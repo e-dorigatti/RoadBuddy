@@ -2,6 +2,7 @@ package it.unitn.roadbuddy.app.backend.models;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 public class CommentPOI extends PointOfInterest {
@@ -16,12 +17,13 @@ public class CommentPOI extends PointOfInterest {
         return text;
     }
 
-    public MarkerOptions drawToMap( GoogleMap map ) {
+    public Marker drawToMap( GoogleMap map ) {
         MarkerOptions opts = new MarkerOptions( )
                 .position( new LatLng( getLatitude( ), getLongitude( ) ) )
-                .title( "Created by an user" )
+                .title( "Created by an user" )  // FIXME [ed] when we add support for multiple users
                 .snippet( getText( ) );
 
-        return opts;
+        marker = map.addMarker( opts );
+        return marker;
     }
 }

@@ -3,7 +3,9 @@ package it.unitn.roadbuddy.app;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.os.AsyncTask;
 import android.text.InputType;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -12,13 +14,14 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
+import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.CommentPOI;
 
 public class AddPOIState implements NFAState,
                                     GoogleMap.OnMapClickListener,
                                     GoogleMap.OnMapLongClickListener,
+                                    GoogleMap.OnMarkerClickListener,
                                     GoogleMap.OnCameraChangeListener {
 
     MainActivity activity;
@@ -34,6 +37,7 @@ public class AddPOIState implements NFAState,
 
         activity.map.setOnMapLongClickListener( this );
         activity.map.setOnCameraChangeListener( this );
+        activity.map.setOnMarkerClickListener( this );
         activity.map.setOnMapClickListener( this );
 
         activity.showToast( "Long tap to add" );
@@ -46,15 +50,12 @@ public class AddPOIState implements NFAState,
             @Override
             public void onClick( View v ) {
                 if ( comment != null ) {
-                    DAOFactory.getPoiDAOFactory( ).getCommentPoiDAO( ).AddCommentPOI(
-                            activity.getApplicationContext( ), comment
-                    );
-
-                    activity.showToast( "Point saved" );
+                    new SavePOIAsync( nfa ).executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, comment );
                 }
-                else activity.showToast( "No point added..." );
-
-                nfa.Transition( new RestState( ) );
+                else {
+                    activity.showToast( R.string.new_poi_cancel );
+                    nfa.Transition( new RestState( ) );
+                }
             }
         } );
 
@@ -73,6 +74,7 @@ public class AddPOIState implements NFAState,
         activity.map.setOnMapLongClickListener( null );
         activity.map.setOnCameraChangeListener( null );
         activity.map.setOnMapClickListener( null );
+        activity.map.setOnMarkerClickListener( null );
 
         activity.removeMenuBar( );
     }
@@ -111,14 +113,18 @@ public class AddPOIState implements NFAState,
     }
 
     @Override
+    public boolean onMarkerClick( Marker m ) {
+        return true;  // prevent the default behaviour
+    }
+
+    @Override
     public void onMapClick( LatLng point ) {
         activity.toggleMenuBar( );
     }
 
     void drawMarker( ) {
         if ( comment != null ) {
-            MarkerOptions options = comment.drawToMap( activity.map );
-            marker = activity.map.addMarker( options );
+            marker = comment.drawToMap( activity.map );
             marker.showInfoWindow( );
         }
     }
@@ -126,5 +132,46 @@ public class AddPOIState implements NFAState,
     public void onCameraChange( final CameraPosition position ) {
         activity.RefreshMapContent( );
         drawMarker( );
+    }
+
+    class SavePOIAsync extends AsyncTask<CommentPOI, Integer, Boolean> {
+        NFA nfa;
+        String exceptionMessage;
+
+        public SavePOIAsync( NFA nfa ) {
+            this.nfa = nfa;
+        }
+
+        @Override
+        protected Boolean doInBackground( CommentPOI... poi ) {
+            try {
+                DAOFactory.getPoiDAOFactory( ).getCommentPoiDAO( ).AddCommentPOI(
+                        activity.getApplicationContext( ), poi[ 0 ]
+                );
+                return true;
+            }
+            catch ( BackendException exc ) {
+                Log.e( "roadbuddy", "backend exception", exc );
+                exceptionMessage = exc.getMessage( );
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( Boolean success ) {
+            if ( success ) {
+                activity.showToast( R.string.new_poi_saved );
+                nfa.Transition( new RestState( ) );
+            }
+            else {
+                if ( exceptionMessage != null ) {
+                    activity.showToast( exceptionMessage );
+                }
+                else {
+                    activity.showToast( R.string.generic_backend_error );
+                }
+                activity.showMenuBar( );
+            }
+        }
     }
 }

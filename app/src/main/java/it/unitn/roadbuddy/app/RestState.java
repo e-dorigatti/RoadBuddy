@@ -4,26 +4,26 @@ package it.unitn.roadbuddy.app;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnCameraChangeListener;
 import com.google.android.gms.maps.GoogleMap.OnMapClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
-import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
+import it.unitn.roadbuddy.app.backend.models.PointOfInterest;
 
 
 public class RestState implements NFAState,
                                   OnMapClickListener,
                                   OnMapLongClickListener,
-                                  OnMarkerClickListener,
+                                  GoogleMap.OnMarkerClickListener,
                                   OnCameraChangeListener {
 
     MainActivity activity;
     LinearLayout buttonBar;
     Button btnAddPoi;
     Button btnAddPath;
-    Marker markerShown;
 
     @Override
     public void onStateEnter( final NFA nfa, MainActivity activity ) {
@@ -61,9 +61,19 @@ public class RestState implements NFAState,
     }
 
     @Override
+    public boolean onMarkerClick( Marker m ) {
+        PointOfInterest selected = activity.shownPOIs.get( m );
+        if ( selected != null ) {
+            activity.selectedPOI = selected;
+        }
+
+        return false;
+    }
+
+    @Override
     public void onMapClick( LatLng point ) {
         activity.toggleMenuBar( );
-        markerShown = null;
+        activity.selectedPOI = null;
     }
 
     @Override
@@ -72,15 +82,7 @@ public class RestState implements NFAState,
     }
 
     @Override
-    public boolean onMarkerClick( Marker m ) {
-        markerShown = m;
-        return false;
-    }
-
-    @Override
     public void onCameraChange( final CameraPosition position ) {
         activity.RefreshMapContent( );
-        if ( markerShown != null )
-            markerShown.showInfoWindow( );
     }
 }

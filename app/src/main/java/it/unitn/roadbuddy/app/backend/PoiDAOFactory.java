@@ -9,9 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class PoiDAOFactory {
-    public abstract CommentPoiDAO getCommentPoiDAO( );
+    public abstract CommentPoiDAO getCommentPoiDAO( ) throws BackendException;
 
-    public List<PointOfInterest> getPOIsInside( Context c, LatLngBounds bounds ) {
+    public List<PointOfInterest> getPOIsInside( Context c, LatLngBounds bounds ) throws BackendException {
         List<PointOfInterest> points = new ArrayList<PointOfInterest>( );
 
         // TODO [ed] add points from all POI DAOs

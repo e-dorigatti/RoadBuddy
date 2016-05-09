@@ -2,13 +2,14 @@ package it.unitn.roadbuddy.app.backend.models;
 
 
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Marker;
 
 public abstract class PointOfInterest {
-    private double latitude;
-    private double longitude;
-    private POIType type;
-    private long id;
+    protected double latitude;
+    protected double longitude;
+    protected POIType type;
+    protected long id;
+    protected Marker marker;
 
     public PointOfInterest( POIType type, long id, double latitude, double longitude ) {
         this.type = type;
@@ -33,5 +34,23 @@ public abstract class PointOfInterest {
         return id;
     }
 
-    public abstract MarkerOptions drawToMap( GoogleMap map );
+    public Marker getMarker( ) {
+        return marker;
+    }
+
+    public void setMarker( Marker marker ) {
+        this.marker = marker;
+    }
+
+    @Override
+    public boolean equals( Object other ) {
+        if ( other != null && other instanceof PointOfInterest ) {
+            return this.id == ( ( PointOfInterest ) other ).id;
+        }
+        else {
+            return false;
+        }
+    }
+
+    public abstract Marker drawToMap( GoogleMap map );
 }
