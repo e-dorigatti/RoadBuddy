@@ -74,13 +74,17 @@ public class MainActivity
         new RefreshMapAsync( ).executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, bounds );
     }
 
-    public View setMenuBar( int view ) {
-        removeMenuBar( );
-
-        currentMenuBar = getLayoutInflater( ).inflate( view, mainFrameLayout, false );
-        mainFrameLayout.addView( currentMenuBar );
+    public View setCurrentMenuBar( int view ) {
+        View v = getLayoutInflater( ).inflate( view, mainFrameLayout, false );
+        setCurrentMenuBar( v );
 
         return currentMenuBar;
+    }
+
+    public void setCurrentMenuBar( View v ) {
+        removeMenuBar( );
+        currentMenuBar = v;
+        mainFrameLayout.addView( v );
     }
 
     public void removeMenuBar( ) {

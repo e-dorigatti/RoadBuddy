@@ -34,10 +34,16 @@ public class RestState implements NFAState,
         activity.map.setOnCameraChangeListener( this );
         activity.map.setOnMarkerClickListener( this );
 
-        buttonBar = ( LinearLayout ) activity.setMenuBar( R.layout.rest_buttons_layout );
+        buttonBar = ( LinearLayout ) activity.setCurrentMenuBar( R.layout.rest_buttons_layout );
         buttonBar.setVisibility( View.INVISIBLE );
 
         btnAddPath = ( Button ) buttonBar.findViewById( R.id.btnAddPath );
+        btnAddPath.setOnClickListener( new View.OnClickListener( ) {
+            @Override
+            public void onClick( View v ) {
+                nfa.Transition( new AddPathState( ) );
+            }
+        } );
 
         btnAddPoi = ( Button ) buttonBar.findViewById( R.id.btnAddPoi );
         btnAddPoi.setOnClickListener( new View.OnClickListener( ) {

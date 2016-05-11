@@ -40,9 +40,9 @@ public class AddPOIState implements NFAState,
         activity.map.setOnMarkerClickListener( this );
         activity.map.setOnMapClickListener( this );
 
-        activity.showToast( "Long tap to add" );
+        activity.showToast( R.string.long_tap_to_add );
 
-        buttonBar = ( LinearLayout ) activity.setMenuBar( R.layout.ok_cancel_layout );
+        buttonBar = ( LinearLayout ) activity.setCurrentMenuBar( R.layout.ok_cancel_layout );
         buttonBar.setVisibility( View.INVISIBLE );
 
         btnOk = ( Button ) buttonBar.findViewById( R.id.btnOk );
@@ -129,6 +129,7 @@ public class AddPOIState implements NFAState,
         }
     }
 
+    @Override
     public void onCameraChange( final CameraPosition position ) {
         activity.RefreshMapContent( );
         drawMarker( );
