@@ -24,7 +24,7 @@ public class AddPOIState implements NFAState,
                                     GoogleMap.OnMarkerClickListener,
                                     GoogleMap.OnCameraChangeListener {
 
-    MainActivity activity;
+    MapFragment fragment;
     CommentPOI comment;
     Marker marker;
     LinearLayout buttonBar;
@@ -32,17 +32,17 @@ public class AddPOIState implements NFAState,
     Button btnCancel;
 
     @Override
-    public void onStateEnter( final NFA nfa, final MainActivity activity ) {
-        this.activity = activity;
+    public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
+        this.fragment = fragment;
 
-        activity.map.setOnMapLongClickListener( this );
-        activity.map.setOnCameraChangeListener( this );
-        activity.map.setOnMarkerClickListener( this );
-        activity.map.setOnMapClickListener( this );
+        fragment.googleMap.setOnMapLongClickListener( this );
+        fragment.googleMap.setOnCameraChangeListener( this );
+        fragment.googleMap.setOnMarkerClickListener( this );
+        fragment.googleMap.setOnMapClickListener( this );
 
-        activity.showToast( R.string.long_tap_to_add );
+        fragment.showToast( R.string.long_tap_to_add );
 
-        buttonBar = ( LinearLayout ) activity.setCurrentMenuBar( R.layout.ok_cancel_layout );
+        buttonBar = ( LinearLayout ) fragment.setCurrentMenuBar( R.layout.ok_cancel_layout );
         buttonBar.setVisibility( View.INVISIBLE );
 
         btnOk = ( Button ) buttonBar.findViewById( R.id.btnOk );
@@ -53,7 +53,7 @@ public class AddPOIState implements NFAState,
                     new SavePOIAsync( nfa ).executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, comment );
                 }
                 else {
-                    activity.showToast( R.string.new_poi_cancel );
+                    fragment.showToast( R.string.new_poi_cancel );
                     nfa.Transition( new RestState( ) );
                 }
             }
@@ -63,28 +63,28 @@ public class AddPOIState implements NFAState,
         btnCancel.setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View v ) {
-                activity.showToast( "No point added..." );
+                fragment.showToast( "No point added..." );
                 nfa.Transition( new RestState( ) );
             }
         } );
     }
 
     @Override
-    public void onStateExit( NFA nfa, MainActivity activity ) {
-        activity.map.setOnMapLongClickListener( null );
-        activity.map.setOnCameraChangeListener( null );
-        activity.map.setOnMapClickListener( null );
-        activity.map.setOnMarkerClickListener( null );
+    public void onStateExit( NFA nfa, MapFragment fragment ) {
+        fragment.googleMap.setOnMapLongClickListener( null );
+        fragment.googleMap.setOnCameraChangeListener( null );
+        fragment.googleMap.setOnMapClickListener( null );
+        fragment.googleMap.setOnMarkerClickListener( null );
 
-        activity.removeMenuBar( );
+        fragment.removeMenuBar( );
     }
 
     @Override
     public void onMapLongClick( final LatLng point ) {
-        AlertDialog.Builder builder = new AlertDialog.Builder( activity );
+        AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getActivity());
         builder.setTitle( "Enter text" );
 
-        final EditText input = new EditText( activity );
+        final EditText input = new EditText(fragment.getActivity());
         input.setInputType( InputType.TYPE_TEXT_FLAG_AUTO_COMPLETE | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT );
         builder.setView( input );
 
@@ -119,19 +119,19 @@ public class AddPOIState implements NFAState,
 
     @Override
     public void onMapClick( LatLng point ) {
-        activity.toggleMenuBar( );
+        fragment.toggleMenuBar( );
     }
 
     void drawMarker( ) {
         if ( comment != null ) {
-            marker = comment.drawToMap( activity.map );
+            marker = comment.drawToMap( fragment.googleMap );
             marker.showInfoWindow( );
         }
     }
 
     @Override
     public void onCameraChange( final CameraPosition position ) {
-        activity.RefreshMapContent( );
+        fragment.RefreshMapContent( );
         drawMarker( );
     }
 
@@ -147,7 +147,7 @@ public class AddPOIState implements NFAState,
         protected Boolean doInBackground( CommentPOI... poi ) {
             try {
                 DAOFactory.getPoiDAOFactory( ).getCommentPoiDAO( ).AddCommentPOI(
-                        activity.getApplicationContext( ), poi[ 0 ]
+                        fragment.getActivity().getApplicationContext( ), poi[ 0 ]
                 );
                 return true;
             }
@@ -161,17 +161,17 @@ public class AddPOIState implements NFAState,
         @Override
         protected void onPostExecute( Boolean success ) {
             if ( success ) {
-                activity.showToast( R.string.new_poi_saved );
+                fragment.showToast( R.string.new_poi_saved );
                 nfa.Transition( new RestState( ) );
             }
             else {
                 if ( exceptionMessage != null ) {
-                    activity.showToast( exceptionMessage );
+                    fragment.showToast( exceptionMessage );
                 }
                 else {
-                    activity.showToast( R.string.generic_backend_error );
+                    fragment.showToast( R.string.generic_backend_error );
                 }
-                activity.showMenuBar( );
+                fragment.showMenuBar( );
             }
         }
     }

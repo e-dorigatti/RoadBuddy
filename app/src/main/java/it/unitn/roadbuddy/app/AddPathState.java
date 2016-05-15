@@ -31,15 +31,15 @@ public class AddPathState implements NFAState,
 
     List<WaypointInfo> path = new ArrayList<>( );
     GoogleMap map;
-    MainActivity activity;
+    MapFragment fragment;
     LinearLayout lyWaypointControl;
     LinearLayout lyOkCancel;
     Marker selectedMarker;
 
     @Override
-    public void onStateEnter( final NFA nfa, final MainActivity activity ) {
-        this.activity = activity;
-        this.map = activity.map;
+    public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
+        this.fragment = fragment;
+        this.map = fragment.googleMap;
 
         map.setOnMapLongClickListener( this );
         map.setOnCameraChangeListener( this );
@@ -47,8 +47,8 @@ public class AddPathState implements NFAState,
         map.setOnMapClickListener( this );
         map.clear( );
 
-        lyWaypointControl = ( LinearLayout ) activity.getLayoutInflater( ).inflate(
-                R.layout.waypoint_control, activity.mainFrameLayout, false
+        lyWaypointControl = ( LinearLayout ) fragment.getActivity().getLayoutInflater( ).inflate(
+                R.layout.waypoint_control, fragment.mainFrameLayout, false
         );
         lyWaypointControl.findViewById( R.id.btnDeleteWaypoint ).setOnClickListener(
                 new View.OnClickListener( ) {
@@ -58,7 +58,7 @@ public class AddPathState implements NFAState,
                     }
                 } );
 
-        lyOkCancel = ( LinearLayout ) activity.setCurrentMenuBar( R.layout.ok_cancel_layout );
+        lyOkCancel = ( LinearLayout ) fragment.setCurrentMenuBar( R.layout.ok_cancel_layout );
         lyOkCancel.findViewById( R.id.btnOk ).setOnClickListener(
                 new View.OnClickListener( ) {
                     @Override
@@ -71,16 +71,16 @@ public class AddPathState implements NFAState,
                 new View.OnClickListener( ) {
                     @Override
                     public void onClick( View v ) {
-                        activity.showToast( "No point added..." );
+                        fragment.showToast( "No point added..." );
                         nfa.Transition( new RestState( ) );
                     }
                 } );
 
-        activity.showToast( R.string.long_tap_to_add );
+        fragment.showToast( R.string.long_tap_to_add );
     }
 
     @Override
-    public void onStateExit( NFA nfa, MainActivity activity ) {
+    public void onStateExit( NFA nfa, MapFragment fragment ) {
         map.setOnMapLongClickListener( null );
         map.setOnCameraChangeListener( null );
         map.setOnMapClickListener( null );
@@ -154,7 +154,7 @@ public class AddPathState implements NFAState,
         waypoint.legTo = direction.getRouteList( ).get( 0 ).getLegList( ).get( 0 );
         ArrayList<LatLng> points = waypoint.legTo.getDirectionPoint( );
         PolylineOptions opts = DirectionConverter.createPolyline(
-                activity.getApplicationContext( ),
+                fragment.getActivity().getApplicationContext( ),
                 points, 5, Color.BLUE
         );
         waypoint.polylineTo = map.addPolyline( opts );
@@ -165,7 +165,7 @@ public class AddPathState implements NFAState,
     @Override
     public void onMapLongClick( final LatLng point ) {
         if ( requestPending ) {
-            activity.showToast( R.string.wait_for_network );
+            fragment.showToast( R.string.wait_for_network );
             return;
         }
 
@@ -183,7 +183,7 @@ public class AddPathState implements NFAState,
 
     @Override
     public boolean onMarkerClick( Marker m ) {
-        activity.setCurrentMenuBar( lyWaypointControl );
+        fragment.setCurrentMenuBar( lyWaypointControl );
         selectedMarker = m;
 
         return false;
@@ -191,7 +191,7 @@ public class AddPathState implements NFAState,
 
     @Override
     public void onMapClick( LatLng point ) {
-        activity.setCurrentMenuBar( lyOkCancel );
+        fragment.setCurrentMenuBar( lyOkCancel );
         selectedMarker = null;
     }
 
@@ -230,7 +230,7 @@ public class AddPathState implements NFAState,
             else {
                 waypoint.marker.remove( );
                 path.remove( waypoint );
-                activity.showToast( "NOK" );
+                fragment.showToast( "NOK" );
             }
 
             requestPending = false;
@@ -240,7 +240,7 @@ public class AddPathState implements NFAState,
         public void onDirectionFailure( Throwable t ) {
             Log.d( "roadbuddy", "while getting directions", t );
             if ( t.getMessage( ) != null ) {
-                activity.showToast( t.getMessage( ) );
+                fragment.showToast( t.getMessage( ) );
             }
 
             requestPending = false;
@@ -270,7 +270,7 @@ public class AddPathState implements NFAState,
                 updateWaypoint( next, direction );
             }
             else {
-                activity.showToast( "NOK" );
+                fragment.showToast( "NOK" );
             }
 
             requestPending = false;
@@ -280,7 +280,7 @@ public class AddPathState implements NFAState,
         public void onDirectionFailure( Throwable t ) {
             Log.d( "roadbuddy", "while getting directions", t );
             if ( t.getMessage( ) != null ) {
-                activity.showToast( t.getMessage( ) );
+                fragment.showToast( t.getMessage( ) );
             }
 
             requestPending = false;

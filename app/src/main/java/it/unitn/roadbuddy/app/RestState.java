@@ -20,21 +20,21 @@ public class RestState implements NFAState,
                                   GoogleMap.OnMarkerClickListener,
                                   OnCameraChangeListener {
 
-    MainActivity activity;
+    MapFragment fragment;
     LinearLayout buttonBar;
     Button btnAddPoi;
     Button btnAddPath;
 
     @Override
-    public void onStateEnter( final NFA nfa, MainActivity activity ) {
-        this.activity = activity;
+    public void onStateEnter( final NFA nfa, MapFragment fragment ) {
+        this.fragment = fragment;
 
-        activity.map.setOnMapClickListener( this );
-        activity.map.setOnMapLongClickListener( this );
-        activity.map.setOnCameraChangeListener( this );
-        activity.map.setOnMarkerClickListener( this );
+        fragment.googleMap.setOnMapClickListener( this );
+        fragment.googleMap.setOnMapLongClickListener( this );
+        fragment.googleMap.setOnCameraChangeListener( this );
+        fragment.googleMap.setOnMarkerClickListener( this );
 
-        buttonBar = ( LinearLayout ) activity.setCurrentMenuBar( R.layout.rest_buttons_layout );
+        buttonBar = ( LinearLayout ) fragment.setCurrentMenuBar( R.layout.rest_buttons_layout );
         buttonBar.setVisibility( View.INVISIBLE );
 
         btnAddPath = ( Button ) buttonBar.findViewById( R.id.btnAddPath );
@@ -53,24 +53,24 @@ public class RestState implements NFAState,
             }
         } );
 
-        activity.RefreshMapContent( );
+        fragment.RefreshMapContent( );
     }
 
     @Override
-    public void onStateExit( NFA nfa, MainActivity activity ) {
-        activity.map.setOnMapClickListener( null );
-        activity.map.setOnMapLongClickListener( null );
-        activity.map.setOnCameraChangeListener( null );
-        activity.map.setOnMarkerClickListener( null );
+    public void onStateExit( NFA nfa, MapFragment fragment ) {
+        fragment.googleMap.setOnMapClickListener( null );
+        fragment.googleMap.setOnMapLongClickListener( null );
+        fragment.googleMap.setOnCameraChangeListener( null );
+        fragment.googleMap.setOnMarkerClickListener( null );
 
-        activity.removeMenuBar( );
+        fragment.removeMenuBar( );
     }
 
     @Override
     public boolean onMarkerClick( Marker m ) {
-        PointOfInterest selected = activity.shownPOIs.get( m );
+        PointOfInterest selected = fragment.shownPOIs.get( m );
         if ( selected != null ) {
-            activity.selectedPOI = selected;
+            fragment.selectedPOI = selected;
         }
 
         return false;
@@ -78,8 +78,8 @@ public class RestState implements NFAState,
 
     @Override
     public void onMapClick( LatLng point ) {
-        activity.toggleMenuBar( );
-        activity.selectedPOI = null;
+        fragment.toggleMenuBar( );
+        fragment.selectedPOI = null;
     }
 
     @Override
@@ -89,6 +89,6 @@ public class RestState implements NFAState,
 
     @Override
     public void onCameraChange( final CameraPosition position ) {
-        activity.RefreshMapContent( );
+        fragment.RefreshMapContent( );
     }
 }
