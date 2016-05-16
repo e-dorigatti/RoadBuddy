@@ -8,13 +8,15 @@ import org.postgresql.PGConnection;
 
 import java.sql.*;
 
+import it.unitn.roadbuddy.app.BuildConfig;
+
 public class PostgresUtils {
 
-    private static final String USER = "roadbuddy";
-    private static final String PASSWORD = "lpsmt2016";
-    private static final String HOST = "hetzy3.spaziodati.eu";
-    private static final String PORT = "54321";
-    private static final String DATABASE = "roadbuddy";
+    private static final String USER = BuildConfig.USER;
+    private static final String PASSWORD = BuildConfig.PASSWORD;
+    private static final String HOST = BuildConfig.HOST;
+    private static final String PORT = BuildConfig.PORT;
+    private static final String DATABASE = BuildConfig.DATABASE;
     public static final String URL = String.format(
             "jdbc:postgresql://%s:%s/%s?user=%s&password=%s&ssl=false",
             HOST, PORT, DATABASE, USER, PASSWORD
