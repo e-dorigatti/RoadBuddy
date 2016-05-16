@@ -13,11 +13,12 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
-import it.unitn.roadbuddy.app.backend.models.PointOfInterest;
+import it.unitn.roadbuddy.app.backend.models.CommentPOI;
+import it.unitn.roadbuddy.app.backend.models.Path;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,9 +34,11 @@ public class MainActivity
     LinearLayout lyMapButtons;
     FrameLayout mainFrameLayout;
     NFA nfa;
+
     View currentMenuBar;
-    Map<Marker, PointOfInterest> shownPOIs;
-    PointOfInterest selectedPOI;
+
+    Map<String, Drawable> shownDrawables = new HashMap<>( );
+    Drawable selectedDrawable;
 
     @Override
     protected void onCreate( Bundle savedInstanceState ) {
@@ -55,7 +58,6 @@ public class MainActivity
         mCameraTextView = ( TextView ) findViewById( R.id.camera_text );
         lyMapButtons = ( LinearLayout ) findViewById( R.id.lyMapButtons );
         mainFrameLayout = ( FrameLayout ) findViewById( R.id.mainFrameLayout );
-        shownPOIs = new HashMap<>( );
 
         SupportMapFragment mapFragment =
                 ( SupportMapFragment ) getSupportFragmentManager( ).findFragmentById( R.id.map );
@@ -106,9 +108,9 @@ public class MainActivity
     public void toggleMenuBar( ) {
         if ( currentMenuBar != null ) {
             if ( currentMenuBar.getVisibility( ) == View.VISIBLE )
-                currentMenuBar.setVisibility( View.INVISIBLE );
+                hideMenuBar( );
             else
-                currentMenuBar.setVisibility( View.VISIBLE );
+                showMenuBar( );
         }
     }
 
@@ -121,16 +123,44 @@ public class MainActivity
         showToast( msg );
     }
 
-    class RefreshMapAsync extends AsyncTask<LatLngBounds, Integer, List<PointOfInterest>> {
+    public Drawable getSelectedDrawable( ) {
+        return selectedDrawable;
+    }
+
+    public void setSelectedDrawable( Drawable d ) {
+        if ( selectedDrawable != null )
+            selectedDrawable.setSelected( false );
+
+        selectedDrawable = d;
+
+        if ( selectedDrawable != null )
+            selectedDrawable.setSelected( true );
+    }
+
+    class RefreshMapAsync extends AsyncTask<LatLngBounds, Integer, List<Drawable>> {
 
         String exceptionMessage;
 
-        @Override
-        protected List<PointOfInterest> doInBackground( LatLngBounds... bounds ) {
+        protected List<Drawable> doInBackground( LatLngBounds... bounds ) {
             try {
-                return DAOFactory.getPoiDAOFactory( ).getPOIsInside(
+                List<Drawable> results = new ArrayList<>( );
+
+                List<Path> paths = DAOFactory.getPathDAO( ).getPathsInside(
                         getApplicationContext( ), bounds[ 0 ]
                 );
+
+                for ( Path p : paths )
+                    results.add( new DrawablePath( p ) );
+
+                List<CommentPOI> commentPOIs =
+                        DAOFactory.getPoiDAOFactory( ).getCommentPoiDAO( )
+                                  .getCommentPOIsInside( getApplicationContext( ),
+                                                         bounds[ 0 ] );
+
+                for ( CommentPOI p : commentPOIs )
+                    results.add( new DrawableCommentPOI( p ) );
+
+                return results;
             }
             catch ( BackendException e ) {
                 Log.e( "roadbuddy", "backend exception", e );
@@ -140,32 +170,23 @@ public class MainActivity
         }
 
         @Override
-        protected void onPostExecute( List<PointOfInterest> points ) {
-            if ( points != null ) {
-                /**
-                 * [ed] overwrite all POIs with fresh data coming from the database, also
-                 * redraw all of them except for the currently selected POI
-                 *
-                 * TODO do not redraw existing POIs, just update their data.
-                 * I suspect this would case noticeable flicker
-                 */
-                for ( Map.Entry<Marker, PointOfInterest> entry : shownPOIs.entrySet( ) ) {
-                    if ( entry.getValue( ) != selectedPOI ) {
-                        entry.getKey( ).remove( );
-                    }
+        protected void onPostExecute( List<Drawable> drawables ) {
+            if ( drawables != null ) {
+                for ( Map.Entry<String, Drawable> entry : shownDrawables.entrySet( ) ) {
+                    entry.getValue( ).RemoveFromMap( );
                 }
 
-                shownPOIs.clear( );
-                for ( PointOfInterest p : points ) {
-                    Marker marker;
-                    if ( p != selectedPOI ) {
-                        marker = p.drawToMap( map );
+                shownDrawables.clear( );
+                for ( Drawable d : drawables ) {
+                    String displayed = d.DrawToMap( map );
+                    shownDrawables.put( displayed, d );
+
+                    if ( d.equals( selectedDrawable ) ) {
+                        // they represent the same database object but are actually different references
+                        selectedDrawable = d;
+                        d.setSelected( true );
                     }
-                    else {
-                        marker = selectedPOI.getMarker( );
-                        p.setMarker( marker );
-                    }
-                    shownPOIs.put( marker, p );
+                    else d.setSelected( false );
                 }
             }
             else if ( exceptionMessage != null ) {

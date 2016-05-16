@@ -4,6 +4,8 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.internal.IPolylineDelegate;
 
 public class CommentPOI extends PointOfInterest {
     private String text;
@@ -15,15 +17,5 @@ public class CommentPOI extends PointOfInterest {
 
     public String getText( ) {
         return text;
-    }
-
-    public Marker drawToMap( GoogleMap map ) {
-        MarkerOptions opts = new MarkerOptions( )
-                .position( new LatLng( getLatitude( ), getLongitude( ) ) )
-                .title( "Created by an user" )  // FIXME [ed] when we add support for multiple users
-                .snippet( getText( ) );
-
-        marker = map.addMarker( opts );
-        return marker;
     }
 }

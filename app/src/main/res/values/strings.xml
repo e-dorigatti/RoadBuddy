@@ -12,6 +12,7 @@
     <string name="long_tap_to_add">Long tap to add</string>
     <string name="wait_for_network">Please wait until the current request returns</string>
 
-<!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="new_path_cancel">No path added..</string>
+    <string name="new_path_saved">Path saved!</string>
+
 </resources>

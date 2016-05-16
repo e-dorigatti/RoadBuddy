@@ -1,6 +1,9 @@
 package it.unitn.roadbuddy.app.backend.postgres;
 
+import com.google.android.gms.maps.model.LatLngBounds;
+import org.postgis.LinearRing;
 import org.postgis.PGgeometry;
+import org.postgis.Point;
 import org.postgresql.PGConnection;
 
 import java.sql.*;
@@ -36,6 +39,18 @@ public class PostgresUtils {
         if ( instance == null )
             instance = new PostgresUtils( );
         return instance;
+    }
+
+    public static org.postgis.Polygon LatLngBoundsToPolygon( LatLngBounds bounds ) {
+        return new org.postgis.Polygon( new LinearRing[] {
+                new LinearRing( new Point[] {
+                        new Point( bounds.northeast.latitude, bounds.northeast.longitude ),
+                        new Point( bounds.northeast.latitude, bounds.southwest.longitude ),
+                        new Point( bounds.southwest.latitude, bounds.southwest.longitude ),
+                        new Point( bounds.southwest.latitude, bounds.northeast.longitude ),
+                        new Point( bounds.northeast.latitude, bounds.northeast.longitude )
+                } )
+        } );
     }
 
     public int getSchemaVersion( String schema ) throws SQLException {

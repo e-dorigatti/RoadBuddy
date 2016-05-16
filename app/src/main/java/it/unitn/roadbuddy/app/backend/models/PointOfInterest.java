@@ -1,7 +1,6 @@
 package it.unitn.roadbuddy.app.backend.models;
 
 
-import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Marker;
 
 public abstract class PointOfInterest {
@@ -51,6 +50,4 @@ public abstract class PointOfInterest {
             return false;
         }
     }
-
-    public abstract Marker drawToMap( GoogleMap map );
 }

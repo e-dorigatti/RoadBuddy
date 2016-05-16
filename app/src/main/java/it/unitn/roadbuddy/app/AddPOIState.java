@@ -26,7 +26,7 @@ public class AddPOIState implements NFAState,
 
     MainActivity activity;
     CommentPOI comment;
-    Marker marker;
+    DrawableCommentPOI drawable;
     LinearLayout buttonBar;
     Button btnOk;
     Button btnCancel;
@@ -91,8 +91,8 @@ public class AddPOIState implements NFAState,
         builder.setPositiveButton( "Add", new DialogInterface.OnClickListener( ) {
             @Override
             public void onClick( DialogInterface dialog, int which ) {
-                if ( marker != null ) {
-                    marker.remove( );
+                if ( drawable != null ) {
+                    drawable.RemoveFromMap();
                 }
 
                 String text = input.getText( ).toString( );
@@ -124,8 +124,9 @@ public class AddPOIState implements NFAState,
 
     void drawMarker( ) {
         if ( comment != null ) {
-            marker = comment.drawToMap( activity.map );
-            marker.showInfoWindow( );
+            drawable = new DrawableCommentPOI( comment );
+            drawable.DrawToMap( activity.map );
+            drawable.setSelected( true );
         }
     }
 

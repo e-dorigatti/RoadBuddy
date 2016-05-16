@@ -2,6 +2,7 @@ package it.unitn.roadbuddy.app;
 
 
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -15,6 +16,8 @@ import com.akexorcist.googledirection.model.Leg;
 import com.akexorcist.googledirection.util.DirectionConverter;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.*;
+import it.unitn.roadbuddy.app.backend.DAOFactory;
+import it.unitn.roadbuddy.app.backend.models.Path;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +66,16 @@ public class AddPathState implements NFAState,
                 new View.OnClickListener( ) {
                     @Override
                     public void onClick( View v ) {
-                        savePath( );
+                        if ( path.size( ) > 0 ) {
+                            new SavePathAsync( nfa ).executeOnExecutor(
+                                    AsyncTask.THREAD_POOL_EXECUTOR,
+                                    path
+                            );
+                        }
+                        else {
+                            activity.showToast( R.string.new_path_cancel );
+                            nfa.Transition( new RestState( ) );
+                        }
                     }
                 } );
 
@@ -85,10 +97,6 @@ public class AddPathState implements NFAState,
         map.setOnCameraChangeListener( null );
         map.setOnMapClickListener( null );
         map.setOnMarkerClickListener( null );
-    }
-
-    void savePath( ) {
-        // TODO
     }
 
     MarkerOptions createMarker( LatLng point, int i ) {
@@ -228,9 +236,7 @@ public class AddPathState implements NFAState,
                 updateWaypoint( waypoint, direction );
             }
             else {
-                waypoint.marker.remove( );
-                path.remove( waypoint );
-                activity.showToast( "NOK" );
+                fail( );
             }
 
             requestPending = false;
@@ -243,7 +249,16 @@ public class AddPathState implements NFAState,
                 activity.showToast( t.getMessage( ) );
             }
 
+            fail( );
             requestPending = false;
+        }
+
+        void fail( ) {
+            WaypointInfo waypoint = path.get( path.size( ) - 1 );
+
+            waypoint.marker.remove( );
+            path.remove( waypoint );
+            activity.showToast( "NOK" );
         }
     }
 
@@ -284,6 +299,55 @@ public class AddPathState implements NFAState,
             }
 
             requestPending = false;
+        }
+    }
+
+    class SavePathAsync extends AsyncTask<List<WaypointInfo>, Integer, Boolean> {
+        NFA nfa;
+        String errorMessage;
+
+        public SavePathAsync( NFA nfa ) {
+            this.nfa = nfa;
+        }
+
+        @Override
+        protected Boolean doInBackground( List<WaypointInfo>... waypoints ) {
+            Path path = new Path( -1 );
+            for ( int i = 1; i < waypoints[ 0 ].size( ); i++ ) {
+                WaypointInfo waypoint = waypoints[ 0 ].get( i );
+                path.addLeg( waypoint.legTo.getDirectionPoint( ) );
+            }
+
+            try {
+                DAOFactory.getPathDAO( ).AddPath( path );
+                return true;
+            }
+            catch ( Exception exc ) {
+                Log.e( "roadbuddy", "save path async", exc );
+                errorMessage = exc.getMessage( );
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( Boolean success ) {
+            if ( success ) {
+                for ( WaypointInfo waypoint : path ) {
+                    if ( waypoint.polylineTo != null )
+                        waypoint.polylineTo.remove( );
+                }
+
+                activity.showToast( R.string.new_path_saved );
+                nfa.Transition( new RestState( ) );
+            }
+            else {
+                if ( errorMessage != null ) {
+                    activity.showToast( errorMessage );
+                }
+                else {
+                    activity.showToast( R.string.generic_backend_error );
+                }
+            }
         }
     }
 }

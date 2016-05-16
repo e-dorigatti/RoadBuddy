@@ -11,13 +11,14 @@ import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
-import it.unitn.roadbuddy.app.backend.models.PointOfInterest;
+import com.google.android.gms.maps.model.Polyline;
 
 
 public class RestState implements NFAState,
                                   OnMapClickListener,
                                   OnMapLongClickListener,
                                   GoogleMap.OnMarkerClickListener,
+                                  GoogleMap.OnPolylineClickListener,
                                   OnCameraChangeListener {
 
     MainActivity activity;
@@ -33,6 +34,7 @@ public class RestState implements NFAState,
         activity.map.setOnMapLongClickListener( this );
         activity.map.setOnCameraChangeListener( this );
         activity.map.setOnMarkerClickListener( this );
+        activity.map.setOnPolylineClickListener( this );
 
         buttonBar = ( LinearLayout ) activity.setCurrentMenuBar( R.layout.rest_buttons_layout );
         buttonBar.setVisibility( View.INVISIBLE );
@@ -56,30 +58,40 @@ public class RestState implements NFAState,
         activity.RefreshMapContent( );
     }
 
+    void onGraphicItemSelected( String itemId ) {
+        Drawable selected = activity.shownDrawables.get( itemId );
+        Utils.Assert( selected != null, false );
+        activity.setSelectedDrawable( selected );
+    }
+
     @Override
     public void onStateExit( NFA nfa, MainActivity activity ) {
         activity.map.setOnMapClickListener( null );
         activity.map.setOnMapLongClickListener( null );
         activity.map.setOnCameraChangeListener( null );
         activity.map.setOnMarkerClickListener( null );
+        activity.map.setOnPolylineClickListener( null );
 
         activity.removeMenuBar( );
     }
 
     @Override
     public boolean onMarkerClick( Marker m ) {
-        PointOfInterest selected = activity.shownPOIs.get( m );
-        if ( selected != null ) {
-            activity.selectedPOI = selected;
-        }
+        onGraphicItemSelected( m.getId( ) );
 
-        return false;
+        // prevent default map's behaviour, we will take care of it
+        return true;
+    }
+
+    @Override
+    public void onPolylineClick( Polyline p ) {
+        onGraphicItemSelected( p.getId( ) );
     }
 
     @Override
     public void onMapClick( LatLng point ) {
         activity.toggleMenuBar( );
-        activity.selectedPOI = null;
+        activity.setSelectedDrawable( null );
     }
 
     @Override
