@@ -25,7 +25,7 @@ public class AddPathState implements NFAState,
                                      GoogleMap.OnMarkerClickListener,
                                      GoogleMap.OnCameraChangeListener {
 
-    private static final String APIKEY = "AIzaSyDIbDr0ZKOgQomCZtKmLKUmL4W5pPFyRoU";
+    private static final String APIKEY = BuildConfig.APIKEY;
 
     boolean requestPending = false;
 

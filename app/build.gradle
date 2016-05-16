@@ -3,7 +3,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.1.1'
+        classpath 'com.android.tools.build:gradle:2.1.0'
     }
 }
 apply plugin: 'com.android.application'
@@ -30,6 +30,15 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    buildTypes.each {
+        it.buildConfigField 'String', 'APIKEY', APIKEY
+        it.buildConfigField 'String', 'USER', USER
+        it.buildConfigField 'String', 'PASSWORD', PASSWORD
+        it.buildConfigField 'String', 'HOST', HOST
+        it.buildConfigField 'String', 'PORT', PORT
+        it.buildConfigField 'String', 'DATABASE', DATABASE
+
+    }
 }
 
 dependencies {
@@ -42,4 +51,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.4.0'
     compile 'com.android.support:design:23.4.0'
     compile 'com.android.support:support-v4:23.4.0'
+    compile 'com.github.clans:fab:1.6.3'
 }
