@@ -6,14 +6,9 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import com.google.android.gms.maps.GoogleMap;
 
 
 public class MainActivity extends AppCompatActivity {
-
-    GoogleMap map;
-    NFA nfa;
-
 
     @Override
     protected void onCreate( Bundle savedInstanceState ) {
@@ -24,8 +19,9 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar( toolbar );
 
         TabLayout tabLayout = ( TabLayout ) findViewById( R.id.tab_layout );
-        tabLayout.addTab( tabLayout.newTab( ).setText( "Map" ) );
-        tabLayout.addTab( tabLayout.newTab( ).setText( "Viaggi" ) );
+        tabLayout.addTab( tabLayout.newTab( ).setText( R.string.map_tab_name ) );
+        tabLayout.addTab( tabLayout.newTab( ).setText( R.string.trips_tab_name ) );
+        tabLayout.addTab( tabLayout.newTab( ).setText( R.string.settings_tab_name ) );
         tabLayout.setTabGravity( TabLayout.GRAVITY_FILL );
 
         final ViewPager viewPager = ( ViewPager ) findViewById( R.id.pager );

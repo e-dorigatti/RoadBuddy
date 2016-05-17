@@ -15,6 +15,10 @@
     <string name="new_path_cancel">No path added..</string>
     <string name="new_path_saved">Path saved!</string>
 
+    <string name="map_tab_name">Map</string>
+    <string name="trips_tab_name">Viaggi</string>
+    <string name="settings_tab_name">Impostazioni</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

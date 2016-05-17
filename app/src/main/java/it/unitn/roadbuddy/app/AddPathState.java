@@ -38,6 +38,7 @@ public class AddPathState implements NFAState,
     LinearLayout lyWaypointControl;
     LinearLayout lyOkCancel;
     Marker selectedMarker;
+    SavePathAsync asyncSave;
 
     @Override
     public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
@@ -50,7 +51,7 @@ public class AddPathState implements NFAState,
         map.setOnMapClickListener( this );
         map.clear( );
 
-        lyWaypointControl = ( LinearLayout ) fragment.getActivity().getLayoutInflater( ).inflate(
+        lyWaypointControl = ( LinearLayout ) fragment.getActivity( ).getLayoutInflater( ).inflate(
                 R.layout.waypoint_control, fragment.mainFrameLayout, false
         );
         lyWaypointControl.findViewById( R.id.btnDeleteWaypoint ).setOnClickListener(
@@ -67,10 +68,17 @@ public class AddPathState implements NFAState,
                     @Override
                     public void onClick( View v ) {
                         if ( path.size( ) > 0 ) {
-                            new SavePathAsync( nfa ).executeOnExecutor(
-                                    AsyncTask.THREAD_POOL_EXECUTOR,
-                                    path
-                            );
+                            if ( asyncSave == null ) {
+                                asyncSave = new SavePathAsync(
+                                        nfa
+                                );
+
+                                asyncSave.executeOnExecutor(
+                                        AsyncTask.THREAD_POOL_EXECUTOR,
+                                        path
+                                );
+                            }
+                            else fragment.showToast( R.string.wait_for_network );
                         }
                         else {
                             fragment.showToast( R.string.new_path_cancel );
@@ -97,6 +105,9 @@ public class AddPathState implements NFAState,
         map.setOnCameraChangeListener( null );
         map.setOnMapClickListener( null );
         map.setOnMarkerClickListener( null );
+
+        if ( asyncSave != null )
+            asyncSave.cancel( true );
     }
 
     MarkerOptions createMarker( LatLng point, int i ) {
@@ -162,7 +173,7 @@ public class AddPathState implements NFAState,
         waypoint.legTo = direction.getRouteList( ).get( 0 ).getLegList( ).get( 0 );
         ArrayList<LatLng> points = waypoint.legTo.getDirectionPoint( );
         PolylineOptions opts = DirectionConverter.createPolyline(
-                fragment.getActivity().getApplicationContext( ),
+                fragment.getActivity( ).getApplicationContext( ),
                 points, 5, Color.BLUE
         );
         waypoint.polylineTo = map.addPolyline( opts );
@@ -206,24 +217,6 @@ public class AddPathState implements NFAState,
     @Override
     public void onCameraChange( final CameraPosition position ) {
 
-    }
-
-    class WaypointInfo {
-        int index;
-
-        LatLng point;
-        Leg legTo;
-
-        Marker marker;
-        Polyline polylineTo;
-
-        public WaypointInfo( int index, LatLng point, Leg legTo, Marker marker, Polyline polylineTo ) {
-            this.index = index;
-            this.point = point;
-            this.legTo = legTo;
-            this.marker = marker;
-            this.polylineTo = polylineTo;
-        }
     }
 
     class InsertWaypointDirectionReceived implements DirectionCallback {
@@ -302,9 +295,12 @@ public class AddPathState implements NFAState,
         }
     }
 
+
     class SavePathAsync extends AsyncTask<List<WaypointInfo>, Integer, Boolean> {
+
         NFA nfa;
         String errorMessage;
+        List<WaypointInfo> savedPath;
 
         public SavePathAsync( NFA nfa ) {
             this.nfa = nfa;
@@ -320,6 +316,7 @@ public class AddPathState implements NFAState,
 
             try {
                 DAOFactory.getPathDAO( ).AddPath( path );
+                savedPath = waypoints[ 0 ];
                 return true;
             }
             catch ( Exception exc ) {
@@ -332,7 +329,7 @@ public class AddPathState implements NFAState,
         @Override
         protected void onPostExecute( Boolean success ) {
             if ( success ) {
-                for ( WaypointInfo waypoint : path ) {
+                for ( WaypointInfo waypoint : savedPath ) {
                     if ( waypoint.polylineTo != null )
                         waypoint.polylineTo.remove( );
                 }
@@ -348,6 +345,27 @@ public class AddPathState implements NFAState,
                     fragment.showToast( R.string.generic_backend_error );
                 }
             }
+
+            asyncSave = null;
         }
     }
+
+    class WaypointInfo {
+        int index;
+
+        LatLng point;
+        Leg legTo;
+
+        Marker marker;
+        Polyline polylineTo;
+
+        public WaypointInfo( int index, LatLng point, Leg legTo, Marker marker, Polyline polylineTo ) {
+            this.index = index;
+            this.point = point;
+            this.legTo = legTo;
+            this.marker = marker;
+            this.polylineTo = polylineTo;
+        }
+    }
+
 }

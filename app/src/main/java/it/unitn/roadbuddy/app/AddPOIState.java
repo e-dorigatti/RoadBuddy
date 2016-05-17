@@ -2,6 +2,7 @@ package it.unitn.roadbuddy.app;
 
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.text.InputType;
@@ -30,6 +31,7 @@ public class AddPOIState implements NFAState,
     LinearLayout buttonBar;
     Button btnOk;
     Button btnCancel;
+    SavePOIAsync asyncSave;
 
     @Override
     public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
@@ -50,7 +52,14 @@ public class AddPOIState implements NFAState,
             @Override
             public void onClick( View v ) {
                 if ( comment != null ) {
-                    new SavePOIAsync( nfa ).executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, comment );
+                    if ( asyncSave == null ) {
+                        asyncSave = new SavePOIAsync(
+                                nfa, fragment.getActivity( ).getApplicationContext( )
+                        );
+
+                        asyncSave.executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, comment );
+                    }
+                    else fragment.showToast( R.string.wait_for_network );
                 }
                 else {
                     fragment.showToast( R.string.new_poi_cancel );
@@ -136,19 +145,23 @@ public class AddPOIState implements NFAState,
         drawMarker( );
     }
 
+
     class SavePOIAsync extends AsyncTask<CommentPOI, Integer, Boolean> {
+
         NFA nfa;
         String exceptionMessage;
+        Context context;
 
-        public SavePOIAsync( NFA nfa ) {
+        public SavePOIAsync( NFA nfa, Context context ) {
             this.nfa = nfa;
+            this.context = context;
         }
 
         @Override
         protected Boolean doInBackground( CommentPOI... poi ) {
             try {
                 DAOFactory.getPoiDAOFactory( ).getCommentPoiDAO( ).AddCommentPOI(
-                        fragment.getActivity( ).getApplicationContext( ), poi[ 0 ]
+                        context, poi[ 0 ]
                 );
                 return true;
             }
@@ -172,8 +185,9 @@ public class AddPOIState implements NFAState,
                 else {
                     fragment.showToast( R.string.generic_backend_error );
                 }
-                fragment.showMenuBar( );
             }
+
+            asyncSave = null;
         }
     }
 }

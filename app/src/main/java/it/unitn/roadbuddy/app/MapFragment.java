@@ -1,5 +1,6 @@
 package it.unitn.roadbuddy.app;
 
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -7,8 +8,10 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.RotateAnimation;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -33,6 +36,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     NFA nfa;
     Map<String, Drawable> shownDrawables = new HashMap<>( );
     Drawable selectedDrawable;
+
+    RefreshMapAsync asyncRefresh;
 
     public MapFragment( ) {
         // Required empty public constructor
@@ -61,14 +66,37 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     @Override
+    public void onPause( ) {
+        if ( asyncRefresh != null )
+            asyncRefresh.cancel( true );
+
+        if ( nfa != null )
+            nfa.Pause( );
+
+        super.onPause( );
+    }
+
+    @Override
+    public void onResume( ) {
+        if ( nfa != null )
+            nfa.Resume( );
+
+        super.onResume( );
+    }
+
+    @Override
     public void onMapReady( GoogleMap map ) {
         this.googleMap = map;
         nfa = new NFA( this, new RestState( ) );
     }
 
     public void RefreshMapContent( ) {
+        if ( asyncRefresh != null )
+            asyncRefresh.cancel( true );
+
         LatLngBounds bounds = googleMap.getProjection( ).getVisibleRegion( ).latLngBounds;
-        new RefreshMapAsync( ).executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, bounds );
+        asyncRefresh = new RefreshMapAsync( getActivity( ).getApplicationContext( ) );
+        asyncRefresh.executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, bounds );
     }
 
 
@@ -132,25 +160,30 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     class RefreshMapAsync extends AsyncTask<LatLngBounds, Integer, List<Drawable>> {
 
         String exceptionMessage;
+        Context context;
+
+        public RefreshMapAsync( Context context ) {
+            this.context = context;
+        }
 
         protected List<Drawable> doInBackground( LatLngBounds... bounds ) {
             try {
                 List<Drawable> results = new ArrayList<>( );
 
                 List<Path> paths = DAOFactory.getPathDAO( ).getPathsInside(
-                        getActivity( ).getApplicationContext( ), bounds[ 0 ]
+                        context, bounds[ 0 ]
                 );
-
-                for ( Path p : paths )
-                    results.add( new DrawablePath( p ) );
 
                 List<CommentPOI> commentPOIs =
                         DAOFactory.getPoiDAOFactory( )
                                   .getCommentPoiDAO( )
                                   .getCommentPOIsInside(
-                                          getActivity( ).getApplicationContext( ),
+                                          context,
                                           bounds[ 0 ]
                                   );
+
+                for ( Path p : paths )
+                    results.add( new DrawablePath( p ) );
 
                 for ( CommentPOI p : commentPOIs )
                     results.add( new DrawableCommentPOI( p ) );
@@ -190,6 +223,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             else {
                 showToast( R.string.generic_backend_error );
             }
+
+            asyncRefresh = null;
         }
     }
 }
