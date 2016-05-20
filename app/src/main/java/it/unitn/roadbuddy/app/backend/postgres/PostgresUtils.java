@@ -1,14 +1,17 @@
 package it.unitn.roadbuddy.app.backend.postgres;
 
+import android.util.Log;
 import com.google.android.gms.maps.model.LatLngBounds;
+import it.unitn.roadbuddy.app.BuildConfig;
+import it.unitn.roadbuddy.app.backend.BackendException;
 import org.postgis.LinearRing;
 import org.postgis.PGgeometry;
 import org.postgis.Point;
 import org.postgresql.PGConnection;
 
 import java.sql.*;
-
-import it.unitn.roadbuddy.app.BuildConfig;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PostgresUtils {
 
@@ -22,25 +25,62 @@ public class PostgresUtils {
             HOST, PORT, DATABASE, USER, PASSWORD
     );
     private static PostgresUtils instance = null;
-    private Connection conn;
+    private static List<Connection> openConnections = new ArrayList<>( );
+    private Connection connection;
 
     private PostgresUtils( ) throws SQLException {
-        conn = getConnection( );
-        conn.prepareStatement(
+        getConnection( ).prepareStatement(
                 "CREATE TABLE IF NOT EXISTS SchemaVersions(schema TEXT PRIMARY KEY, version INTEGER)"
         ).execute( );
     }
 
-    public static Connection getConnection( ) throws SQLException {
-        PGConnection conn = ( PGConnection ) DriverManager.getConnection( URL );
-        conn.addDataType( "geometry", PGgeometry.class );
-        return ( Connection ) conn;
+    public static void InitSchemas( ) throws BackendException {
+        try {
+            PostgresUserDAO.getInstance( );
+            PostgresPathDAO.getInstance( );
+            PostgresCommentPoiDAO.getInstance( );
+        }
+        catch ( SQLException exc ) {
+            throw new BackendException( exc.getMessage( ), exc );
+        }
+    }
+
+    public static Connection getNewConnection( ) throws SQLException {
+        Connection conn = DriverManager.getConnection( URL );
+        ( ( PGConnection ) conn ).addDataType( "geometry", PGgeometry.class );
+        openConnections.add( conn );
+
+        return conn;
     }
 
     public static PostgresUtils getInstance( ) throws SQLException {
         if ( instance == null )
             instance = new PostgresUtils( );
         return instance;
+    }
+
+    public static void closeAllConnections( ) {
+        for ( Connection conn : openConnections ) {
+            try {
+                if ( !conn.isClosed( ) )
+                    conn.close( );
+            }
+            catch ( SQLException exc ) {
+                Log.i( PostgresUtils.class.getName( ), "connection already closed", exc );
+            }
+        }
+        openConnections.clear( );
+    }
+
+    public static boolean InitDriver( ) {
+        try {
+            Class.forName( "org.postgresql.Driver" );
+            return true;
+        }
+        catch ( ClassNotFoundException e ) {
+            Log.e( PostgresUtils.class.getName( ), "backend exception", e );
+            return false;
+        }
     }
 
     public static org.postgis.Polygon LatLngBoundsToPolygon( LatLngBounds bounds ) {
@@ -55,8 +95,16 @@ public class PostgresUtils {
         } );
     }
 
+    private Connection getConnection( ) throws SQLException {
+        if ( connection == null || connection.isClosed( ) )
+            connection = PostgresUtils.getNewConnection( );
+        return connection;
+    }
+
     public int getSchemaVersion( String schema ) throws SQLException {
-        PreparedStatement stmt = conn.prepareStatement( "SELECT version FROM SchemaVersions WHERE schema = ?" );
+        PreparedStatement stmt = getConnection( ).prepareStatement(
+                "SELECT version FROM SchemaVersions WHERE schema = ?"
+        );
         stmt.setString( 1, schema );
         ResultSet res = stmt.executeQuery( );
         if ( res.next( ) ) {
@@ -68,7 +116,7 @@ public class PostgresUtils {
     }
 
     public boolean setSchemaVersion( String schema, int version ) throws SQLException {
-        PreparedStatement stmt = conn.prepareStatement(
+        PreparedStatement stmt = getConnection( ).prepareStatement(
                 "INSERT INTO SchemaVersions(schema, version) VALUES(?, ?) ON CONFLICT(schema) DO UPDATE SET version = ?"
         );
         stmt.setString( 1, schema );

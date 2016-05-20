@@ -4,7 +4,6 @@ package it.unitn.roadbuddy.app;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.os.AsyncTask;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
@@ -31,7 +30,7 @@ public class AddPOIState implements NFAState,
     LinearLayout buttonBar;
     Button btnOk;
     Button btnCancel;
-    SavePOIAsync asyncSave;
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     @Override
     public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
@@ -52,14 +51,12 @@ public class AddPOIState implements NFAState,
             @Override
             public void onClick( View v ) {
                 if ( comment != null ) {
-                    if ( asyncSave == null ) {
-                        asyncSave = new SavePOIAsync(
+                    if ( !taskManager.isTaskRunning( SavePOIAsync.class ) ) {
+                        taskManager.startRunningTask( new SavePOIAsync(
                                 nfa, fragment.getActivity( ).getApplicationContext( )
-                        );
-
-                        asyncSave.executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, comment );
+                        ), true, comment );
                     }
-                    else fragment.showToast( R.string.wait_for_network );
+                    else fragment.showToast( R.string.wait_for_async_op_completion );
                 }
                 else {
                     fragment.showToast( R.string.new_poi_cancel );
@@ -86,6 +83,7 @@ public class AddPOIState implements NFAState,
         fragment.googleMap.setOnMarkerClickListener( null );
 
         fragment.removeMenuBar( );
+        taskManager.stopRunningTask( SavePOIAsync.class );
     }
 
     @Override
@@ -101,11 +99,12 @@ public class AddPOIState implements NFAState,
             @Override
             public void onClick( DialogInterface dialog, int which ) {
                 if ( drawable != null ) {
-                    drawable.RemoveFromMap( );
+                    drawable.RemoveFromMap( fragment.getContext( ) );
                 }
 
                 String text = input.getText( ).toString( );
-                comment = new CommentPOI( 0, point.latitude, point.longitude, text );
+                comment = new CommentPOI( 0, point.latitude, point.longitude, text,
+                                          fragment.currentUser.getId( ) );
 
                 drawMarker( );
             }
@@ -134,8 +133,8 @@ public class AddPOIState implements NFAState,
     void drawMarker( ) {
         if ( comment != null ) {
             drawable = new DrawableCommentPOI( comment );
-            drawable.DrawToMap( fragment.googleMap );
-            drawable.setSelected( true );
+            drawable.DrawToMap( fragment.getContext( ), fragment.googleMap );
+            drawable.setSelected( fragment.getContext( ), true );
         }
     }
 
@@ -146,13 +145,14 @@ public class AddPOIState implements NFAState,
     }
 
 
-    class SavePOIAsync extends AsyncTask<CommentPOI, Integer, Boolean> {
+    class SavePOIAsync extends CancellableAsyncTask<CommentPOI, Integer, Boolean> {
 
         NFA nfa;
         String exceptionMessage;
         Context context;
 
         public SavePOIAsync( NFA nfa, Context context ) {
+            super( taskManager );
             this.nfa = nfa;
             this.context = context;
         }
@@ -166,7 +166,7 @@ public class AddPOIState implements NFAState,
                 return true;
             }
             catch ( BackendException exc ) {
-                Log.e( "roadbuddy", "backend exception", exc );
+                Log.e( getClass( ).getName( ), "backend exception", exc );
                 exceptionMessage = exc.getMessage( );
                 return false;
             }
@@ -176,6 +176,8 @@ public class AddPOIState implements NFAState,
         protected void onPostExecute( Boolean success ) {
             if ( success ) {
                 fragment.showToast( R.string.new_poi_saved );
+                drawable.RemoveFromMap( context );
+                fragment.RefreshMapContent( );
                 nfa.Transition( new RestState( ) );
             }
             else {
@@ -187,7 +189,7 @@ public class AddPOIState implements NFAState,
                 }
             }
 
-            asyncSave = null;
+            super.onPostExecute( success );
         }
     }
 }

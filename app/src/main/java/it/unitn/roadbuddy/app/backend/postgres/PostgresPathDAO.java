@@ -17,9 +17,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
-    private static final String
+    protected static final String
             COLUMN_NAME_ID = "id",
-            COLUMN_NAME_PATH = "path";
+            COLUMN_NAME_PATH = "path",
+            COLUMN_NAME_OWNER = "owner",
+            TABLE_NAME = "Paths";
+
     private static PostgresPathDAO instance;
 
     private PostgresPathDAO( ) throws SQLException {
@@ -32,9 +35,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
         return instance;
     }
 
-    Path multiLineStringToPath( long id, MultiLineString mls ) {
-        Path path = new Path( id );
-
+    static Path appendMultiLineStringToPath( Path path, MultiLineString mls ) {
         for ( LineString ls : mls.getLines( ) ) {
             List<LatLng> leg = new ArrayList<>( );
             for ( Point p : ls.getPoints( ) ) {
@@ -46,7 +47,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
         return path;
     }
 
-    MultiLineString pathToMultiLineString( Path path ) {
+    static MultiLineString pathToMultiLineString( Path path ) {
         List<Path.Leg> legs = path.getLegs( );
         LineString[] strings = new LineString[ legs.size( ) ];
 
@@ -72,18 +73,21 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
     @Override
     public void AddPath( Path path ) throws BackendException {
         try {
-            PreparedStatement stmt = dbConnection.prepareStatement(
-                    String.format( "INSERT INTO %s(%s) VALUES (?)",
-                                   getSchemaName( ), COLUMN_NAME_PATH )
+            PreparedStatement stmt = getConnection( ).prepareStatement(
+                    String.format(
+                            "INSERT INTO %s(%s, %s) VALUES (?, ?)",
+                            getSchemaName( ), COLUMN_NAME_PATH, COLUMN_NAME_OWNER
+                    )
             );
 
             MultiLineString mls = pathToMultiLineString( path );
             stmt.setObject( 1, new PGgeometry( mls ) );
+            stmt.setLong( 2, path.getOwner( ) );
 
             stmt.execute( );
         }
         catch ( SQLException exc ) {
-            Log.e( "roadbuddy", "while saving path", exc );
+            Log.e( getClass( ).getName( ), "while saving path", exc );
             throw new BackendException( exc.getMessage( ), exc );
         }
     }
@@ -91,9 +95,11 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
     @Override
     public List<Path> getPathsInside( Context c, LatLngBounds bounds ) throws BackendException {
         try {
-            PreparedStatement stmt = dbConnection.prepareStatement(
-                    String.format( "SELECT %1$s, %2$s FROM %3$s WHERE ST_Intersects(?, %2$s)",
-                                   COLUMN_NAME_ID, COLUMN_NAME_PATH, getSchemaName( ) )
+            PreparedStatement stmt = getConnection( ).prepareStatement(
+                    String.format(
+                            "SELECT %1$s, %2$s, %4$s FROM %3$s WHERE ST_Intersects(?, %2$s)",
+                            COLUMN_NAME_ID, COLUMN_NAME_PATH, getSchemaName( ), COLUMN_NAME_OWNER
+                    )
             );
 
             Polygon bounding_box = PostgresUtils.LatLngBoundsToPolygon( bounds );
@@ -104,34 +110,43 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
 
             while ( res.next( ) ) {
                 long id = res.getLong( COLUMN_NAME_ID );
+                long owner = res.getLong( COLUMN_NAME_OWNER );
+
                 PGgeometry geom = ( PGgeometry ) res.getObject( COLUMN_NAME_PATH );
                 MultiLineString mls = ( MultiLineString ) geom.getGeometry( );
 
-                Path path = multiLineStringToPath( id, mls );
+                Path path = new Path( id, owner );
+                appendMultiLineStringToPath( path, mls );
                 paths.add( path );
             }
 
             return paths;
         }
         catch ( SQLException exc ) {
-            Log.e( "roadbuddy", "while retrieving paths", exc );
+            Log.e( getClass( ).getName( ), "while retrieving paths", exc );
             throw new BackendException( exc.getMessage( ), exc );
         }
     }
 
     @Override
     protected int getSchemaVersion( ) {
-        return 1;  // TODO [ed] increment at every schema change
+        return 4;  // TODO [ed] increment at every schema change
     }
 
     @Override
     protected String getSchemaName( ) {
-        return "Paths";
+        return TABLE_NAME;
     }
 
     @Override
     protected String getCreateTableStatement( ) {
-        return String.format( "CREATE TABLE %s(%s SERIAL PRIMARY KEY, %s GEOMETRY(MULTILINESTRING))",
-                              getSchemaName( ), COLUMN_NAME_ID, COLUMN_NAME_PATH );
+        return String.format(
+                "CREATE TABLE %s(%s SERIAL PRIMARY KEY, " +
+                        "%s GEOMETRY(MULTILINESTRING), " +
+                        "%s INTEGER REFERENCES %s(%s) NOT NULL)",
+                getSchemaName( ), COLUMN_NAME_ID, COLUMN_NAME_PATH,
+                COLUMN_NAME_OWNER, PostgresUserDAO.TABLE_NAME,
+                PostgresUserDAO.COLUMN_NAME_ID
+        );
     }
 }

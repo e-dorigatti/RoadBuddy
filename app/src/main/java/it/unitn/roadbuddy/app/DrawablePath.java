@@ -1,5 +1,6 @@
 package it.unitn.roadbuddy.app;
 
+import android.content.Context;
 import android.graphics.Color;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Polyline;
@@ -14,8 +15,8 @@ public class DrawablePath implements Drawable {
         this.path = path;
     }
 
-
-    public String DrawToMap( GoogleMap map ) {
+    @Override
+    public String DrawToMap( Context context, GoogleMap map ) {
         PolylineOptions opts = new PolylineOptions( )
                 .clickable( true );
 
@@ -23,19 +24,21 @@ public class DrawablePath implements Drawable {
             opts.addAll( leg.getPoints( ) );
 
         polyline = map.addPolyline( opts );
-        setSelected( false );
+        setSelected( context, false );
 
         return polyline.getId( );
     }
 
-    public void RemoveFromMap( ) {
+    @Override
+    public void RemoveFromMap( Context context ) {
         if ( polyline != null ) {
             polyline.remove( );
             polyline = null;
         }
     }
 
-    public void setSelected( boolean selected ) {
+    @Override
+    public void setSelected( Context context, boolean selected ) {
         if ( polyline == null )
             return;
 

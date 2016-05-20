@@ -1,17 +1,16 @@
 package it.unitn.roadbuddy.app;
 
 import android.content.Context;
-import android.os.AsyncTask;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.RotateAnimation;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -20,6 +19,7 @@ import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.CommentPOI;
 import it.unitn.roadbuddy.app.backend.models.Path;
+import it.unitn.roadbuddy.app.backend.models.User;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,8 +36,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     NFA nfa;
     Map<String, Drawable> shownDrawables = new HashMap<>( );
     Drawable selectedDrawable;
+    User currentUser;
 
-    RefreshMapAsync asyncRefresh;
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
+
 
     public MapFragment( ) {
         // Required empty public constructor
@@ -46,6 +48,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
+
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
+        long user_id = pref.getLong( SettingsFragment.KEY_PREF_USER_ID, -1 );
+
+        taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
     }
 
     @Override
@@ -67,8 +74,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onPause( ) {
-        if ( asyncRefresh != null )
-            asyncRefresh.cancel( true );
+        taskManager.stopRunningTask( RefreshMapAsync.class );
 
         if ( nfa != null )
             nfa.Pause( );
@@ -91,14 +97,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void RefreshMapContent( ) {
-        if ( asyncRefresh != null )
-            asyncRefresh.cancel( true );
-
         LatLngBounds bounds = googleMap.getProjection( ).getVisibleRegion( ).latLngBounds;
-        asyncRefresh = new RefreshMapAsync( getActivity( ).getApplicationContext( ) );
-        asyncRefresh.executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, bounds );
+        taskManager.startRunningTask( new RefreshMapAsync( getContext( ) ), true, bounds );
     }
-
 
     public View setCurrentMenuBar( int view ) {
         View v = getActivity( ).getLayoutInflater( ).inflate( view, mainFrameLayout, false );
@@ -149,20 +150,21 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public void setSelectedDrawable( Drawable d ) {
         if ( selectedDrawable != null )
-            selectedDrawable.setSelected( false );
+            selectedDrawable.setSelected( getContext( ), false );
 
         selectedDrawable = d;
 
         if ( selectedDrawable != null )
-            selectedDrawable.setSelected( true );
+            selectedDrawable.setSelected( getContext( ), true );
     }
 
-    class RefreshMapAsync extends AsyncTask<LatLngBounds, Integer, List<Drawable>> {
+    class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Integer, List<Drawable>> {
 
         String exceptionMessage;
         Context context;
 
         public RefreshMapAsync( Context context ) {
+            super( taskManager );
             this.context = context;
         }
 
@@ -191,7 +193,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 return results;
             }
             catch ( BackendException e ) {
-                Log.e( "roadbuddy", "backend exception", e );
+                Log.e( getClass( ).getName( ), "while refreshing map", e );
                 exceptionMessage = e.getMessage( );
                 return null;
             }
@@ -201,20 +203,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         protected void onPostExecute( List<Drawable> drawables ) {
             if ( drawables != null ) {
                 for ( Map.Entry<String, Drawable> entry : shownDrawables.entrySet( ) ) {
-                    entry.getValue( ).RemoveFromMap( );
+                    entry.getValue( ).RemoveFromMap( context );
                 }
 
                 shownDrawables.clear( );
                 for ( Drawable d : drawables ) {
-                    String displayed = d.DrawToMap( googleMap );
+                    String displayed = d.DrawToMap( context, googleMap );
                     shownDrawables.put( displayed, d );
 
                     if ( d.equals( selectedDrawable ) ) {
                         // they represent the same database object but are actually different references
                         selectedDrawable = d;
-                        d.setSelected( true );
+                        d.setSelected( context, true );
                     }
-                    else d.setSelected( false );
+                    else d.setSelected( context, false );
                 }
             }
             else if ( exceptionMessage != null ) {
@@ -224,7 +226,41 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 showToast( R.string.generic_backend_error );
             }
 
-            asyncRefresh = null;
+            super.onPostExecute( drawables );
+        }
+    }
+
+    class GetCurrentUserAsync extends CancellableAsyncTask<Long, Integer, User> {
+
+        String exceptionMessage;
+
+        public GetCurrentUserAsync( ) {
+            super( taskManager );
+        }
+
+        @Override
+        protected User doInBackground( Long... userID ) {
+            try {
+                return DAOFactory.getUserDAO( ).getUser( userID[ 0 ] );
+            }
+            catch ( BackendException exc ) {
+                exceptionMessage = exc.getMessage( );
+                Log.e( getClass( ).getName( ), "while retrieving current user", exc );
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( User user ) {
+            if ( user != null ) {
+                currentUser = user;
+            }
+            else if ( exceptionMessage != null ) {
+                showToast( exceptionMessage );
+            }
+            else {
+                showToast( R.string.generic_backend_error );
+            }
         }
     }
 }

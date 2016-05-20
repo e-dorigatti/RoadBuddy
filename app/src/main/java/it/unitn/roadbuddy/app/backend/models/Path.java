@@ -10,15 +10,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Path {
+
     protected List<Leg> legs = new ArrayList<>( );
+    protected long owner;
     private long id;
 
-    public Path( long id ) {
+    public Path( long id, long owner ) {
         this.id = id;
+        this.owner = owner;
     }
 
     public long getId( ) {
         return id;
+    }
+
+    public long getOwner( ) {
+        return owner;
     }
 
     public void addLeg( List<LatLng> points ) {

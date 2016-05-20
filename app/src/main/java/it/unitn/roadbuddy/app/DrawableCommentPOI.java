@@ -1,5 +1,6 @@
 package it.unitn.roadbuddy.app;
 
+import android.content.Context;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -14,7 +15,7 @@ public class DrawableCommentPOI implements Drawable {
         this.poi = poi;
     }
 
-    public String DrawToMap( GoogleMap map ) {
+    public String DrawToMap( Context context, GoogleMap map ) {
         MarkerOptions opts = new MarkerOptions( )
                 .position( new LatLng( poi.getLatitude( ), poi.getLongitude( ) ) )
                 .title( "Created by an user" )  // FIXME [ed] when we add support for multiple users
@@ -24,14 +25,14 @@ public class DrawableCommentPOI implements Drawable {
         return marker.getId( );
     }
 
-    public void RemoveFromMap( ) {
+    public void RemoveFromMap( Context context ) {
         if ( marker != null ) {
             marker.remove( );
             marker = null;
         }
     }
 
-    public void setSelected( boolean selected ) {
+    public void setSelected( Context context, boolean selected ) {
         if ( marker == null )
             return;
 

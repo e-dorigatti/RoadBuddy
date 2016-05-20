@@ -21,7 +21,10 @@ public class PostgresCommentPoiDAO extends PostgresDAOBase implements CommentPoi
     private static final String
             COLUMN_NAME_ID = "id",
             COLUMN_NAME_LOCATION = "location",
-            COLUMN_NAME_TEXT = "text";
+            COLUMN_NAME_TEXT = "text",
+            COLUMN_NAME_OWNER = "owner",
+            TABLE_NAME = "CommentPOIs";
+
     private static PostgresCommentPoiDAO instance = null;
 
     private PostgresCommentPoiDAO( ) throws SQLException {
@@ -37,19 +40,23 @@ public class PostgresCommentPoiDAO extends PostgresDAOBase implements CommentPoi
     @Override
     public void AddCommentPOI( Context c, CommentPOI poi ) throws BackendException {
         try {
-            PreparedStatement stmt = dbConnection.prepareStatement(
-                    String.format( "INSERT INTO %s(%s, %s) VALUES(?, ?)",
-                                   getSchemaName( ), COLUMN_NAME_LOCATION, COLUMN_NAME_TEXT )
+            PreparedStatement stmt = getConnection( ).prepareStatement(
+                    String.format(
+                            "INSERT INTO %s(%s, %s, %s) VALUES(?, ?, ?)",
+                            getSchemaName( ), COLUMN_NAME_LOCATION, COLUMN_NAME_TEXT,
+                            COLUMN_NAME_OWNER
+                    )
             );
 
             Point p = new Point( poi.getLatitude( ), poi.getLongitude( ) );
             stmt.setObject( 1, new PGgeometry( p ) );
             stmt.setString( 2, poi.getText( ) );
+            stmt.setLong( 3, poi.getOwner( ) );
 
             stmt.execute( );
         }
         catch ( SQLException exc ) {
-            Log.e( "roadbuddy", "exception while saving comment poi", exc );
+            Log.e( getClass( ).getName( ), "exception while saving comment poi", exc );
             throw new BackendException( exc.getMessage( ), exc );
         }
     }
@@ -57,9 +64,12 @@ public class PostgresCommentPoiDAO extends PostgresDAOBase implements CommentPoi
     @Override
     public List<CommentPOI> getCommentPOIsInside( Context c, LatLngBounds bounds ) throws BackendException {
         try {
-            PreparedStatement stmt = dbConnection.prepareStatement(
-                    String.format( "SELECT %1$s, %2$s, %3$s FROM %4$s WHERE ST_Contains(?, %2$s)",
-                                   COLUMN_NAME_ID, COLUMN_NAME_LOCATION, COLUMN_NAME_TEXT, getSchemaName( ) )
+            PreparedStatement stmt = getConnection( ).prepareStatement(
+                    String.format(
+                            "SELECT %1$s, %2$s, %3$s, %5$s FROM %4$s WHERE ST_Contains(?, %2$s)",
+                            COLUMN_NAME_ID, COLUMN_NAME_LOCATION, COLUMN_NAME_TEXT, getSchemaName( ),
+                            COLUMN_NAME_OWNER
+                    )
             );
 
             Polygon bounding_box = PostgresUtils.LatLngBoundsToPolygon( bounds );
@@ -70,34 +80,43 @@ public class PostgresCommentPoiDAO extends PostgresDAOBase implements CommentPoi
 
             while ( res.next( ) ) {
                 long id = res.getLong( COLUMN_NAME_ID );
+                long owner = res.getLong( COLUMN_NAME_OWNER );
+
                 PGgeometry geom = ( PGgeometry ) res.getObject( COLUMN_NAME_LOCATION );
                 Point point = ( Point ) geom.getGeometry( );
                 String text = res.getString( COLUMN_NAME_TEXT );
-                CommentPOI poi = new CommentPOI( id, point.x, point.y, text );
+
+                CommentPOI poi = new CommentPOI( id, point.x, point.y, text, owner );
                 pois.add( poi );
             }
 
             return pois;
         }
         catch ( SQLException exc ) {
-            Log.e( "roadbuddy", "exception while retrieving comment pois", exc );
+            Log.e( getClass( ).getName( ), "exception while retrieving comment pois", exc );
             throw new BackendException( "exception while retrieving comment pois", exc );
         }
     }
 
     @Override
     protected int getSchemaVersion( ) {
-        return 3;  // TODO [ed] increment at every schema change
+        return 6;  // TODO [ed] increment at every schema change
     }
 
     @Override
     protected String getSchemaName( ) {
-        return "CommentPOIs";
+        return TABLE_NAME;
     }
 
     @Override
     protected String getCreateTableStatement( ) {
-        return String.format( "CREATE TABLE %s(%s SERIAL PRIMARY KEY, %s GEOMETRY(POINT), %s TEXT)",
-                              getSchemaName( ), COLUMN_NAME_ID, COLUMN_NAME_LOCATION, COLUMN_NAME_TEXT );
+        return String.format(
+                "CREATE TABLE %s(%s SERIAL PRIMARY KEY, " +
+                        "%s GEOMETRY(POINT), %s TEXT, " +
+                        "%s INTEGER REFERENCES %s(%s) NOT NULL)",
+                getSchemaName( ), COLUMN_NAME_ID, COLUMN_NAME_LOCATION,
+                COLUMN_NAME_TEXT, COLUMN_NAME_OWNER, PostgresUserDAO.TABLE_NAME,
+                PostgresUserDAO.COLUMN_NAME_ID
+        );
     }
 }

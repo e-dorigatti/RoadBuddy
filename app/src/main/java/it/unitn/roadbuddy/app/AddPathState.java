@@ -2,7 +2,6 @@ package it.unitn.roadbuddy.app;
 
 
 import android.graphics.Color;
-import android.os.AsyncTask;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -38,7 +37,7 @@ public class AddPathState implements NFAState,
     LinearLayout lyWaypointControl;
     LinearLayout lyOkCancel;
     Marker selectedMarker;
-    SavePathAsync asyncSave;
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     @Override
     public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
@@ -68,17 +67,12 @@ public class AddPathState implements NFAState,
                     @Override
                     public void onClick( View v ) {
                         if ( path.size( ) > 0 ) {
-                            if ( asyncSave == null ) {
-                                asyncSave = new SavePathAsync(
+                            if ( !taskManager.isTaskRunning( SavePathAsync.class ) ) {
+                                taskManager.startRunningTask( new SavePathAsync(
                                         nfa
-                                );
-
-                                asyncSave.executeOnExecutor(
-                                        AsyncTask.THREAD_POOL_EXECUTOR,
-                                        path
-                                );
+                                ), true, path );
                             }
-                            else fragment.showToast( R.string.wait_for_network );
+                            else fragment.showToast( R.string.wait_for_async_op_completion );
                         }
                         else {
                             fragment.showToast( R.string.new_path_cancel );
@@ -106,8 +100,7 @@ public class AddPathState implements NFAState,
         map.setOnMapClickListener( null );
         map.setOnMarkerClickListener( null );
 
-        if ( asyncSave != null )
-            asyncSave.cancel( true );
+        taskManager.stopRunningTask( SavePathAsync.class );
     }
 
     MarkerOptions createMarker( LatLng point, int i ) {
@@ -184,7 +177,7 @@ public class AddPathState implements NFAState,
     @Override
     public void onMapLongClick( final LatLng point ) {
         if ( requestPending ) {
-            fragment.showToast( R.string.wait_for_network );
+            fragment.showToast( R.string.wait_for_async_op_completion );
             return;
         }
 
@@ -296,19 +289,21 @@ public class AddPathState implements NFAState,
     }
 
 
-    class SavePathAsync extends AsyncTask<List<WaypointInfo>, Integer, Boolean> {
+    class SavePathAsync extends CancellableAsyncTask<List<WaypointInfo>, Integer, Boolean> {
 
         NFA nfa;
         String errorMessage;
         List<WaypointInfo> savedPath;
 
         public SavePathAsync( NFA nfa ) {
+            super( taskManager );
             this.nfa = nfa;
         }
 
         @Override
         protected Boolean doInBackground( List<WaypointInfo>... waypoints ) {
-            Path path = new Path( -1 );
+            Path path = new Path( -1, fragment.currentUser.getId( ) );
+
             for ( int i = 1; i < waypoints[ 0 ].size( ); i++ ) {
                 WaypointInfo waypoint = waypoints[ 0 ].get( i );
                 path.addLeg( waypoint.legTo.getDirectionPoint( ) );
@@ -320,7 +315,7 @@ public class AddPathState implements NFAState,
                 return true;
             }
             catch ( Exception exc ) {
-                Log.e( "roadbuddy", "save path async", exc );
+                Log.e( getClass( ).getName( ), "save path async", exc );
                 errorMessage = exc.getMessage( );
                 return false;
             }
@@ -330,6 +325,7 @@ public class AddPathState implements NFAState,
         protected void onPostExecute( Boolean success ) {
             if ( success ) {
                 for ( WaypointInfo waypoint : savedPath ) {
+                    waypoint.marker.remove( );
                     if ( waypoint.polylineTo != null )
                         waypoint.polylineTo.remove( );
                 }
@@ -346,7 +342,7 @@ public class AddPathState implements NFAState,
                 }
             }
 
-            asyncSave = null;
+            super.onPostExecute( success );
         }
     }
 

@@ -1,18 +1,21 @@
 package it.unitn.roadbuddy.app.backend.postgres;
 
 
-import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 
 public abstract class PostgresDAOBase {
 
-    protected Connection dbConnection;
+    private Connection connection;
 
     protected PostgresDAOBase( ) throws SQLException {
-        dbConnection = PostgresUtils.getConnection( );
         createTable( );
+    }
+
+    protected Connection getConnection( ) throws SQLException {
+        if ( connection == null || connection.isClosed( ) )
+            connection = PostgresUtils.getNewConnection( );
+        return connection;
     }
 
     protected abstract int getSchemaVersion( );
@@ -23,18 +26,19 @@ public abstract class PostgresDAOBase {
 
     protected void createTable( ) throws SQLException {
         String schemaName = getSchemaName( );
-        int schemaVersion = getSchemaVersion( );
+        int localSchemaVersion = getSchemaVersion( );
+        int remoteSchemaVersion = PostgresUtils.getInstance( ).getSchemaVersion( schemaName );
 
-        if ( PostgresUtils.getInstance( ).getSchemaVersion( schemaName ) < schemaVersion ) {
-            dbConnection.prepareStatement(
+        if ( remoteSchemaVersion < localSchemaVersion ) {
+            getConnection( ).prepareStatement(
                     String.format( "DROP TABLE IF EXISTS %s", schemaName )
             ).execute( );
 
-            dbConnection.prepareStatement(
+            getConnection( ).prepareStatement(
                     getCreateTableStatement( )
             ).execute( );
 
-            PostgresUtils.getInstance( ).setSchemaVersion( schemaName, schemaVersion );
+            PostgresUtils.getInstance( ).setSchemaVersion( schemaName, localSchemaVersion );
         }
     }
 }

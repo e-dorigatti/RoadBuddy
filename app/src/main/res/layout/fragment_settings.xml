@@ -3,26 +3,19 @@
               xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              tools:context="it.unitn.roadbuddy.app.SettingsFragment" android:orientation="vertical">
-
+              tools:context="it.unitn.roadbuddy.app.SettingsFragment"
+              android:orientation="vertical">
 
     <FrameLayout
             android:layout_width="fill_parent"
             android:layout_height="wrap_content">
+
         <ImageView
                 android:layout_width="150dp"
                 android:layout_height="150dp"
-                android:id="@+id/avatarImage" android:src="@mipmap/avatar1" android:layout_gravity="center_horizontal"
-                />
+                android:id="@+id/avatarImage"
+                android:src="@mipmap/avatar1"
+                android:layout_gravity="center_horizontal"/>
     </FrameLayout>
-    <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="User Name"
-            android:id="@+id/txtUserName" android:layout_gravity="center_horizontal" android:textSize="25dp"/>
-    <ListView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/listSettings" android:layout_gravity="bottom" android:layout_weight="1"
-            android:stackFromBottom="false"/>
+
 </LinearLayout>

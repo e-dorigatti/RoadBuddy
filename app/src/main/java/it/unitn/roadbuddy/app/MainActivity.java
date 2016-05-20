@@ -1,14 +1,21 @@
 package it.unitn.roadbuddy.app;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.widget.Toast;
+import it.unitn.roadbuddy.app.backend.BackendException;
+import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
 
 public class MainActivity extends AppCompatActivity {
+
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     @Override
     protected void onCreate( Bundle savedInstanceState ) {
@@ -45,13 +52,53 @@ public class MainActivity extends AppCompatActivity {
             }
         } );
 
-        try {
-            Class.forName( "org.postgresql.Driver" );  // FIXME [ed] find a better place
+        // FIXME [ed] find a better place
+        taskManager.startRunningTask( new AsyncInitializeDB( ), true );
+
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( this );
+        if ( pref.getBoolean( SettingsFragment.KEY_PREF_DEV_ENABLED, false ) ) {
+            String userName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, "<unset>" );
+            long userID = pref.getLong( SettingsFragment.KEY_PREF_USER_ID, -1 );
+
+            Toast.makeText( this,
+                            String.format( "You are currently running as user %s (id: %d)",
+                                           userName, userID ),
+                            Toast.LENGTH_SHORT ).show( );
         }
-        catch ( ClassNotFoundException e ) {
-            Log.e( getClass( ).getName( ), "backend exception", e );
-            finish( );
+    }
+
+    @Override
+    protected void onDestroy( ) {
+        PostgresUtils.closeAllConnections( );  // FIXME [ed] find a better place
+        super.onDestroy( );
+    }
+
+    class AsyncInitializeDB extends CancellableAsyncTask<Void, Void, Boolean> {
+
+        public AsyncInitializeDB( ) {
+            super( taskManager );
+        }
+
+        @Override
+        protected Boolean doInBackground( Void... args ) {
+            if ( !PostgresUtils.InitDriver( ) )
+                return false;
+
+            try {
+                PostgresUtils.InitSchemas( );
+            }
+            catch ( BackendException exc ) {
+                Log.e( getClass( ).getName( ), "while initializing database", exc );
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        protected void onPostExecute( Boolean ok ) {
+            if ( !ok )
+                finish( );
         }
     }
 }
-

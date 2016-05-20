@@ -21,7 +21,7 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
             case 1:
                 return new TripsFragment( );
             case 2:
-                return new SettingsFragment( );
+                return (Fragment) new SettingsFragment( );
             default:
                 return null;
         }
