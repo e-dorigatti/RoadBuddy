@@ -25,11 +25,6 @@ import it.unitn.roadbuddy.app.backend.models.PointOfInterest;
 
 public class MainActivity extends AppCompatActivity {
 
-    GoogleMap map;
-    NFA nfa;
-    Map<Marker, PointOfInterest> shownPOIs;
-    PointOfInterest selectedPOI;
-
     @Override
     protected void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
