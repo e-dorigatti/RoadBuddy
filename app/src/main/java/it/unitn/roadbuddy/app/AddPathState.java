@@ -101,6 +101,7 @@ public class AddPathState implements NFAState,
         map.setOnMarkerClickListener( null );
 
         taskManager.stopRunningTask( SavePathAsync.class );
+        clearPath( );
     }
 
     MarkerOptions createMarker( LatLng point, int i ) {
@@ -158,6 +159,15 @@ public class AddPathState implements NFAState,
             getDirections( previous.point, next.point,
                            new DeleteWaypointDirectionReceived( waypoint, next ) );
         }
+    }
+
+    void clearPath( ) {
+        for ( WaypointInfo waypoint : path ) {
+            waypoint.marker.remove( );
+            if ( waypoint.polylineTo != null )
+                waypoint.polylineTo.remove( );
+        }
+        path.clear( );
     }
 
     WaypointInfo updateWaypoint( WaypointInfo waypoint, Direction direction ) {
@@ -293,7 +303,6 @@ public class AddPathState implements NFAState,
 
         NFA nfa;
         String errorMessage;
-        List<WaypointInfo> savedPath;
 
         public SavePathAsync( NFA nfa ) {
             super( taskManager );
@@ -311,7 +320,6 @@ public class AddPathState implements NFAState,
 
             try {
                 DAOFactory.getPathDAO( ).AddPath( path );
-                savedPath = waypoints[ 0 ];
                 return true;
             }
             catch ( Exception exc ) {
@@ -324,12 +332,6 @@ public class AddPathState implements NFAState,
         @Override
         protected void onPostExecute( Boolean success ) {
             if ( success ) {
-                for ( WaypointInfo waypoint : savedPath ) {
-                    waypoint.marker.remove( );
-                    if ( waypoint.polylineTo != null )
-                        waypoint.polylineTo.remove( );
-                }
-
                 fragment.showToast( R.string.new_path_saved );
                 nfa.Transition( new RestState( ) );
             }
