@@ -23,18 +23,16 @@ public class AddPOIState implements NFAState,
                                     GoogleMap.OnMapLongClickListener,
                                     GoogleMap.OnMarkerClickListener,
                                     GoogleMap.OnCameraChangeListener {
-
+    NFA nfa;
     MapFragment fragment;
     CommentPOI comment;
     DrawableCommentPOI drawable;
-    LinearLayout buttonBar;
-    Button btnOk;
-    Button btnCancel;
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     @Override
-    public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
+    public void onStateEnter( NFA nfa, final MapFragment fragment ) {
         this.fragment = fragment;
+        this.nfa = nfa;
 
         fragment.googleMap.setOnMapLongClickListener( this );
         fragment.googleMap.setOnCameraChangeListener( this );
@@ -43,36 +41,6 @@ public class AddPOIState implements NFAState,
 
         fragment.showToast( R.string.long_tap_to_add );
 
-        buttonBar = ( LinearLayout ) fragment.setCurrentMenuBar( R.layout.ok_cancel_layout );
-        buttonBar.setVisibility( View.INVISIBLE );
-
-        btnOk = ( Button ) buttonBar.findViewById( R.id.btnOk );
-        btnOk.setOnClickListener( new View.OnClickListener( ) {
-            @Override
-            public void onClick( View v ) {
-                if ( comment != null ) {
-                    if ( !taskManager.isTaskRunning( SavePOIAsync.class ) ) {
-                        taskManager.startRunningTask( new SavePOIAsync(
-                                nfa, fragment.getActivity( ).getApplicationContext( )
-                        ), true, comment );
-                    }
-                    else fragment.showToast( R.string.wait_for_async_op_completion );
-                }
-                else {
-                    fragment.showToast( R.string.new_poi_cancel );
-                    nfa.Transition( new RestState( ) );
-                }
-            }
-        } );
-
-        btnCancel = ( Button ) buttonBar.findViewById( R.id.btnCancel );
-        btnCancel.setOnClickListener( new View.OnClickListener( ) {
-            @Override
-            public void onClick( View v ) {
-                fragment.showToast( "No point added..." );
-                nfa.Transition( new RestState( ) );
-            }
-        } );
     }
 
     @Override
@@ -98,15 +66,18 @@ public class AddPOIState implements NFAState,
         builder.setPositiveButton( "Add", new DialogInterface.OnClickListener( ) {
             @Override
             public void onClick( DialogInterface dialog, int which ) {
-                if ( drawable != null ) {
-                    drawable.RemoveFromMap( fragment.getContext( ) );
-                }
 
                 String text = input.getText( ).toString( );
                 comment = new CommentPOI( 0, point.latitude, point.longitude, text,
                                           fragment.currentUser.getId( ) );
-
                 drawMarker( );
+
+                if ( !taskManager.isTaskRunning( SavePOIAsync.class ) ) {
+                    taskManager.startRunningTask( new SavePOIAsync(
+                            nfa, fragment.getActivity( ).getApplicationContext( )
+                    ), true, comment );
+                }
+                else fragment.showToast( R.string.wait_for_async_op_completion );
             }
         } );
 
@@ -114,6 +85,11 @@ public class AddPOIState implements NFAState,
             @Override
             public void onClick( DialogInterface dialog, int which ) {
                 dialog.cancel( );
+                fragment.showToast( "No point added..." );
+                if(drawable!= null){
+                    drawable.RemoveFromMap(fragment.getActivity());
+                }
+                nfa.Transition( new RestState( ) );
             }
         } );
 
@@ -127,7 +103,7 @@ public class AddPOIState implements NFAState,
 
     @Override
     public void onMapClick( LatLng point ) {
-        fragment.toggleMenuBar( );
+        //fragment.toggleMenuBar( );
     }
 
     void drawMarker( ) {

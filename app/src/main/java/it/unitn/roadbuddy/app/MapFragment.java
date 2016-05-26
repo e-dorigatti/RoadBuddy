@@ -120,25 +120,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         currentMenuBar = null;
     }
 
-    public void showMenuBar( ) {
-        if ( currentMenuBar != null )
-            currentMenuBar.setVisibility( View.VISIBLE );
-    }
-
-    public void hideMenuBar( ) {
-        if ( currentMenuBar != null )
-            currentMenuBar.setVisibility( View.INVISIBLE );
-    }
-
-    public void toggleMenuBar( ) {
-        if ( currentMenuBar != null ) {
-            if ( currentMenuBar.getVisibility( ) == View.VISIBLE )
-                currentMenuBar.setVisibility( View.INVISIBLE );
-            else
-                currentMenuBar.setVisibility( View.VISIBLE );
-        }
-    }
-
     public void showToast( String text ) {
         Toast.makeText( getActivity( ).getApplicationContext( ), text, Toast.LENGTH_LONG ).show( );
     }
