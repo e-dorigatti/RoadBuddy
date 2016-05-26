@@ -15,6 +15,8 @@ import com.akexorcist.googledirection.model.Leg;
 import com.akexorcist.googledirection.util.DirectionConverter;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.*;
+import it.unitn.roadbuddy.app.backend.DAOFactory;
+import it.unitn.roadbuddy.app.backend.models.Path;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +37,7 @@ public class AddPathState implements NFAState,
     LinearLayout lyWaypointControl;
     LinearLayout lyOkCancel;
     Marker selectedMarker;
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     @Override
     public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
@@ -47,7 +50,7 @@ public class AddPathState implements NFAState,
         map.setOnMapClickListener( this );
         map.clear( );
 
-        lyWaypointControl = ( LinearLayout ) fragment.getActivity().getLayoutInflater( ).inflate(
+        lyWaypointControl = ( LinearLayout ) fragment.getActivity( ).getLayoutInflater( ).inflate(
                 R.layout.waypoint_control, fragment.mainFrameLayout, false
         );
         lyWaypointControl.findViewById( R.id.btnDeleteWaypoint ).setOnClickListener(
@@ -63,7 +66,18 @@ public class AddPathState implements NFAState,
                 new View.OnClickListener( ) {
                     @Override
                     public void onClick( View v ) {
-                        savePath( );
+                        if ( path.size( ) > 0 ) {
+                            if ( !taskManager.isTaskRunning( SavePathAsync.class ) ) {
+                                taskManager.startRunningTask( new SavePathAsync(
+                                        nfa
+                                ), true, path );
+                            }
+                            else fragment.showToast( R.string.wait_for_async_op_completion );
+                        }
+                        else {
+                            fragment.showToast( R.string.new_path_cancel );
+                            nfa.Transition( new RestState( ) );
+                        }
                     }
                 } );
 
@@ -85,10 +99,8 @@ public class AddPathState implements NFAState,
         map.setOnCameraChangeListener( null );
         map.setOnMapClickListener( null );
         map.setOnMarkerClickListener( null );
-    }
 
-    void savePath( ) {
-        // TODO
+        taskManager.stopRunningTask( SavePathAsync.class );
     }
 
     MarkerOptions createMarker( LatLng point, int i ) {
@@ -154,7 +166,7 @@ public class AddPathState implements NFAState,
         waypoint.legTo = direction.getRouteList( ).get( 0 ).getLegList( ).get( 0 );
         ArrayList<LatLng> points = waypoint.legTo.getDirectionPoint( );
         PolylineOptions opts = DirectionConverter.createPolyline(
-                fragment.getActivity().getApplicationContext( ),
+                fragment.getActivity( ).getApplicationContext( ),
                 points, 5, Color.BLUE
         );
         waypoint.polylineTo = map.addPolyline( opts );
@@ -165,7 +177,7 @@ public class AddPathState implements NFAState,
     @Override
     public void onMapLongClick( final LatLng point ) {
         if ( requestPending ) {
-            fragment.showToast( R.string.wait_for_network );
+            fragment.showToast( R.string.wait_for_async_op_completion );
             return;
         }
 
@@ -200,24 +212,6 @@ public class AddPathState implements NFAState,
 
     }
 
-    class WaypointInfo {
-        int index;
-
-        LatLng point;
-        Leg legTo;
-
-        Marker marker;
-        Polyline polylineTo;
-
-        public WaypointInfo( int index, LatLng point, Leg legTo, Marker marker, Polyline polylineTo ) {
-            this.index = index;
-            this.point = point;
-            this.legTo = legTo;
-            this.marker = marker;
-            this.polylineTo = polylineTo;
-        }
-    }
-
     class InsertWaypointDirectionReceived implements DirectionCallback {
 
         @Override
@@ -228,9 +222,7 @@ public class AddPathState implements NFAState,
                 updateWaypoint( waypoint, direction );
             }
             else {
-                waypoint.marker.remove( );
-                path.remove( waypoint );
-                fragment.showToast( "NOK" );
+                fail( );
             }
 
             requestPending = false;
@@ -243,7 +235,16 @@ public class AddPathState implements NFAState,
                 fragment.showToast( t.getMessage( ) );
             }
 
+            fail( );
             requestPending = false;
+        }
+
+        void fail( ) {
+            WaypointInfo waypoint = path.get( path.size( ) - 1 );
+
+            waypoint.marker.remove( );
+            path.remove( waypoint );
+            fragment.showToast( "NOK" );
         }
     }
 
@@ -286,4 +287,81 @@ public class AddPathState implements NFAState,
             requestPending = false;
         }
     }
+
+
+    class SavePathAsync extends CancellableAsyncTask<List<WaypointInfo>, Integer, Boolean> {
+
+        NFA nfa;
+        String errorMessage;
+        List<WaypointInfo> savedPath;
+
+        public SavePathAsync( NFA nfa ) {
+            super( taskManager );
+            this.nfa = nfa;
+        }
+
+        @Override
+        protected Boolean doInBackground( List<WaypointInfo>... waypoints ) {
+            Path path = new Path( -1, fragment.currentUser.getId( ) );
+
+            for ( int i = 1; i < waypoints[ 0 ].size( ); i++ ) {
+                WaypointInfo waypoint = waypoints[ 0 ].get( i );
+                path.addLeg( waypoint.legTo.getDirectionPoint( ) );
+            }
+
+            try {
+                DAOFactory.getPathDAO( ).AddPath( path );
+                savedPath = waypoints[ 0 ];
+                return true;
+            }
+            catch ( Exception exc ) {
+                Log.e( getClass( ).getName( ), "save path async", exc );
+                errorMessage = exc.getMessage( );
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( Boolean success ) {
+            if ( success ) {
+                for ( WaypointInfo waypoint : savedPath ) {
+                    waypoint.marker.remove( );
+                    if ( waypoint.polylineTo != null )
+                        waypoint.polylineTo.remove( );
+                }
+
+                fragment.showToast( R.string.new_path_saved );
+                nfa.Transition( new RestState( ) );
+            }
+            else {
+                if ( errorMessage != null ) {
+                    fragment.showToast( errorMessage );
+                }
+                else {
+                    fragment.showToast( R.string.generic_backend_error );
+                }
+            }
+
+            super.onPostExecute( success );
+        }
+    }
+
+    class WaypointInfo {
+        int index;
+
+        LatLng point;
+        Leg legTo;
+
+        Marker marker;
+        Polyline polylineTo;
+
+        public WaypointInfo( int index, LatLng point, Leg legTo, Marker marker, Polyline polylineTo ) {
+            this.index = index;
+            this.point = point;
+            this.legTo = legTo;
+            this.marker = marker;
+            this.polylineTo = polylineTo;
+        }
+    }
+
 }

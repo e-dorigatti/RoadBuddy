@@ -1,73 +1,104 @@
 package it.unitn.roadbuddy.app;
 
-import android.os.AsyncTask;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.Toast;
-
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
-
-import java.util.List;
-import java.util.Map;
-
 import it.unitn.roadbuddy.app.backend.BackendException;
-import it.unitn.roadbuddy.app.backend.DAOFactory;
-import it.unitn.roadbuddy.app.backend.models.PointOfInterest;
+import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
 
 public class MainActivity extends AppCompatActivity {
+
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     @Override
     protected void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
         setContentView( R.layout.activity_main );
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        Toolbar toolbar = ( Toolbar ) findViewById( R.id.toolbar );
+        setSupportActionBar( toolbar );
 
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tab_layout);
-        tabLayout.addTab(tabLayout.newTab().setText("Map"));
-        tabLayout.addTab(tabLayout.newTab().setText("Viaggi"));
-        tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
+        TabLayout tabLayout = ( TabLayout ) findViewById( R.id.tab_layout );
+        tabLayout.addTab( tabLayout.newTab( ).setText( R.string.map_tab_name ) );
+        tabLayout.addTab( tabLayout.newTab( ).setText( R.string.trips_tab_name ) );
+        tabLayout.addTab( tabLayout.newTab( ).setText( R.string.settings_tab_name ) );
+        tabLayout.setTabGravity( TabLayout.GRAVITY_FILL );
 
-        final ViewPager viewPager = (ViewPager) findViewById(R.id.pager);
-        final PagerAdapter adapter = new PagerAdapter(getSupportFragmentManager(), tabLayout.getTabCount() );
-        viewPager.setAdapter(adapter);
-        viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout) );
-        tabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+        final ViewPager viewPager = ( ViewPager ) findViewById( R.id.pager );
+        final PagerAdapter adapter = new PagerAdapter( getSupportFragmentManager( ), tabLayout.getTabCount( ) );
+        viewPager.setAdapter( adapter );
+        viewPager.addOnPageChangeListener( new TabLayout.TabLayoutOnPageChangeListener( tabLayout ) );
+        tabLayout.setOnTabSelectedListener( new TabLayout.OnTabSelectedListener( ) {
             @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                viewPager.setCurrentItem(tab.getPosition());
+            public void onTabSelected( TabLayout.Tab tab ) {
+                viewPager.setCurrentItem( tab.getPosition( ) );
             }
 
             @Override
-            public void onTabUnselected(TabLayout.Tab tab) {
+            public void onTabUnselected( TabLayout.Tab tab ) {
 
             }
 
             @Override
-            public void onTabReselected(TabLayout.Tab tab) {
+            public void onTabReselected( TabLayout.Tab tab ) {
 
             }
-        });
+        } );
 
-        try {
-            Class.forName( "org.postgresql.Driver" );  // FIXME [ed] find a better place
+        // FIXME [ed] find a better place
+        taskManager.startRunningTask( new AsyncInitializeDB( ), true );
+
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( this );
+        if ( pref.getBoolean( SettingsFragment.KEY_PREF_DEV_ENABLED, false ) ) {
+            String userName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, "<unset>" );
+            long userID = pref.getLong( SettingsFragment.KEY_PREF_USER_ID, -1 );
+
+            Toast.makeText( this,
+                            String.format( "You are currently running as user %s (id: %d)",
+                                           userName, userID ),
+                            Toast.LENGTH_SHORT ).show( );
         }
-        catch ( ClassNotFoundException e ) {
-            Log.e( getClass( ).getName( ), "backend exception", e );
-            finish( );
-        }
-
     }
 
-}
+    @Override
+    protected void onDestroy( ) {
+        PostgresUtils.closeAllConnections( );  // FIXME [ed] find a better place
+        super.onDestroy( );
+    }
 
+    class AsyncInitializeDB extends CancellableAsyncTask<Void, Void, Boolean> {
+
+        public AsyncInitializeDB( ) {
+            super( taskManager );
+        }
+
+        @Override
+        protected Boolean doInBackground( Void... args ) {
+            if ( !PostgresUtils.InitDriver( ) )
+                return false;
+
+            try {
+                PostgresUtils.InitSchemas( );
+            }
+            catch ( BackendException exc ) {
+                Log.e( getClass( ).getName( ), "while initializing database", exc );
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        protected void onPostExecute( Boolean ok ) {
+            if ( !ok )
+                finish( );
+        }
+    }
+}

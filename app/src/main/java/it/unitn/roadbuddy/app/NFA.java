@@ -4,19 +4,32 @@ public class NFA {
 
     NFAState currentState;
     MapFragment fragment;
+    boolean paused = true;
 
-    public NFA(MapFragment fragment, NFAState initialState ) {
+    public NFA( MapFragment fragment, NFAState initialState ) {
         this.fragment = fragment;
         Transition( initialState );
     }
 
     public void Transition( NFAState newState ) {
-        if ( currentState != null )
-            currentState.onStateExit( this, fragment);
-
-        if ( newState != null )
-            newState.onStateEnter( this, fragment);
+        Pause( );
 
         currentState = newState;
+
+        Resume( );
+    }
+
+    public void Pause( ) {
+        if ( !paused && currentState != null ) {
+            currentState.onStateExit( this, fragment );
+            paused = true;
+        }
+    }
+
+    public void Resume( ) {
+        if ( paused && currentState != null ) {
+            currentState.onStateEnter( this, fragment );
+            paused = false;
+        }
     }
 }

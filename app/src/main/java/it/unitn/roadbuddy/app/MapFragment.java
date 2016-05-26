@@ -1,7 +1,9 @@
 package it.unitn.roadbuddy.app;
 
-import android.os.AsyncTask;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,17 +11,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
-
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
-import it.unitn.roadbuddy.app.backend.models.PointOfInterest;
+import it.unitn.roadbuddy.app.backend.models.CommentPOI;
+import it.unitn.roadbuddy.app.backend.models.Path;
+import it.unitn.roadbuddy.app.backend.models.User;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,52 +34,75 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     View currentMenuBar;
     GoogleMap googleMap;
     NFA nfa;
-    Map<Marker, PointOfInterest> shownPOIs;
-    PointOfInterest selectedPOI;
+    Map<String, Drawable> shownDrawables = new HashMap<>( );
+    Drawable selectedDrawable;
+    User currentUser;
 
-    public MapFragment() {
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
+
+
+    public MapFragment( ) {
         // Required empty public constructor
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onCreate( Bundle savedInstanceState ) {
+        super.onCreate( savedInstanceState );
 
-        shownPOIs = new HashMap<>( );
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
+        long user_id = pref.getLong( SettingsFragment.KEY_PREF_USER_ID, -1 );
 
+        taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView( LayoutInflater inflater, ViewGroup container,
+                              Bundle savedInstanceState ) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_map, container, false);
+        return inflater.inflate( R.layout.fragment_map, container, false );
     }
 
     @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onViewCreated( View view, Bundle savedInstanceState ) {
+        super.onViewCreated( view, savedInstanceState );
 
-        this.mainFrameLayout = (FrameLayout) view.findViewById(R.id.mainFrameLayout);
+        this.mainFrameLayout = ( FrameLayout ) view.findViewById( R.id.mainFrameLayout );
 
-        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
+        SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
     }
 
     @Override
-    public void onMapReady(GoogleMap map) {
+    public void onPause( ) {
+        taskManager.stopRunningTask( RefreshMapAsync.class );
+
+        if ( nfa != null )
+            nfa.Pause( );
+
+        super.onPause( );
+    }
+
+    @Override
+    public void onResume( ) {
+        if ( nfa != null )
+            nfa.Resume( );
+
+        super.onResume( );
+    }
+
+    @Override
+    public void onMapReady( GoogleMap map ) {
         this.googleMap = map;
         nfa = new NFA( this, new RestState( ) );
     }
 
     public void RefreshMapContent( ) {
         LatLngBounds bounds = googleMap.getProjection( ).getVisibleRegion( ).latLngBounds;
-        new RefreshMapAsync( ).executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, bounds );
+        taskManager.startRunningTask( new RefreshMapAsync( getContext( ) ), true, bounds );
     }
 
-
     public View setCurrentMenuBar( int view ) {
-        View v = getActivity().getLayoutInflater().inflate( view, mainFrameLayout, false );
+        View v = getActivity( ).getLayoutInflater( ).inflate( view, mainFrameLayout, false );
         setCurrentMenuBar( v );
 
         return currentMenuBar;
@@ -115,7 +140,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void showToast( String text ) {
-        Toast.makeText( getActivity().getApplicationContext( ), text, Toast.LENGTH_LONG ).show( );
+        Toast.makeText( getActivity( ).getApplicationContext( ), text, Toast.LENGTH_LONG ).show( );
     }
 
     public void showToast( int textId ) {
@@ -123,54 +148,118 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         showToast( msg );
     }
 
-    class RefreshMapAsync extends AsyncTask<LatLngBounds, Integer, List<PointOfInterest>> {
+    public void setSelectedDrawable( Drawable d ) {
+        if ( selectedDrawable != null )
+            selectedDrawable.setSelected( getContext( ), false );
+
+        selectedDrawable = d;
+
+        if ( selectedDrawable != null )
+            selectedDrawable.setSelected( getContext( ), true );
+    }
+
+    class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Integer, List<Drawable>> {
 
         String exceptionMessage;
+        Context context;
 
-        @Override
-        protected List<PointOfInterest> doInBackground(LatLngBounds... bounds) {
+        public RefreshMapAsync( Context context ) {
+            super( taskManager );
+            this.context = context;
+        }
+
+        protected List<Drawable> doInBackground( LatLngBounds... bounds ) {
             try {
-                return DAOFactory.getPoiDAOFactory().getPOIsInside(
-                        getActivity().getApplicationContext(), bounds[0]
+                List<Drawable> results = new ArrayList<>( );
+
+                List<Path> paths = DAOFactory.getPathDAO( ).getPathsInside(
+                        context, bounds[ 0 ]
                 );
-            } catch (BackendException e) {
-                Log.e("roadbuddy", "backend exception", e);
-                exceptionMessage = e.getMessage();
+
+                List<CommentPOI> commentPOIs =
+                        DAOFactory.getPoiDAOFactory( )
+                                  .getCommentPoiDAO( )
+                                  .getCommentPOIsInside(
+                                          context,
+                                          bounds[ 0 ]
+                                  );
+
+                for ( Path p : paths )
+                    results.add( new DrawablePath( p ) );
+
+                for ( CommentPOI p : commentPOIs )
+                    results.add( new DrawableCommentPOI( p ) );
+
+                return results;
+            }
+            catch ( BackendException e ) {
+                Log.e( getClass( ).getName( ), "while refreshing map", e );
+                exceptionMessage = e.getMessage( );
                 return null;
             }
         }
 
         @Override
-        protected void onPostExecute(List<PointOfInterest> points) {
-            if (points != null) {
-                /**
-                 * [ed] overwrite all POIs with fresh data coming from the database, also
-                 * redraw all of them except for the currently selected POI
-                 *
-                 * TODO do not redraw existing POIs, just update their data.
-                 * I suspect this would case noticeable flicker
-                 */
-                for (Map.Entry<Marker, PointOfInterest> entry : shownPOIs.entrySet()) {
-                    if (entry.getValue() != selectedPOI) {
-                        entry.getKey().remove();
-                    }
+        protected void onPostExecute( List<Drawable> drawables ) {
+            if ( drawables != null ) {
+                for ( Map.Entry<String, Drawable> entry : shownDrawables.entrySet( ) ) {
+                    entry.getValue( ).RemoveFromMap( context );
                 }
 
-                shownPOIs.clear();
-                for (PointOfInterest p : points) {
-                    Marker marker;
-                    if (p != selectedPOI) {
-                        marker = p.drawToMap(googleMap);
-                    } else {
-                        marker = selectedPOI.getMarker();
-                        p.setMarker(marker);
+                shownDrawables.clear( );
+                for ( Drawable d : drawables ) {
+                    String displayed = d.DrawToMap( context, googleMap );
+                    shownDrawables.put( displayed, d );
+
+                    if ( d.equals( selectedDrawable ) ) {
+                        // they represent the same database object but are actually different references
+                        selectedDrawable = d;
+                        d.setSelected( context, true );
                     }
-                    shownPOIs.put(marker, p);
+                    else d.setSelected( context, false );
                 }
-            } else if (exceptionMessage != null) {
-                showToast(exceptionMessage);
-            } else {
-                showToast(R.string.generic_backend_error);
+            }
+            else if ( exceptionMessage != null ) {
+                showToast( exceptionMessage );
+            }
+            else {
+                showToast( R.string.generic_backend_error );
+            }
+
+            super.onPostExecute( drawables );
+        }
+    }
+
+    class GetCurrentUserAsync extends CancellableAsyncTask<Long, Integer, User> {
+
+        String exceptionMessage;
+
+        public GetCurrentUserAsync( ) {
+            super( taskManager );
+        }
+
+        @Override
+        protected User doInBackground( Long... userID ) {
+            try {
+                return DAOFactory.getUserDAO( ).getUser( userID[ 0 ] );
+            }
+            catch ( BackendException exc ) {
+                exceptionMessage = exc.getMessage( );
+                Log.e( getClass( ).getName( ), "while retrieving current user", exc );
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( User user ) {
+            if ( user != null ) {
+                currentUser = user;
+            }
+            else if ( exceptionMessage != null ) {
+                showToast( exceptionMessage );
+            }
+            else {
+                showToast( R.string.generic_backend_error );
             }
         }
     }

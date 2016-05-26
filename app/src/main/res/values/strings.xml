@@ -8,9 +8,23 @@
     <string name="generic_backend_error">There was an error while communicating with the backend..</string>
     <string name="new_poi_saved">Point saved!</string>
     <string name="new_poi_cancel">No point added..</string>
+    <string name="poi_title">Created by %s</string>
 
     <string name="long_tap_to_add">Long tap to add</string>
-    <string name="wait_for_network">Please wait until the current request returns</string>
+    <string name="wait_for_async_op_completion">Please wait until the current request returns</string>
+
+    <string name="new_path_cancel">No path added..</string>
+    <string name="new_path_saved">Path saved!</string>
+
+    <string name="map_tab_name">Map</string>
+    <string name="trips_tab_name">Viaggi</string>
+    <string name="settings_tab_name">Impostazioni</string>
+
+    <string name="developers_preferences_header">Developer Settings</string>
+    <string name="pref_dev_settings_enabled_summary">Enable Developer Access</string>
+    <string name="pref_dev_settings_enabled_title">Enabled</string>
+    <string name="pref_dev_user_name_summary">Changes the current user</string>
+    <string name="pref_dev_user_name_title">User Name</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

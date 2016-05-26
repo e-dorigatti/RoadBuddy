@@ -1,7 +1,6 @@
 package it.unitn.roadbuddy.app.backend.models;
 
 
-import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Marker;
 
 public abstract class PointOfInterest {
@@ -10,12 +9,18 @@ public abstract class PointOfInterest {
     protected POIType type;
     protected long id;
     protected Marker marker;
+    protected long owner;
 
-    public PointOfInterest( POIType type, long id, double latitude, double longitude ) {
+    public PointOfInterest( POIType type, long id, double latitude, double longitude, long owner ) {
         this.type = type;
         this.id = id;
         this.latitude = latitude;
         this.longitude = longitude;
+        this.owner = owner;
+    }
+
+    public long getOwner( ) {
+        return owner;
     }
 
     public double getLatitude( ) {
@@ -51,6 +56,4 @@ public abstract class PointOfInterest {
             return false;
         }
     }
-
-    public abstract Marker drawToMap( GoogleMap map );
 }
