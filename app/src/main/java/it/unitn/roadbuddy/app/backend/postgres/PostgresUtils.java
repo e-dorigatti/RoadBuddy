@@ -21,7 +21,7 @@ public class PostgresUtils {
     private static final String PORT = BuildConfig.PORT;
     private static final String DATABASE = BuildConfig.DATABASE;
     public static final String URL = String.format(
-            "jdbc:postgresql://%s:%s/%s?user=%s&password=%s&ssl=false",
+            "jdbc:postgresql://%s:%s/%s?user=%s&password=%s&ssl=false&loglevel=2",
             HOST, PORT, DATABASE, USER, PASSWORD
     );
     private static PostgresUtils instance = null;

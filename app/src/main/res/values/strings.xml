@@ -25,6 +25,7 @@
     <string name="pref_dev_settings_enabled_title">Enabled</string>
     <string name="pref_dev_user_name_summary">Changes the current user</string>
     <string name="pref_dev_user_name_title">User Name</string>
+    <string name="app_initial_loading">Connecting to backend...</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

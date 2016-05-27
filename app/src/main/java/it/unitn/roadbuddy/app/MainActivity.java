@@ -1,5 +1,6 @@
 package it.unitn.roadbuddy.app;
 
+import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -75,8 +76,20 @@ public class MainActivity extends AppCompatActivity {
 
     class AsyncInitializeDB extends CancellableAsyncTask<Void, Void, Boolean> {
 
+        ProgressDialog waitDialog;
+
         public AsyncInitializeDB( ) {
             super( taskManager );
+        }
+
+        @Override
+        protected void onPreExecute( ) {
+            waitDialog = new ProgressDialog( MainActivity.this );
+            waitDialog.setProgressStyle( ProgressDialog.STYLE_SPINNER );
+            waitDialog.setMessage( getString( R.string.app_initial_loading ) );
+            waitDialog.setIndeterminate( true );
+            waitDialog.setCanceledOnTouchOutside( false );
+            waitDialog.show( );
         }
 
         @Override
@@ -97,8 +110,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute( Boolean ok ) {
-            if ( !ok )
+            if ( ok ) {
+                waitDialog.hide( );
+            }
+            else {
                 finish( );
+            }
         }
     }
 }
