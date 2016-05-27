@@ -1,8 +1,8 @@
 package it.unitn.roadbuddy.app;
 
 
+import com.github.clans.fab.FloatingActionButton;
 import android.view.View;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnCameraChangeListener;
@@ -23,8 +23,8 @@ public class RestState implements NFAState,
 
     MapFragment fragment;
     LinearLayout buttonBar;
-    Button btnAddPoi;
-    Button btnAddPath;
+    FloatingActionButton btnAddPoi;
+    FloatingActionButton btnAddPath;
 
     @Override
     public void onStateEnter( final NFA nfa, MapFragment fragment ) {
@@ -37,9 +37,8 @@ public class RestState implements NFAState,
         fragment.googleMap.setOnPolylineClickListener( this );
 
         buttonBar = ( LinearLayout ) fragment.setCurrentMenuBar( R.layout.rest_buttons_layout );
-        buttonBar.setVisibility( View.INVISIBLE );
 
-        btnAddPath = ( Button ) buttonBar.findViewById( R.id.btnAddPath );
+        btnAddPath = (FloatingActionButton ) buttonBar.findViewById( R.id.btnAddPath );
         btnAddPath.setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View v ) {
@@ -47,7 +46,7 @@ public class RestState implements NFAState,
             }
         } );
 
-        btnAddPoi = ( Button ) buttonBar.findViewById( R.id.btnAddPoi );
+        btnAddPoi = ( FloatingActionButton ) buttonBar.findViewById( R.id.btnAddPoi );
         btnAddPoi.setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View v ) {
@@ -90,7 +89,7 @@ public class RestState implements NFAState,
 
     @Override
     public void onMapClick( LatLng point ) {
-        fragment.toggleMenuBar( );
+        //fragment.toggleMenuBar( );
         fragment.setSelectedDrawable( null );
     }
 

@@ -1,22 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:layout_gravity="bottom"
-              android:id="@+id/lyMapButtons">
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:fab="http://schemas.android.com/apk/res-auto"
+    android:layout_gravity="bottom"
+    android:gravity="right"
+    android:id="@+id/lyMapButtons">
 
-    <Button
+    <com.github.clans.fab.FloatingActionMenu
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="10dp"
+        fab:menu_labels_style="@style/MenuLabelsStyle"
+        fab:menu_animationDelayPerItem="0"
+        fab:menu_shadowColor="#444"
+        fab:menu_colorNormal="#FFB805"
+        fab:menu_colorPressed="#F2AB00"
+        fab:menu_colorRipple="#D99200"
+        android:layout_gravity="right|bottom">
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/elimina"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:text="Ok"
-            android:id="@+id/btnOk"/>
-    <Space
+            android:layout_height="wrap_content"
+            fab:fab_label="Elimina selezionato"
+            style="@style/MenuButtonsStyle"/>
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/annulla"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_gravity="right" android:layout_weight="1"/>
-    <Button
+            android:layout_height="wrap_content"
+            fab:fab_label="Annulla"
+            style="@style/MenuButtonsStyle"/>
+
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fatto"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:text="Cancel"
-            android:id="@+id/btnCancel"/>
+            android:layout_height="wrap_content"
+            fab:fab_label="Fatto"
+            style="@style/MenuButtonsStyle"/>
+
+    </com.github.clans.fab.FloatingActionMenu>
 </LinearLayout>
+

@@ -50,19 +50,10 @@ public class AddPathState implements NFAState,
         map.setOnMapClickListener( this );
         map.clear( );
 
-        lyWaypointControl = ( LinearLayout ) fragment.getActivity( ).getLayoutInflater( ).inflate(
-                R.layout.waypoint_control, fragment.mainFrameLayout, false
-        );
-        lyWaypointControl.findViewById( R.id.btnDeleteWaypoint ).setOnClickListener(
-                new View.OnClickListener( ) {
-                    @Override
-                    public void onClick( View v ) {
-                        deleteSelectedWaypoint( );
-                    }
-                } );
+
 
         lyOkCancel = ( LinearLayout ) fragment.setCurrentMenuBar( R.layout.ok_cancel_layout );
-        lyOkCancel.findViewById( R.id.btnOk ).setOnClickListener(
+        lyOkCancel.findViewById( R.id.fatto ).setOnClickListener(
                 new View.OnClickListener( ) {
                     @Override
                     public void onClick( View v ) {
@@ -80,8 +71,15 @@ public class AddPathState implements NFAState,
                         }
                     }
                 } );
+        lyOkCancel.findViewById( R.id.elimina ).setOnClickListener(
+                new View.OnClickListener( ) {
+                    @Override
+                    public void onClick( View v ) {
+                        deleteSelectedWaypoint( );
+                    }
+                } );
 
-        lyOkCancel.findViewById( R.id.btnCancel ).setOnClickListener(
+        lyOkCancel.findViewById( R.id.annulla ).setOnClickListener(
                 new View.OnClickListener( ) {
                     @Override
                     public void onClick( View v ) {
@@ -205,7 +203,6 @@ public class AddPathState implements NFAState,
 
     @Override
     public boolean onMarkerClick( Marker m ) {
-        fragment.setCurrentMenuBar( lyWaypointControl );
         selectedMarker = m;
 
         return false;
