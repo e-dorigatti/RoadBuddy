@@ -13,7 +13,7 @@ import android.widget.Toast;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
-
+//comment here
 public class MainActivity extends AppCompatActivity {
 
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
