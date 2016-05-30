@@ -1,5 +1,6 @@
 package it.unitn.roadbuddy.app;
 
+import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -11,6 +12,8 @@ import android.util.Log;
 import android.widget.Toast;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
+
+import java.sql.SQLException;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -51,7 +54,10 @@ public class MainActivity extends AppCompatActivity {
 
             }
         } );
+    }
 
+    @Override
+    protected void onStart( ) {
         // FIXME [ed] find a better place
         taskManager.startRunningTask( new AsyncInitializeDB( ), true );
 
@@ -65,23 +71,43 @@ public class MainActivity extends AppCompatActivity {
                                            userName, userID ),
                             Toast.LENGTH_SHORT ).show( );
         }
+
+        super.onStart( );
     }
 
     @Override
-    protected void onDestroy( ) {
-        PostgresUtils.closeAllConnections( );  // FIXME [ed] find a better place
-        super.onDestroy( );
+    protected void onStop( ) {
+        try {
+            PostgresUtils.getInstance( ).close( );  // FIXME [ed] find a better place
+        }
+        catch ( SQLException exc ) {
+            Log.e( getClass( ).getName( ), "on destroy", exc );
+        }
+
+        super.onStop( );
     }
 
     class AsyncInitializeDB extends CancellableAsyncTask<Void, Void, Boolean> {
+
+        ProgressDialog waitDialog;
 
         public AsyncInitializeDB( ) {
             super( taskManager );
         }
 
         @Override
+        protected void onPreExecute( ) {
+            waitDialog = new ProgressDialog( MainActivity.this );
+            waitDialog.setProgressStyle( ProgressDialog.STYLE_SPINNER );
+            waitDialog.setMessage( getString( R.string.app_initial_loading ) );
+            waitDialog.setIndeterminate( true );
+            waitDialog.setCanceledOnTouchOutside( false );
+            waitDialog.show( );
+        }
+
+        @Override
         protected Boolean doInBackground( Void... args ) {
-            if ( !PostgresUtils.InitDriver( ) )
+            if ( !PostgresUtils.Init( ) )
                 return false;
 
             try {
@@ -97,8 +123,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute( Boolean ok ) {
-            if ( !ok )
+            if ( ok ) {
+                waitDialog.hide( );
+            }
+            else {
                 finish( );
+            }
         }
     }
 }

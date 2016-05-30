@@ -3,56 +3,71 @@ package it.unitn.roadbuddy.app;
 
 import android.os.AsyncTask;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class CancellableAsyncTaskManager {
 
-    protected Map<Class<?>, CancellableAsyncTask<?, ?, ?>> runningTasksByType = new HashMap<>( );
+    protected Map<Class<?>, List<CancellableAsyncTask<?, ?, ?>>> runningTasksByType = new HashMap<>( );
     protected Map<CancellableAsyncTask<?, ?, ?>, Class<?>> runningTaskByInstance = new HashMap<>( );
 
-    public void stopAllRunningTasks( ) {
-        for ( CancellableAsyncTask task : runningTasksByType.values( ) )
-            task.cancel( true );
-
-        runningTasksByType.clear( );
-        runningTaskByInstance.clear( );
+    public synchronized boolean isTaskRunning( Class<?> taskType ) {
+        List<CancellableAsyncTask<?, ?, ?>> tasks = runningTasksByType.get( taskType );
+        return tasks != null && tasks.size( ) > 0;
     }
 
-    public boolean isTaskRunning(Class<?> taskType) {
-        CancellableAsyncTask task = runningTasksByType.get( taskType );
-        return task != null;
-    }
-
-    public void stopRunningTask( Class<?> taskType ) {
-        CancellableAsyncTask task = runningTasksByType.get( taskType );
-        if ( task != null ) {
-            task.cancel( true );
+    public synchronized void stopRunningTasksOfType( Class<?> taskType ) {
+        List<CancellableAsyncTask<?, ?, ?>> tasks = runningTasksByType.get( taskType );
+        if ( tasks != null ) {
+            for ( CancellableAsyncTask<?, ?, ?> task : tasks )
+                task.cancel( true );
         }
+
+        // no need to remove the tasks as they will take care of it, therefore
+        //  - isTaskRunning might return true for cancelled tasks, too
+        //  - we are preferring consistency at the expense of performances
+        //    (this makes the operation O(n**2) instead of O(n) plus the
+        //    synchronization overhead for calling removeTask)
+        // FIXME do we really want this?
     }
 
-    public void stopRunningTask( CancellableAsyncTask<?, ?, ?> task ) {
-        if ( runningTaskByInstance.containsKey( task ) )
-            task.cancel( true );
-    }
-
-    protected void removeTask( CancellableAsyncTask task ) {
+    public synchronized void removeTask( CancellableAsyncTask task ) {
         Class<?> taskType = runningTaskByInstance.get( task );
-        Utils.Assert( taskType != null, true );
+        List<CancellableAsyncTask<?, ?, ?>> siblingTasks = runningTasksByType.get( taskType );
+        Utils.Assert( taskType != null && siblingTasks != null && siblingTasks.size( ) > 0, true );
 
         runningTaskByInstance.remove( task );
-        runningTasksByType.remove( taskType );
+
+        boolean found = false;
+        for ( CancellableAsyncTask<?, ?, ?> t : siblingTasks ) {
+            if ( t.equals( task ) ) {
+                siblingTasks.remove( task );
+                found = true;
+                break;
+            }
+        }
+
+        Utils.Assert( found, true );
     }
 
-    public <Params> void startRunningTask( CancellableAsyncTask<Params, ?, ?> task,
-                                           boolean mayInterruptOldTask, Params... args
+    public synchronized <Params> void startRunningTask( CancellableAsyncTask<Params, ?, ?> task,
+                                                        boolean mayInterruptOldTasks, Params... args
     ) {
-        CancellableAsyncTask<?, ?, ?> oldTask = runningTasksByType.get( task.getClass( ) );
-        if ( oldTask != null && mayInterruptOldTask )
-            stopRunningTask( oldTask );
+        if ( mayInterruptOldTasks )
+            stopRunningTasksOfType( task.getClass( ) );
 
         runningTaskByInstance.put( task, task.getClass( ) );
-        runningTasksByType.put( task.getClass( ), task );
+
+        List<CancellableAsyncTask<?, ?, ?>> siblingTasks = runningTasksByType.get( task.getClass( ) );
+        if ( siblingTasks == null ) {
+            siblingTasks = new ArrayList<>( );
+            siblingTasks.add( task );
+
+            runningTasksByType.put( task.getClass( ), siblingTasks );
+        }
+        else siblingTasks.add( task );
 
         task.executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, args );
     }

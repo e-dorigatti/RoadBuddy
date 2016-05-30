@@ -10,6 +10,7 @@ import it.unitn.roadbuddy.app.backend.PathDAO;
 import it.unitn.roadbuddy.app.backend.models.Path;
 import org.postgis.*;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,7 +30,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
         super( );
     }
 
-    public static PostgresPathDAO getInstance( ) throws SQLException {
+    public static synchronized PostgresPathDAO getInstance( ) throws SQLException {
         if ( instance == null )
             instance = new PostgresPathDAO( );
         return instance;
@@ -72,8 +73,8 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
 
     @Override
     public void AddPath( Path path ) throws BackendException {
-        try {
-            PreparedStatement stmt = getConnection( ).prepareStatement(
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement(
                     String.format(
                             "INSERT INTO %s(%s, %s) VALUES (?, ?)",
                             getSchemaName( ), COLUMN_NAME_PATH, COLUMN_NAME_OWNER
@@ -94,8 +95,8 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
 
     @Override
     public List<Path> getPathsInside( Context c, LatLngBounds bounds ) throws BackendException {
-        try {
-            PreparedStatement stmt = getConnection( ).prepareStatement(
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement(
                     String.format(
                             "SELECT %1$s, %2$s, %4$s FROM %3$s WHERE ST_Intersects(?, %2$s)",
                             COLUMN_NAME_ID, COLUMN_NAME_PATH, getSchemaName( ), COLUMN_NAME_OWNER

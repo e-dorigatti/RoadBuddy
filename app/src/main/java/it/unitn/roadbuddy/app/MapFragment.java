@@ -78,7 +78,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onPause( ) {
-        taskManager.stopRunningTask( RefreshMapAsync.class );
+        taskManager.stopRunningTasksOfType( RefreshMapAsync.class );
 
         if ( nfa != null )
             nfa.Pause( );

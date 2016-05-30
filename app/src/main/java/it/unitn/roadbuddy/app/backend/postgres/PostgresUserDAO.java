@@ -7,6 +7,7 @@ import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.UserDAO;
 import it.unitn.roadbuddy.app.backend.models.User;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -24,7 +25,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
         super( );
     }
 
-    public static PostgresUserDAO getInstance( ) throws SQLException {
+    public static synchronized PostgresUserDAO getInstance( ) throws SQLException {
         if ( instance == null )
             instance = new PostgresUserDAO( );
         return instance;
@@ -35,8 +36,8 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
         if ( !BuildConfig.DEBUG )
             throw new RuntimeException( "cannot change user in production settings" );
 
-        try {
-            PreparedStatement stmtInsertUser = getConnection( ).prepareStatement(
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmtInsertUser = conn.prepareStatement(
                     String.format( "INSERT INTO %s(%s) VALUES (?) RETURNING %s",
                                    getSchemaName( ), COLUMN_NAME_USERNAME, COLUMN_NAME_ID )
 
@@ -55,8 +56,8 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
 
     @Override
     public User getUser( long id ) throws BackendException {
-        try {
-            PreparedStatement stmt = getConnection( ).prepareStatement(
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement(
                     String.format( "SELECT %s FROM %s WHERE %s = ?",
                                    COLUMN_NAME_USERNAME, getSchemaName( ), COLUMN_NAME_ID )
 
