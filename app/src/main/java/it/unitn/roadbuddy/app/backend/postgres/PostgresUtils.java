@@ -2,16 +2,16 @@ package it.unitn.roadbuddy.app.backend.postgres;
 
 import android.util.Log;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.zaxxer.hikari.HikariDataSource;
 import it.unitn.roadbuddy.app.BuildConfig;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import org.postgis.LinearRing;
-import org.postgis.PGgeometry;
 import org.postgis.Point;
-import org.postgresql.PGConnection;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class PostgresUtils {
 
@@ -24,11 +24,18 @@ public class PostgresUtils {
             "jdbc:postgresql://%s:%s/%s?user=%s&password=%s&ssl=false&loglevel=2",
             HOST, PORT, DATABASE, USER, PASSWORD
     );
+
     private static PostgresUtils instance = null;
-    private static List<Connection> openConnections = new ArrayList<>( );
-    private Connection connection;
+
+    private HikariDataSource dataSource;
 
     private PostgresUtils( ) throws SQLException {
+
+        dataSource = new HikariDataSource( );
+        dataSource.setJdbcUrl( URL );
+        dataSource.setUsername( USER );
+        dataSource.setPassword( PASSWORD );
+
         getConnection( ).prepareStatement(
                 "CREATE TABLE IF NOT EXISTS SchemaVersions(schema TEXT PRIMARY KEY, version INTEGER)"
         ).execute( );
@@ -45,40 +52,26 @@ public class PostgresUtils {
         }
     }
 
-    public static Connection getNewConnection( ) throws SQLException {
-        Connection conn = DriverManager.getConnection( URL );
-        ( ( PGConnection ) conn ).addDataType( "geometry", PGgeometry.class );
-        openConnections.add( conn );
-
-        return conn;
-    }
-
-    public static PostgresUtils getInstance( ) throws SQLException {
+    public static synchronized PostgresUtils getInstance( ) throws SQLException {
         if ( instance == null )
             instance = new PostgresUtils( );
         return instance;
     }
 
-    public static void closeAllConnections( ) {
-        for ( Connection conn : openConnections ) {
-            try {
-                if ( !conn.isClosed( ) )
-                    conn.close( );
-            }
-            catch ( SQLException exc ) {
-                Log.i( PostgresUtils.class.getName( ), "connection already closed", exc );
-            }
-        }
-        openConnections.clear( );
-    }
-
-    public static boolean InitDriver( ) {
+    public static boolean Init( ) {
         try {
             Class.forName( "org.postgresql.Driver" );
+
+            PostgresUtils.getInstance( ).getConnection( ).close( );
+
             return true;
         }
         catch ( ClassNotFoundException e ) {
-            Log.e( PostgresUtils.class.getName( ), "backend exception", e );
+            Log.e( PostgresUtils.class.getName( ), "on init", e );
+            return false;
+        }
+        catch ( SQLException e ) {
+            Log.e( PostgresUtils.class.getName( ), "on init", e );
             return false;
         }
     }
@@ -95,10 +88,18 @@ public class PostgresUtils {
         } );
     }
 
-    private Connection getConnection( ) throws SQLException {
-        if ( connection == null || connection.isClosed( ) )
-            connection = PostgresUtils.getNewConnection( );
-        return connection;
+    public void close( ) {
+        try {
+            dataSource.close( );
+            instance = null;
+        }
+        catch ( Exception exc ) {
+            Log.e( getClass( ).getName( ), "while closing pool", exc );
+        }
+    }
+
+    public Connection getConnection( ) throws SQLException {
+        return dataSource.getConnection( );
     }
 
     public int getSchemaVersion( String schema ) throws SQLException {

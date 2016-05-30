@@ -9,8 +9,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+
+import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -29,7 +33,7 @@ import java.util.Map;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
-
+    FloatingActionMenu floatingActionMenu;
     FrameLayout mainFrameLayout;
     View currentMenuBar;
     GoogleMap googleMap;
@@ -66,7 +70,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated( View view, Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
 
-        this.mainFrameLayout = ( FrameLayout ) view.findViewById( R.id.mainFrameLayout );
+        this.mainFrameLayout = ( FrameLayout ) view.findViewById( R.id.button_container );
 
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
@@ -74,7 +78,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onPause( ) {
-        taskManager.stopRunningTask( RefreshMapAsync.class );
+        taskManager.stopRunningTasksOfType( RefreshMapAsync.class );
 
         if ( nfa != null )
             nfa.Pause( );
@@ -98,6 +102,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public void RefreshMapContent( ) {
         LatLngBounds bounds = googleMap.getProjection( ).getVisibleRegion( ).latLngBounds;
+        Animation animRotate = AnimationUtils.loadAnimation(getContext(),R.anim.rotate);
+        floatingActionMenu = (FloatingActionMenu) getView().findViewById(R.id.fab);
+        floatingActionMenu.getMenuIconView().startAnimation(animRotate);
         taskManager.startRunningTask( new RefreshMapAsync( getContext( ) ), true, bounds );
     }
 
@@ -150,6 +157,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
 
         protected List<Drawable> doInBackground( LatLngBounds... bounds ) {
+
+
+
             try {
                 List<Drawable> results = new ArrayList<>( );
 
@@ -208,6 +218,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
 
             super.onPostExecute( drawables );
+            floatingActionMenu.getMenuIconView().clearAnimation();
         }
     }
 

@@ -6,10 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.text.InputType;
 import android.util.Log;
-import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -51,7 +48,7 @@ public class AddPOIState implements NFAState,
         fragment.googleMap.setOnMarkerClickListener( null );
 
         fragment.removeMenuBar( );
-        taskManager.stopRunningTask( SavePOIAsync.class );
+        taskManager.stopRunningTasksOfType( SavePOIAsync.class );
     }
 
     @Override

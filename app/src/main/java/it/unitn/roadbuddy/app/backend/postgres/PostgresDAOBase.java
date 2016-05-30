@@ -6,16 +6,8 @@ import java.sql.SQLException;
 
 public abstract class PostgresDAOBase {
 
-    private Connection connection;
-
     protected PostgresDAOBase( ) throws SQLException {
         createTable( );
-    }
-
-    protected Connection getConnection( ) throws SQLException {
-        if ( connection == null || connection.isClosed( ) )
-            connection = PostgresUtils.getNewConnection( );
-        return connection;
     }
 
     protected abstract int getSchemaVersion( );
@@ -30,13 +22,17 @@ public abstract class PostgresDAOBase {
         int remoteSchemaVersion = PostgresUtils.getInstance( ).getSchemaVersion( schemaName );
 
         if ( remoteSchemaVersion < localSchemaVersion ) {
-            getConnection( ).prepareStatement(
+            Connection conn = PostgresUtils.getInstance( ).getConnection( );
+
+            conn.prepareStatement(
                     String.format( "DROP TABLE IF EXISTS %s", schemaName )
             ).execute( );
 
-            getConnection( ).prepareStatement(
+            conn.prepareStatement(
                     getCreateTableStatement( )
             ).execute( );
+
+            conn.close( );
 
             PostgresUtils.getInstance( ).setSchemaVersion( schemaName, localSchemaVersion );
         }

@@ -34,7 +34,6 @@ public class AddPathState implements NFAState,
     List<WaypointInfo> path = new ArrayList<>( );
     GoogleMap map;
     MapFragment fragment;
-    LinearLayout lyWaypointControl;
     LinearLayout lyOkCancel;
     Marker selectedMarker;
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
@@ -98,7 +97,7 @@ public class AddPathState implements NFAState,
         map.setOnMapClickListener( null );
         map.setOnMarkerClickListener( null );
 
-        taskManager.stopRunningTask( SavePathAsync.class );
+        taskManager.stopRunningTasksOfType( SavePathAsync.class );
         clearPath( );
     }
 
