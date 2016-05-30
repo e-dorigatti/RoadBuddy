@@ -2,11 +2,8 @@ package it.unitn.roadbuddy.app;
 
 
 import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import com.github.clans.fab.FloatingActionButton;
 import android.widget.RelativeLayout;
-
+import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnCameraChangeListener;
 import com.google.android.gms.maps.GoogleMap.OnMapClickListener;
@@ -64,8 +61,8 @@ public class RestState implements NFAState,
 
     void onGraphicItemSelected( String itemId ) {
         Drawable selected = fragment.shownDrawables.get( itemId );
-        Utils.Assert( selected != null, false );
-        fragment.setSelectedDrawable( selected );
+        if ( selected != null )
+            fragment.setSelectedDrawable( selected );
     }
 
     @Override

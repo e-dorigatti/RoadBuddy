@@ -15,7 +15,6 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -72,7 +71,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onViewCreated( View view, Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
-        
+
         mainLayout = new ViewContainer(
                 getLayoutInflater( savedInstanceState ), getFragmentManager( ),
                 ( FrameLayout ) view.findViewById( R.id.button_container )
@@ -112,10 +111,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void RefreshMapContent( ) {
+        Animation animRotate = AnimationUtils.loadAnimation( getContext( ), R.anim.rotate );
+        floatingActionMenu = ( FloatingActionMenu ) getView( ).findViewById( R.id.fab );
+        floatingActionMenu.getMenuIconView( ).startAnimation( animRotate );
+
         LatLngBounds bounds = googleMap.getProjection( ).getVisibleRegion( ).latLngBounds;
-        Animation animRotate = AnimationUtils.loadAnimation(getContext(),R.anim.rotate);
-        floatingActionMenu = (FloatingActionMenu) getView().findViewById(R.id.fab);
-        floatingActionMenu.getMenuIconView().startAnimation(animRotate);
         taskManager.startRunningTask( new RefreshMapAsync( getContext( ) ), true, bounds );
     }
 
@@ -210,7 +210,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
 
             super.onPostExecute( drawables );
-            floatingActionMenu.getMenuIconView().clearAnimation();
+            floatingActionMenu.getMenuIconView( ).clearAnimation( );
         }
     }
 
