@@ -47,7 +47,6 @@ public class AddPOIState implements NFAState,
         fragment.googleMap.setOnMapClickListener( null );
         fragment.googleMap.setOnMarkerClickListener( null );
 
-        fragment.removeMenuBar( );
         taskManager.stopRunningTasksOfType( SavePOIAsync.class );
     }
 
@@ -107,7 +106,7 @@ public class AddPOIState implements NFAState,
         if ( comment != null ) {
             drawable = new DrawableCommentPOI( comment );
             drawable.DrawToMap( fragment.getContext( ), fragment.googleMap );
-            drawable.setSelected( fragment.getContext( ), true );
+            drawable.setSelected( fragment.getContext( ), fragment.googleMap, true );
         }
     }
 

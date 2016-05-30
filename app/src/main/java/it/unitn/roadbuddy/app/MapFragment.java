@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,9 +31,9 @@ import java.util.Map;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
+    ViewContainer mainLayout;
+    ViewContainer sliderLayout;
 
-    FrameLayout mainFrameLayout;
-    View currentMenuBar;
     GoogleMap googleMap;
     NFA nfa;
     Map<String, Drawable> shownDrawables = new HashMap<>( );
@@ -66,7 +68,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated( View view, Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
 
-        this.mainFrameLayout = ( FrameLayout ) view.findViewById( R.id.mainFrameLayout );
+        mainLayout = new ViewContainer(
+                getLayoutInflater( savedInstanceState ), getFragmentManager( ),
+                ( FrameLayout ) view.findViewById( R.id.mainFrameLayout )
+        );
+
+        sliderLayout = new ViewContainer(
+                getLayoutInflater( savedInstanceState ), getFragmentManager( ),
+                ( FrameLayout ) view.findViewById( R.id.sliderLayout )
+        );
 
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
@@ -101,25 +111,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         taskManager.startRunningTask( new RefreshMapAsync( getContext( ) ), true, bounds );
     }
 
-    public View setCurrentMenuBar( int view ) {
-        View v = getActivity( ).getLayoutInflater( ).inflate( view, mainFrameLayout, false );
-        setCurrentMenuBar( v );
-
-        return currentMenuBar;
-    }
-
-    public void setCurrentMenuBar( View v ) {
-        removeMenuBar( );
-        currentMenuBar = v;
-        mainFrameLayout.addView( v );
-    }
-
-    public void removeMenuBar( ) {
-        if ( currentMenuBar != null )
-            mainFrameLayout.removeView( currentMenuBar );
-        currentMenuBar = null;
-    }
-
     public void showToast( String text ) {
         Toast.makeText( getActivity( ).getApplicationContext( ), text, Toast.LENGTH_LONG ).show( );
     }
@@ -131,12 +122,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public void setSelectedDrawable( Drawable d ) {
         if ( selectedDrawable != null )
-            selectedDrawable.setSelected( getContext( ), false );
+            selectedDrawable.setSelected( getContext( ), googleMap, false );
 
         selectedDrawable = d;
 
-        if ( selectedDrawable != null )
-            selectedDrawable.setSelected( getContext( ), true );
+        if ( selectedDrawable != null ) {
+            selectedDrawable.setSelected( getContext( ), googleMap, true );
+            sliderLayout.setFragment( selectedDrawable.getInfoFragment( ) );
+        }
+        else sliderLayout.setFragment( null );
     }
 
     class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Integer, List<Drawable>> {
@@ -195,9 +189,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     if ( d.equals( selectedDrawable ) ) {
                         // they represent the same database object but are actually different references
                         selectedDrawable = d;
-                        d.setSelected( context, true );
+                        d.setSelected( context, googleMap, true );
                     }
-                    else d.setSelected( context, false );
+                    else d.setSelected( context, googleMap, false );
                 }
             }
             else if ( exceptionMessage != null ) {
@@ -243,5 +237,81 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 showToast( R.string.generic_backend_error );
             }
         }
+    }
+}
+
+class ViewContainer {
+
+    LayoutInflater inflater;
+    FragmentManager fragmentManager;
+
+    ViewGroup container;
+
+    View currentView;
+    Fragment currentFragment;
+
+    public ViewContainer( LayoutInflater inflater,
+                          FragmentManager fragmentManager,
+                          ViewGroup container ) {
+
+        this.container = container;
+        this.inflater = inflater;
+        this.fragmentManager = fragmentManager;
+    }
+
+    public void removeView( ) {
+        if ( currentView != null ) {
+            container.removeView( currentView );
+            currentView = null;
+        }
+        else if ( currentFragment != null ) {
+            FragmentTransaction ft = fragmentManager.beginTransaction( );
+            ft.remove( currentFragment );
+            ft.commit( );
+            currentFragment = null;
+        }
+    }
+
+    public void setView( View v ) {
+        removeView( );
+        if ( v != null ) {
+            currentView = v;
+
+            if ( v.getParent( ) == null )
+                container.addView( v );
+            else Utils.Assert( v.getParent( ) == container, false );
+
+            showParent( );
+        }
+        else hideParent( );
+    }
+
+    public View setView( int resId ) {
+        View v = inflater.inflate( resId, container, false );
+        setView( v );
+        return v;
+    }
+
+    public void setFragment( Fragment f ) {
+        removeView( );
+
+        if ( f != null ) {
+            currentFragment = f;
+
+            FragmentTransaction ft = fragmentManager.beginTransaction( );
+            ft.add( container.getId( ), f );
+            ft.commit( );
+
+            showParent( );
+        }
+        else hideParent( );
+    }
+
+    public void showParent( ) {
+        //container.setVisibility( View.VISIBLE );
+    }
+
+    public void hideParent( ) {
+        //container.setVisibility( View.INVISIBLE );
     }
 }

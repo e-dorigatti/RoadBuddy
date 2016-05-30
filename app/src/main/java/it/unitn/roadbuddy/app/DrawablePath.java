@@ -15,6 +15,10 @@ public class DrawablePath implements Drawable {
         this.path = path;
     }
 
+    public Path getPath( ) {
+        return path;
+    }
+
     @Override
     public String DrawToMap( Context context, GoogleMap map ) {
         PolylineOptions opts = new PolylineOptions( )
@@ -24,7 +28,7 @@ public class DrawablePath implements Drawable {
             opts.addAll( leg.getPoints( ) );
 
         polyline = map.addPolyline( opts );
-        setSelected( context, false );
+        setSelected( context, map, false );
 
         return polyline.getId( );
     }
@@ -38,7 +42,7 @@ public class DrawablePath implements Drawable {
     }
 
     @Override
-    public void setSelected( Context context, boolean selected ) {
+    public void setSelected( Context context, GoogleMap map, boolean selected ) {
         if ( polyline == null )
             return;
 
@@ -54,5 +58,10 @@ public class DrawablePath implements Drawable {
     public boolean equals( Drawable other ) {
         return other != null && other instanceof DrawablePath &&
                 this.path.equals( ( ( DrawablePath ) other ).path );
+    }
+
+    @Override
+    public DrawableInfoFragment getInfoFragment( ) {
+        return DrawablePathInfoFragment.newInstance( this );
     }
 }

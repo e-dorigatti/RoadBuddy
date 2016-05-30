@@ -34,7 +34,6 @@ public class AddPathState implements NFAState,
     List<WaypointInfo> path = new ArrayList<>( );
     GoogleMap map;
     MapFragment fragment;
-    LinearLayout lyWaypointControl;
     LinearLayout lyOkCancel;
     Marker selectedMarker;
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
@@ -50,9 +49,10 @@ public class AddPathState implements NFAState,
         map.setOnMapClickListener( this );
         map.clear( );
 
+        lyOkCancel = ( LinearLayout ) fragment.mainLayout.setView(
+                R.layout.ok_cancel_layout
+        );
 
-
-        lyOkCancel = ( LinearLayout ) fragment.setCurrentMenuBar( R.layout.ok_cancel_layout );
         lyOkCancel.findViewById( R.id.fatto ).setOnClickListener(
                 new View.OnClickListener( ) {
                     @Override
@@ -71,6 +71,7 @@ public class AddPathState implements NFAState,
                         }
                     }
                 } );
+
         lyOkCancel.findViewById( R.id.elimina ).setOnClickListener(
                 new View.OnClickListener( ) {
                     @Override
@@ -210,7 +211,7 @@ public class AddPathState implements NFAState,
 
     @Override
     public void onMapClick( LatLng point ) {
-        fragment.setCurrentMenuBar( lyOkCancel );
+        fragment.mainLayout.setView( lyOkCancel );
         selectedMarker = null;
     }
 

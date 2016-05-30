@@ -1,9 +1,9 @@
 package it.unitn.roadbuddy.app;
 
 
-import com.github.clans.fab.FloatingActionButton;
 import android.view.View;
 import android.widget.LinearLayout;
+import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnCameraChangeListener;
 import com.google.android.gms.maps.GoogleMap.OnMapClickListener;
@@ -36,9 +36,11 @@ public class RestState implements NFAState,
         fragment.googleMap.setOnMarkerClickListener( this );
         fragment.googleMap.setOnPolylineClickListener( this );
 
-        buttonBar = ( LinearLayout ) fragment.setCurrentMenuBar( R.layout.rest_buttons_layout );
+        fragment.sliderLayout.setView( null );
 
-        btnAddPath = (FloatingActionButton ) buttonBar.findViewById( R.id.btnAddPath );
+        buttonBar = ( LinearLayout ) fragment.mainLayout.setView( R.layout.rest_buttons_layout );
+
+        btnAddPath = ( FloatingActionButton ) buttonBar.findViewById( R.id.btnAddPath );
         btnAddPath.setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View v ) {
@@ -71,7 +73,7 @@ public class RestState implements NFAState,
         fragment.googleMap.setOnMarkerClickListener( null );
         fragment.googleMap.setOnPolylineClickListener( null );
 
-        fragment.removeMenuBar( );
+        fragment.mainLayout.removeView( );
     }
 
     @Override

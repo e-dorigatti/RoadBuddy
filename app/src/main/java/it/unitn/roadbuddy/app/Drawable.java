@@ -2,8 +2,13 @@ package it.unitn.roadbuddy.app;
 
 
 import android.content.Context;
+import android.support.v4.app.Fragment;
 import com.google.android.gms.maps.GoogleMap;
 
+
+/**
+ * This interface bridges database objects with objects displayed on the map
+ */
 public interface Drawable {
     /**
      * Draws the object on the map.
@@ -17,7 +22,7 @@ public interface Drawable {
      * Use this method, for example, to change the appearance
      * of the drawn object.
      */
-    void setSelected( Context context, boolean selected );
+    void setSelected( Context context, GoogleMap map, boolean selected );
 
     /**
      * Delete the graphic object from the map
@@ -29,4 +34,9 @@ public interface Drawable {
      * This should not depend on the appearance
      */
     boolean equals( Drawable other );
+
+    /**
+     * Additional details to be shown
+     */
+    DrawableInfoFragment getInfoFragment( );
 }
