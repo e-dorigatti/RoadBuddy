@@ -1,23 +1,26 @@
 package it.unitn.roadbuddy.app.backend.models;
 
 
-import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Path {
 
-    protected List<Leg> legs = new ArrayList<>( );
+    protected List<List<LatLng>> legs = new ArrayList<>( );
     protected long owner;
     private long id;
 
-    public Path( long id, long owner ) {
+    private long duration;
+    private long distance;
+
+    public Path( long id, long owner, long distance, long duration ) {
         this.id = id;
         this.owner = owner;
+
+        setDistance( distance );
+        setDuration( duration );
     }
 
     public long getId( ) {
@@ -28,20 +31,12 @@ public class Path {
         return owner;
     }
 
-    public void addLeg( List<LatLng> points ) {
-        Leg leg = new Leg( points );
-        this.legs.add( leg );
-    }
-
-    public List<Leg> getLegs( ) {
+    public List<List<LatLng>> getLegs( ) {
         return new ArrayList<>( legs );
     }
 
-    public Polyline drawToMap( GoogleMap map ) {
-        PolylineOptions opts = new PolylineOptions( );
-        for ( Leg leg : legs )
-            opts.addAll( leg.getPoints( ) );
-        return map.addPolyline( opts );
+    public void setLegs( List<List<LatLng>> legs ) {
+        this.legs = legs;
     }
 
     @Override
@@ -50,15 +45,20 @@ public class Path {
                 this.id == ( ( Path ) other ).id;
     }
 
-    public class Leg {
-        protected List<LatLng> points = new ArrayList<>( );
+    public long getDuration( ) {
+        return duration;
+    }
 
-        public Leg( List<LatLng> points ) {
-            this.points.addAll( points );
-        }
+    public void setDuration( long duration ) {
+        this.duration = duration;
+    }
 
-        public List<LatLng> getPoints( ) {
-            return new ArrayList<>( points );
-        }
+    public long getDistance( ) {
+        return distance;
+    }
+
+    public void setDistance( long distance ) {
+        this.distance = distance;
     }
 }
+

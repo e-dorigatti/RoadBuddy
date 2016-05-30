@@ -309,12 +309,23 @@ public class AddPathState implements NFAState,
 
         @Override
         protected Boolean doInBackground( List<WaypointInfo>... waypoints ) {
-            Path path = new Path( -1, fragment.currentUser.getId( ) );
+            Path path = new Path( -1, fragment.currentUser.getId( ), 0, 0 );
+
+            List<List<LatLng>> legs = new ArrayList<>( );
+            long distance = 0;
+            long duration = 0;
 
             for ( int i = 1; i < waypoints[ 0 ].size( ); i++ ) {
-                WaypointInfo waypoint = waypoints[ 0 ].get( i );
-                path.addLeg( waypoint.legTo.getDirectionPoint( ) );
+                Leg leg = waypoints[ 0 ].get( i ).legTo;
+                legs.add( leg.getDirectionPoint( ) );
+
+                distance += Long.parseLong( leg.getDistance( ).getValue( ) );
+                duration += Long.parseLong( leg.getDuration( ).getValue( ) );
             }
+
+            path.setLegs( legs );
+            path.setDistance( distance );
+            path.setDuration( duration );
 
             try {
                 DAOFactory.getPathDAO( ).AddPath( path );
