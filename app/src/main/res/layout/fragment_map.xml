@@ -1,17 +1,23 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:fab="http://schemas.android.com/apk/res-auto"
-    tools:context=".MapFragment"
-    android:id="@+id/mainFrameLayout">
+    tools:context=".MapFragment">
 
     <fragment
         android:id="@+id/map"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="500dp"
         class="com.google.android.gms.maps.SupportMapFragment"
-        tools:layout="@layout/abc_list_menu_item_icon" />
+        android:layout_alignParentTop="true"/>
 
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/button_container"
+        android:layout_alignBottom="@+id/map"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="-25dp"/>
 
-</FrameLayout>
+</RelativeLayout>
