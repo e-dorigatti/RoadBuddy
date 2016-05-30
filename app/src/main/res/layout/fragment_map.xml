@@ -1,6 +1,7 @@
 <com.sothree.slidinguppanel.SlidingUpPanelLayout
         xmlns:sothree="http://schemas.android.com/apk/res-auto"
         xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
         android:id="@+id/sliding_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -13,7 +14,7 @@
                  android:layout_width="match_parent"
                  android:layout_height="match_parent"
                  tools:context=".MapFragment"
-                 android:id="@+id/mainFrameLayout">
+                 android:id="@+id/button_container">
 
         <fragment
                 android:id="@+id/map"
