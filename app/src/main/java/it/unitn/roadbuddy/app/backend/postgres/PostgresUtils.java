@@ -52,7 +52,7 @@ public class PostgresUtils {
         }
     }
 
-    public static PostgresUtils getInstance( ) throws SQLException {
+    public static synchronized PostgresUtils getInstance( ) throws SQLException {
         if ( instance == null )
             instance = new PostgresUtils( );
         return instance;

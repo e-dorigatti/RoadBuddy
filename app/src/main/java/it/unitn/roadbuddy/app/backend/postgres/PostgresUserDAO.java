@@ -25,7 +25,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
         super( );
     }
 
-    public static PostgresUserDAO getInstance( ) throws SQLException {
+    public static synchronized PostgresUserDAO getInstance( ) throws SQLException {
         if ( instance == null )
             instance = new PostgresUserDAO( );
         return instance;

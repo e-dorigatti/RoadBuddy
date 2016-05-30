@@ -32,7 +32,7 @@ public class PostgresCommentPoiDAO extends PostgresDAOBase implements CommentPoi
         super( );
     }
 
-    public static PostgresCommentPoiDAO getInstance( ) throws SQLException {
+    public static synchronized PostgresCommentPoiDAO getInstance( ) throws SQLException {
         if ( instance == null )
             instance = new PostgresCommentPoiDAO( );
         return instance;

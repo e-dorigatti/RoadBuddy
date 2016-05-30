@@ -30,7 +30,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
         super( );
     }
 
-    public static PostgresPathDAO getInstance( ) throws SQLException {
+    public static synchronized PostgresPathDAO getInstance( ) throws SQLException {
         if ( instance == null )
             instance = new PostgresPathDAO( );
         return instance;

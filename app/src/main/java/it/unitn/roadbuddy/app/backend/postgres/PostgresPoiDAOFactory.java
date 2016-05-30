@@ -13,7 +13,7 @@ public class PostgresPoiDAOFactory extends PoiDAOFactory {
 
     }
 
-    public static PoiDAOFactory getInstance( ) {
+    public static synchronized PoiDAOFactory getInstance( ) {
         if ( instance == null )
             instance = new PostgresPoiDAOFactory( );
         return instance;
