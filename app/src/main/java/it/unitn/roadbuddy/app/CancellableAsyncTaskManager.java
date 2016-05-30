@@ -54,7 +54,8 @@ public class CancellableAsyncTaskManager {
         runningTaskByInstance.put( task, task.getClass( ) );
         runningTasksByType.put( task.getClass( ), task );
 
-        task.executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, args );
+        //task.executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, args );
+        task.execute( args );
     }
 }
 

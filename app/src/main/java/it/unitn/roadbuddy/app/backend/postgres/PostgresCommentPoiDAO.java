@@ -11,6 +11,7 @@ import org.postgis.PGgeometry;
 import org.postgis.Point;
 import org.postgis.Polygon;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,8 +40,8 @@ public class PostgresCommentPoiDAO extends PostgresDAOBase implements CommentPoi
 
     @Override
     public void AddCommentPOI( Context c, CommentPOI poi ) throws BackendException {
-        try {
-            PreparedStatement stmt = getConnection( ).prepareStatement(
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement(
                     String.format(
                             "INSERT INTO %s(%s, %s, %s) VALUES(?, ?, ?)",
                             getSchemaName( ), COLUMN_NAME_LOCATION, COLUMN_NAME_TEXT,
@@ -63,8 +64,8 @@ public class PostgresCommentPoiDAO extends PostgresDAOBase implements CommentPoi
 
     @Override
     public List<CommentPOI> getCommentPOIsInside( Context c, LatLngBounds bounds ) throws BackendException {
-        try {
-            PreparedStatement stmt = getConnection( ).prepareStatement(
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement(
                     String.format(
                             "SELECT %1$s, %2$s, %3$s, %5$s FROM %4$s WHERE ST_Contains(?, %2$s)",
                             COLUMN_NAME_ID, COLUMN_NAME_LOCATION, COLUMN_NAME_TEXT, getSchemaName( ),
