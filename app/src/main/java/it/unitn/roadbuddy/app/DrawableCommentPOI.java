@@ -17,9 +17,7 @@ public class DrawableCommentPOI implements Drawable {
 
     public String DrawToMap( Context context, GoogleMap map ) {
         MarkerOptions opts = new MarkerOptions( )
-                .position( new LatLng( poi.getLatitude( ), poi.getLongitude( ) ) )
-                .title( "Created by an user" )  // FIXME [ed] when we add support for multiple users
-                .snippet( poi.getText( ) );
+                .position( new LatLng( poi.getLatitude( ), poi.getLongitude( ) ) );
 
         marker = map.addMarker( opts );
         return marker.getId( );
@@ -32,7 +30,7 @@ public class DrawableCommentPOI implements Drawable {
         }
     }
 
-    public void setSelected( Context context, boolean selected ) {
+    public void setSelected( Context context, GoogleMap map, boolean selected ) {
         if ( marker == null )
             return;
 
@@ -42,9 +40,18 @@ public class DrawableCommentPOI implements Drawable {
             marker.hideInfoWindow( );
     }
 
+    public CommentPOI getPOI( ) {
+        return poi;
+    }
+
     @Override
     public boolean equals( Drawable other ) {
         return other instanceof DrawableCommentPOI &&
                 this.poi.equals( ( ( DrawableCommentPOI ) other ).poi );
+    }
+
+    @Override
+    public DrawableInfoFragment getInfoFragment( ) {
+        return DrawableCommentPOIInfoFragment.newInstance( this );
     }
 }

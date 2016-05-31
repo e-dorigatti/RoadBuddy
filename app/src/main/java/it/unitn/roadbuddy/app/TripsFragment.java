@@ -3,21 +3,21 @@ package it.unitn.roadbuddy.app;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.FrameLayout;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
-import com.github.clans.fab.FloatingActionMenu;
-import com.google.android.gms.maps.SupportMapFragment;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 public class TripsFragment extends Fragment {
 
+    private ArrayAdapter<String> mTripsAdapter;
     public TripsFragment( ) {
         // Required empty public constructor
     }
@@ -31,13 +31,34 @@ public class TripsFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_trips, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_trips, container, false);
+        String[] data = {
+                "Trip1 - 3 hours - 5stars",
+                "Trip2 - 7 hours - 3stars",
+                "Trip3 - 1 hours - 4stars",
+                "Trip4 - 2 hours - 1stars"
+        };
+
+
+        List<String> tripList = new ArrayList<String>(
+                Arrays.asList(data));
+
+
+        mTripsAdapter = new ArrayAdapter<String>(
+                //current context
+                getActivity(),
+                //ID of list of item layout
+                R.layout.list_item_trips,
+                //ID of the textview to populate
+                R.id.list_item_trips_textview,
+                //forecast data
+                tripList);
+        ListView listView = (ListView) rootView.findViewById(R.id.list_view_trips);
+        listView.setAdapter(mTripsAdapter);
+        return rootView;
     }
 
-    @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-    }
+
 
     @Override
     public void onAttach(Context context) {
@@ -48,7 +69,5 @@ public class TripsFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
     }
-
-
 
 }

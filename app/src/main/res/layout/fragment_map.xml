@@ -1,48 +1,33 @@
-<android.support.design.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".MapFragment">
-
-    <android.support.design.widget.CoordinatorLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-
-        <fragment class="com.google.android.gms.maps.SupportMapFragment"
-            android:id="@+id/map"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-            <FrameLayout
-                android:id="@+id/button_container"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="150px"
-                app:layout_anchor="@id/map"
-                app:layout_anchorGravity="bottom|right|end"/>
-    </android.support.design.widget.CoordinatorLayout>
-
-    <android.support.v4.widget.NestedScrollView
-        android:id="@+id/bottom_sheet"
+<com.sothree.slidinguppanel.SlidingUpPanelLayout
+        xmlns:sothree="http://schemas.android.com/apk/res-auto"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/sliding_layout"
         android:layout_width="match_parent"
-        android:layout_height="350dp"
-        android:clipToPadding="true"
-        android:background="#3F51B5"
-        app:layout_behavior="android.support.design.widget.BottomSheetBehavior">
+        android:layout_height="match_parent"
+        android:gravity="bottom"
+        sothree:umanoPanelHeight="68dp"
+        sothree:umanoShadowHeight="4dp">
 
-        <fragment class="it.unitn.roadbuddy.app.TripsFragment"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-        </fragment>
+    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                 xmlns:tools="http://schemas.android.com/tools"
+                 android:layout_width="match_parent"
+                 android:layout_height="match_parent"
+                 tools:context=".MapFragment"
+                 android:id="@+id/button_container">
 
-    </android.support.v4.widget.NestedScrollView>
+        <fragment
+                android:id="@+id/map"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                class="com.google.android.gms.maps.SupportMapFragment"
+                tools:layout="@layout/abc_list_menu_item_icon"/>
 
+    </FrameLayout>
 
+    <FrameLayout android:layout_width="match_parent"
+                 android:layout_height="match_parent"
+                 android:id="@+id/sliderLayout">
 
-</android.support.design.widget.CoordinatorLayout>
-
-
-
-
+    </FrameLayout>
+</com.sothree.slidinguppanel.SlidingUpPanelLayout>
