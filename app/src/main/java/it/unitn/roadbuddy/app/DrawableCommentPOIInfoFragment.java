@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-public class DrawableCommentPOIInfoFragment extends DrawableInfoFragment {
+public class DrawableCommentPOIInfoFragment extends SliderContentFragment {
     DrawableCommentPOI drawablePoi;
 
     public static DrawableCommentPOIInfoFragment newInstance( DrawableCommentPOI drawablePoi ) {

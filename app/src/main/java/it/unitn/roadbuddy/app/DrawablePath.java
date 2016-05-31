@@ -87,7 +87,7 @@ public class DrawablePath implements Drawable {
     }
 
     @Override
-    public DrawableInfoFragment getInfoFragment( ) {
+    public SliderContentFragment getInfoFragment( ) {
         return DrawablePathInfoFragment.newInstance( this );
     }
 }

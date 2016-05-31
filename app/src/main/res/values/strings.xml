@@ -27,6 +27,9 @@
     <string name="pref_dev_user_name_title">User Name</string>
     <string name="app_initial_loading">Connecting to backend...</string>
 
+    <string name="path_edit_total_distance">Total Distance: %s</string>
+    <string name="path_edit_total_duration">Expected Duration: %s</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

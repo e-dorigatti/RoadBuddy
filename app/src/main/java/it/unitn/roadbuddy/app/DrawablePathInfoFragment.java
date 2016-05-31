@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-public class DrawablePathInfoFragment extends DrawableInfoFragment {
+public class DrawablePathInfoFragment extends SliderContentFragment {
     DrawablePath drawablePath;
 
     public static DrawablePathInfoFragment newInstance( DrawablePath drawablePath ) {

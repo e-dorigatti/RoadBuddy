@@ -8,7 +8,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-public abstract class DrawableInfoFragment extends Fragment {
+
+/**
+ * This fragment is used to show information in the bottom slider
+ * of the map. It provides facilities to show two different layouts
+ * based on the slider status: retracted or extended.
+ */
+public abstract class SliderContentFragment extends Fragment {
 
     protected int smallViewId = -1;
     protected int largeViewId = -1;
