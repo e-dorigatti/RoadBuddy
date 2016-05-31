@@ -3,15 +3,20 @@ package it.unitn.roadbuddy.app;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.FrameLayout;
 
+import com.github.clans.fab.FloatingActionMenu;
+import com.google.android.gms.maps.SupportMapFragment;
 
 
 public class TripsFragment extends Fragment {
-
 
     public TripsFragment( ) {
         // Required empty public constructor
@@ -30,6 +35,11 @@ public class TripsFragment extends Fragment {
     }
 
     @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+    }
+
+    @Override
     public void onAttach(Context context) {
         super.onAttach(context);
     }
@@ -38,5 +48,7 @@ public class TripsFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
     }
+
+
 
 }

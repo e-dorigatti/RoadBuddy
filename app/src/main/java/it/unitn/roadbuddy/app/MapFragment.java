@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -12,6 +14,7 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionMenu;
@@ -33,6 +36,7 @@ import java.util.Map;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
+    BottomSheetBehavior mBottomSheetBehavior;
     FloatingActionMenu floatingActionMenu;
     FrameLayout mainFrameLayout;
     View currentMenuBar;
@@ -57,6 +61,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         long user_id = pref.getLong( SettingsFragment.KEY_PREF_USER_ID, -1 );
 
         taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
+
+
     }
 
     @Override
@@ -70,7 +76,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated( View view, Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
 
-        this.mainFrameLayout = ( FrameLayout ) view.findViewById( R.id.button_container );
+        View bottomSheet = view.findViewById( R.id.bottom_sheet );
+        this.mBottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
+        mBottomSheetBehavior.setPeekHeight(150);
+        mBottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
+        this.mainFrameLayout = (FrameLayout) view.findViewById( R.id.button_container );
 
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
