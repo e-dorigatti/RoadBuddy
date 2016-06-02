@@ -1,12 +1,13 @@
 package it.unitn.roadbuddy.app;
 
 import android.content.Context;
-import android.net.Uri;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -55,6 +56,17 @@ public class TripsFragment extends Fragment {
                 tripList);
         ListView listView = (ListView) rootView.findViewById(R.id.list_view_trips);
         listView.setAdapter(mTripsAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String tripsPos = mTripsAdapter.getItem(position);
+                Intent detailIntent;
+                detailIntent = new Intent(getActivity(), TripsDetailActivity.class)
+                        .putExtra(Intent.EXTRA_TEXT, tripsPos);
+                startActivity(detailIntent);
+
+            }
+        });
         return rootView;
     }
 

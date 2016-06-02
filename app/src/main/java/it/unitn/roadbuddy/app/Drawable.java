@@ -2,7 +2,6 @@ package it.unitn.roadbuddy.app;
 
 
 import android.content.Context;
-import android.support.v4.app.Fragment;
 import com.google.android.gms.maps.GoogleMap;
 
 
@@ -38,5 +37,5 @@ public interface Drawable {
     /**
      * Additional details to be shown
      */
-    DrawableInfoFragment getInfoFragment( );
+    SliderContentFragment getInfoFragment( );
 }

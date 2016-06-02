@@ -51,7 +51,7 @@ public class DrawableCommentPOI implements Drawable {
     }
 
     @Override
-    public DrawableInfoFragment getInfoFragment( ) {
+    public SliderContentFragment getInfoFragment( ) {
         return DrawableCommentPOIInfoFragment.newInstance( this );
     }
 }

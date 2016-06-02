@@ -38,7 +38,7 @@ public class RestState implements NFAState,
 
         fragment.sliderLayout.setView( null );
 
-        buttonBar = ( RelativeLayout ) fragment.mainLayout.setView( R.layout.rest_buttons_layout );
+        buttonBar = ( RelativeLayout ) fragment.mainLayout.setView( R.layout.buttons_layout_rs);
 
         btnAddPath = ( FloatingActionButton ) buttonBar.findViewById( R.id.btnAddPath );
         btnAddPath.setOnClickListener( new View.OnClickListener( ) {

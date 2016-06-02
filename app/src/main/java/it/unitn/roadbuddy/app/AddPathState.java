@@ -30,13 +30,15 @@ public class AddPathState implements NFAState,
     private static final String APIKEY = BuildConfig.APIKEY;
 
     boolean requestPending = false;
-
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
     List<WaypointInfo> path = new ArrayList<>( );
+
     GoogleMap map;
     MapFragment fragment;
     LinearLayout lyOkCancel;
     Marker selectedMarker;
-    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
+
+    EditedPathInfoFragment infoFragment;
 
     @Override
     public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
@@ -50,7 +52,7 @@ public class AddPathState implements NFAState,
         map.clear( );
 
         lyOkCancel = ( LinearLayout ) fragment.mainLayout.setView(
-                R.layout.ok_cancel_layout
+                R.layout.button_layout_ap
         );
 
         lyOkCancel.findViewById( R.id.fatto ).setOnClickListener(
@@ -89,6 +91,9 @@ public class AddPathState implements NFAState,
                     }
                 } );
 
+        infoFragment = EditedPathInfoFragment.newInstance( );
+        fragment.sliderLayout.setFragment( infoFragment );
+
         fragment.showToast( R.string.long_tap_to_add );
     }
 
@@ -125,7 +130,8 @@ public class AddPathState implements NFAState,
     }
 
     void deleteSelectedWaypoint( ) {
-        Utils.Assert( selectedMarker != null, true );
+        if ( selectedMarker == null )
+            return;
 
         int position;
         for ( position = 0; position < path.size( ); position++ ) {
@@ -134,9 +140,9 @@ public class AddPathState implements NFAState,
             }
         }
 
-        Utils.Assert( position < path.size( ), true );
-
         WaypointInfo waypoint = path.get( position );
+        selectedMarker = null;
+
         if ( path.size( ) == 1 ) {
             waypoint.marker.remove( );
             path.remove( waypoint );
@@ -146,13 +152,15 @@ public class AddPathState implements NFAState,
             next.polylineTo.remove( );
             waypoint.marker.remove( );
             path.remove( waypoint );
+            infoFragment.deleteWaypoint( 0 );
         }
         else if ( position == path.size( ) - 1 ) {
             waypoint.polylineTo.remove( );
             waypoint.marker.remove( );
             path.remove( waypoint );
+            infoFragment.deleteWaypoint( waypoint.point );
         }
-        else {
+        else if ( position > 0 && position < path.size( ) ) {
             WaypointInfo previous = path.get( position - 1 );
             WaypointInfo next = path.get( position + 1 );
             getDirections( previous.point, next.point,
@@ -191,7 +199,8 @@ public class AddPathState implements NFAState,
         }
 
         Marker marker = map.addMarker( createMarker( point, path.size( ) + 1 ) );
-        path.add( new WaypointInfo( path.size( ), point, null, marker, null ) );
+        WaypointInfo waypoint = new WaypointInfo( path.size( ), point, null, marker, null );
+        path.add( waypoint );
 
         if ( path.size( ) > 1 ) {
             Marker from = path.get( path.size( ) - 2 ).marker;
@@ -228,6 +237,10 @@ public class AddPathState implements NFAState,
 
             if ( direction.isOK( ) ) {
                 updateWaypoint( waypoint, direction );
+
+                infoFragment.appendWaypoint( waypoint.point,
+                                             waypoint.getDistanceTo( ),
+                                             waypoint.getDurationTo( ) );
             }
             else {
                 fail( );
@@ -274,9 +287,15 @@ public class AddPathState implements NFAState,
 
                 toDelete.polylineTo.remove( );
                 toDelete.marker.remove( );
-                path.remove( toDelete );
 
+                path.remove( toDelete );
                 updateWaypoint( next, direction );
+
+                infoFragment.deleteWaypoint( toDelete.point );
+
+                int position = infoFragment.deleteWaypoint( next.point );
+                infoFragment.addWaypoint( position, next.point, next.getDistanceTo( ),
+                                          next.getDurationTo( ) );
             }
             else {
                 fragment.showToast( "NOK" );
@@ -316,11 +335,11 @@ public class AddPathState implements NFAState,
             long duration = 0;
 
             for ( int i = 1; i < waypoints[ 0 ].size( ); i++ ) {
-                Leg leg = waypoints[ 0 ].get( i ).legTo;
-                legs.add( leg.getDirectionPoint( ) );
+                WaypointInfo waypoint = waypoints[ 0 ].get( i );
+                legs.add( waypoint.legTo.getDirectionPoint( ) );
 
-                distance += Long.parseLong( leg.getDistance( ).getValue( ) );
-                duration += Long.parseLong( leg.getDuration( ).getValue( ) );
+                distance += waypoint.getDistanceTo( );
+                duration += waypoint.getDurationTo( );
             }
 
             path.setLegs( legs );
@@ -372,6 +391,18 @@ public class AddPathState implements NFAState,
             this.legTo = legTo;
             this.marker = marker;
             this.polylineTo = polylineTo;
+        }
+
+        public long getDistanceTo( ) {
+            if ( legTo != null )
+                return Long.parseLong( legTo.getDistance( ).getValue( ) );
+            else return 0;
+        }
+
+        public long getDurationTo( ) {
+            if ( legTo != null )
+                return Long.parseLong( legTo.getDuration( ).getValue( ) );
+            else return 0;
         }
     }
 
