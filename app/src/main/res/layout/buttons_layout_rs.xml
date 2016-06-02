@@ -13,7 +13,8 @@
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_alignParentRight="true"
-            fab:menu_labels_style="@style/MenuLabelsStyle"
+            android:layout_marginBottom="10dp"
+            fab:menu_labels_style="@style/RestMenuLabelsStyle"
             fab:menu_animationDelayPerItem="0"
             fab:menu_shadowColor="#444"
             fab:menu_colorNormal="#FFB805"
@@ -21,18 +22,20 @@
             fab:menu_colorRipple="#D99200">
 
         <com.github.clans.fab.FloatingActionButton
-                android:id="@+id/btnAddPoi"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                fab:fab_label="Add point"
-                style="@style/MenuButtonsStyle"/>
+            android:id="@+id/btnAddPoi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/ic_add_location_white_24dp"
+            fab:fab_label="Add point"
+            style="@style/RestMenuButtonsStyle"/>
 
         <com.github.clans.fab.FloatingActionButton
-                android:id="@+id/btnAddPath"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                fab:fab_label="Add path"
-                style="@style/MenuButtonsStyle"/>
+            android:id="@+id/btnAddPath"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/ic_map_white_24dp"
+            fab:fab_label="Add path"
+                style="@style/RestMenuButtonsStyle"/>
 
     </com.github.clans.fab.FloatingActionMenu>
 

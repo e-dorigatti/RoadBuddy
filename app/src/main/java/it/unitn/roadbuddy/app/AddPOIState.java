@@ -6,7 +6,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.text.InputType;
 import android.util.Log;
+import android.view.View;
 import android.widget.EditText;
+import android.widget.RelativeLayout;
+
+import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -27,7 +31,7 @@ public class AddPOIState implements NFAState,
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     @Override
-    public void onStateEnter( NFA nfa, final MapFragment fragment ) {
+    public void onStateEnter(final NFA nfa, final MapFragment fragment ) {
         this.fragment = fragment;
         this.nfa = nfa;
 
@@ -37,6 +41,15 @@ public class AddPOIState implements NFAState,
         fragment.googleMap.setOnMapClickListener( this );
 
         fragment.showToast( R.string.long_tap_to_add );
+        RelativeLayout buttonBar = (RelativeLayout) fragment.mainLayout.setView(R.layout.button_layout_poi);
+        FloatingActionButton btnAnnulla = (FloatingActionButton) buttonBar.findViewById(R.id.annulla);
+        btnAnnulla.setOnClickListener( new View.OnClickListener( ) {
+            @Override
+            public void onClick( View v ) {
+                nfa.Transition( new RestState() );
+            }
+        } );
+
 
     }
 
@@ -48,6 +61,7 @@ public class AddPOIState implements NFAState,
         fragment.googleMap.setOnMarkerClickListener( null );
 
         taskManager.stopRunningTasksOfType( SavePOIAsync.class );
+        fragment.mainLayout.removeView();
     }
 
     @Override
@@ -85,7 +99,6 @@ public class AddPOIState implements NFAState,
                 if(drawable!= null){
                     drawable.RemoveFromMap(fragment.getActivity());
                 }
-                nfa.Transition( new RestState( ) );
             }
         } );
 
@@ -112,7 +125,6 @@ public class AddPOIState implements NFAState,
 
     @Override
     public void onCameraChange( final CameraPosition position ) {
-        fragment.RefreshMapContent( );
         drawMarker( );
     }
 
