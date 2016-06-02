@@ -3,6 +3,7 @@ package it.unitn.roadbuddy.app;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -46,6 +47,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
+    Handler mapRefreshDelayHandler = new Handler( );
+    RefreshMapAsync refreshTask;
+    long mapRefreshDelay = 2500;
 
     public MapFragment( ) {
         // Required empty public constructor
@@ -90,6 +94,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onPause( ) {
         taskManager.stopRunningTasksOfType( RefreshMapAsync.class );
 
+        if(refreshTask != null) {
+            mapRefreshDelayHandler.removeCallbacks( refreshTask );
+            refreshTask = null;
+        }
+
         if ( nfa != null )
             nfa.Pause( );
 
@@ -111,12 +120,19 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void RefreshMapContent( ) {
+
+        // show rotating animation
         Animation animRotate = AnimationUtils.loadAnimation( getContext( ), R.anim.rotate );
         floatingActionMenu = ( FloatingActionMenu ) getView( ).findViewById( R.id.fab );
-        floatingActionMenu.getMenuIconView( ).startAnimation( animRotate );
+        if ( floatingActionMenu != null )
+            floatingActionMenu.getMenuIconView( ).startAnimation( animRotate );
+
 
         LatLngBounds bounds = googleMap.getProjection( ).getVisibleRegion( ).latLngBounds;
-        taskManager.startRunningTask( new RefreshMapAsync( getContext( ) ), true, bounds );
+        if ( refreshTask != null )
+            mapRefreshDelayHandler.removeCallbacks( refreshTask );
+        refreshTask = new RefreshMapAsync( getContext( ), bounds );
+        mapRefreshDelayHandler.postDelayed( refreshTask, mapRefreshDelay );
     }
 
     public void showToast( String text ) {
@@ -141,22 +157,25 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         else sliderLayout.setFragment( null );
     }
 
-    class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Integer, List<Drawable>> {
+    class RefreshMapAsync implements Runnable {
 
         String exceptionMessage;
         Context context;
+        LatLngBounds bounds;
+        boolean success;
 
-        public RefreshMapAsync( Context context ) {
-            super( taskManager );
+        public RefreshMapAsync( Context context, LatLngBounds bounds ) {
             this.context = context;
+            this.bounds = bounds;
         }
 
-        protected List<Drawable> doInBackground( LatLngBounds... bounds ) {
-            try {
-                List<Drawable> results = new ArrayList<>( );
+        @Override
+        public void run( ) {
+            final List<Drawable> results = new ArrayList<>( );
 
+            try {
                 List<Path> paths = DAOFactory.getPathDAO( ).getPathsInside(
-                        context, bounds[ 0 ]
+                        context, bounds
                 );
 
                 List<CommentPOI> commentPOIs =
@@ -164,7 +183,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                                   .getCommentPoiDAO( )
                                   .getCommentPOIsInside(
                                           context,
-                                          bounds[ 0 ]
+                                          bounds
                                   );
 
                 for ( Path p : paths )
@@ -173,18 +192,24 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 for ( CommentPOI p : commentPOIs )
                     results.add( new DrawableCommentPOI( p ) );
 
-                return results;
+                success = true;
             }
             catch ( BackendException e ) {
                 Log.e( getClass( ).getName( ), "while refreshing map", e );
                 exceptionMessage = e.getMessage( );
-                return null;
+                success = false;
             }
+
+            getActivity( ).runOnUiThread( new Runnable( ) {
+                @Override
+                public void run( ) {
+                    updateMap( results );
+                }
+            } );
         }
 
-        @Override
-        protected void onPostExecute( List<Drawable> drawables ) {
-            if ( drawables != null ) {
+        void updateMap( List<Drawable> drawables ) {
+            if ( success ) {
                 for ( Map.Entry<String, Drawable> entry : shownDrawables.entrySet( ) ) {
                     entry.getValue( ).RemoveFromMap( context );
                 }
@@ -209,8 +234,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 showToast( R.string.generic_backend_error );
             }
 
-            super.onPostExecute( drawables );
-            floatingActionMenu.getMenuIconView( ).clearAnimation( );
+            if ( floatingActionMenu != null )
+                floatingActionMenu.getMenuIconView( ).clearAnimation( );
         }
     }
 
