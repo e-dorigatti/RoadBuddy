@@ -1,13 +1,16 @@
 package it.unitn.roadbuddy.app;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -34,6 +37,9 @@ import java.util.Map;
 
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
+
+    public static final int LOCATION_NPERMISSION_REQUEST_CODE = 123;
+    public static boolean hasLocationAccess = false;
 
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
@@ -105,8 +111,19 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady( GoogleMap map ) {
-        this.googleMap = map;
+        googleMap = map;
         nfa = new NFA( this, new RestState( ) );
+
+        if ( ContextCompat.checkSelfPermission(
+                getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED ) {
+
+            googleMap.setMyLocationEnabled( true );
+            googleMap.getUiSettings( ).setMyLocationButtonEnabled( true );
+        }
+        else {
+            // TODO call requestPermissions(...) or show a decent alert
+        }
     }
 
     public void RefreshMapContent( ) {
@@ -114,7 +131,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // show rotating animation
         Animation animRotate = AnimationUtils.loadAnimation( getContext( ), R.anim.rotate );
         floatingActionMenu = ( FloatingActionMenu ) getView( ).findViewById( R.id.fab );
-        if ( floatingActionMenu != null )
+        if ( floatingActionMenu != null && floatingActionMenu.getAnimation( ) == null )
             floatingActionMenu.getMenuIconView( ).startAnimation( animRotate );
 
         // run async task

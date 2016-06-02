@@ -11,7 +11,7 @@ public class DrawableCommentPOIInfoFragment extends SliderContentFragment {
 
     public static DrawableCommentPOIInfoFragment newInstance( DrawableCommentPOI drawablePoi ) {
         DrawableCommentPOIInfoFragment f = new DrawableCommentPOIInfoFragment( );
-        f.smallViewId = R.layout.basic_drawable_info;
+        f.smallViewId = R.layout.fragment_drawable_poi_info_large;
         f.drawablePoi = drawablePoi;
         return f;
     }

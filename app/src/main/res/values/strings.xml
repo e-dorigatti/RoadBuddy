@@ -30,6 +30,8 @@
     <string name="path_edit_total_distance">Total Distance: %s</string>
     <string name="path_edit_total_duration">Expected Duration: %s</string>
 
+    <string name="location_access_denied">You won\'t be able to see your location on the map</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_trips_detail">TripsDetailActivity</string>

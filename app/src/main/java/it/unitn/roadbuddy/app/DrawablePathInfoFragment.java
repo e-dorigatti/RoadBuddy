@@ -35,7 +35,7 @@ public class DrawablePathInfoFragment extends SliderContentFragment {
                 String.format( getString( R.string.path_edit_total_duration ),
                                Path.formatDuration( drawablePath.getPath( ).getDuration( ) )
                 ) );
-        
+
         return view;
     }
 }
