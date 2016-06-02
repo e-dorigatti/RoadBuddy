@@ -3,6 +3,7 @@ package it.unitn.roadbuddy.app.backend.models;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,6 +60,28 @@ public class Path {
 
     public void setDistance( long distance ) {
         this.distance = distance;
+    }
+
+    public static String formatDistance( long distance ) {
+        if ( distance <= 0 )
+            return "-";
+        if ( distance < 1000 )
+            return String.format( "%d m", distance );
+        else return String.format( "%s km", new DecimalFormat( "#.#" ).format( distance / 1000f ) );
+    }
+
+    public static String formatDuration( long duration ) {
+        long totalSeconds = duration % 60;
+        long totalMinutes = duration / 60;
+        long totalHours = totalMinutes / 60;
+
+        if ( duration <= 0 )
+            return "-";
+        else if ( totalHours > 0 )
+            return String.format( "%d h %d mim", totalHours, totalMinutes % 60 );
+        else if ( totalMinutes > 0 )
+            return String.format( "%d min", totalMinutes );
+        else return String.format( "%d sec", totalSeconds );
     }
 }
 

@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
 import com.google.android.gms.maps.model.LatLng;
+import it.unitn.roadbuddy.app.backend.models.Path;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -64,12 +65,12 @@ public class EditedPathInfoFragment extends SliderContentFragment {
     void updateSummary( ) {
         txtTotalDistance.setText(
                 String.format( getString( R.string.path_edit_total_distance ),
-                               formatDistance( totalDistance )
+                               Path.formatDistance( totalDistance )
                 ) );
 
         txtTotalDuration.setText(
                 String.format( getString( R.string.path_edit_total_duration ),
-                               formatDuration( totalDuration )
+                               Path.formatDuration( totalDuration )
                 ) );
     }
 
@@ -110,28 +111,6 @@ public class EditedPathInfoFragment extends SliderContentFragment {
         return -1;
     }
 
-    String formatDistance( long distance ) {
-        if ( distance <= 0 )
-            return "-";
-        if ( distance < 1000 )
-            return String.format( "%d m", distance );
-        else return String.format( "%s km", new DecimalFormat( "#.#" ).format( distance / 1000f ) );
-    }
-
-    String formatDuration( long duration ) {
-        long totalSeconds = duration % 60;
-        long totalMinutes = duration / 60;
-        long totalHours = totalMinutes / 60;
-
-        if ( duration <= 0 )
-            return "-";
-        else if ( totalHours > 0 )
-            return String.format( "%d h %d mim", totalHours, totalMinutes % 60 );
-        else if ( totalMinutes > 0 )
-            return String.format( "%d min", totalMinutes );
-        else return String.format( "%d sec", totalSeconds );
-    }
-
     class WaypointInfo implements DynamicViewArrayAdapter.Listable {
         private LatLng point;
         private long distanceTo;
@@ -163,8 +142,8 @@ public class EditedPathInfoFragment extends SliderContentFragment {
             TextView txt = new TextView( getContext( ) );
             txt.setText( String.format(
                     "Waypoint %d - Distance: %s, Duration %s", position + 1,
-                    formatDistance( waypoint.getDistanceTo( ) ),
-                    formatDuration( waypoint.getDurationTo( ) )
+                    Path.formatDistance( waypoint.getDistanceTo( ) ),
+                    Path.formatDuration( waypoint.getDurationTo( ) )
             ) );
 
             return txt;

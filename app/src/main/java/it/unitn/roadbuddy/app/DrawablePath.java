@@ -49,6 +49,12 @@ public class DrawablePath implements Drawable {
             polyline.remove( );
             polyline = null;
         }
+
+        if ( waypoints != null ) {
+            for ( Marker m : waypoints )
+                m.remove( );
+            waypoints = null;
+        }
     }
 
     @Override
