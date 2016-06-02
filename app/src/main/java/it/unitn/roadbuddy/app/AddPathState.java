@@ -52,7 +52,7 @@ public class AddPathState implements NFAState,
         map.clear( );
 
         lyOkCancel = ( LinearLayout ) fragment.mainLayout.setView(
-                R.layout.ok_cancel_layout
+                R.layout.button_layout_ap
         );
 
         lyOkCancel.findViewById( R.id.fatto ).setOnClickListener(
