@@ -35,7 +35,7 @@
             android:layout_height="wrap_content"
             android:src="@mipmap/ic_map_white_24dp"
             fab:fab_label="Add path"
-                style="@style/RestMenuButtonsStyle"/>
+            style="@style/RestMenuButtonsStyle"/>
 
     </com.github.clans.fab.FloatingActionMenu>
 

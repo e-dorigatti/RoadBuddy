@@ -4,24 +4,24 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 
-public class PagerAdapter extends FragmentStatePagerAdapter {
-    int mNumOfTabs;
 
-    public PagerAdapter( FragmentManager fm, int NumOfTabs ) {
-        super( fm );
-        this.mNumOfTabs = NumOfTabs;
+public class PagerAdapter extends FragmentStatePagerAdapter {
+    int mNumOfTabs = 3;
+    Fragment currentF;
+
+    public PagerAdapter( FragmentManager fm) {
+        super(fm);
     }
 
     @Override
     public Fragment getItem( int position ) {
-
         switch ( position ) {
             case 0:
-                return new MapFragment( );
+                return currentF = new MapFragment( );
             case 1:
-                return new TripsFragment( );
+                return currentF = new TripsFragment( );
             case 2:
-                return (Fragment) new SettingsFragment( );
+                return currentF = new SettingsFragment( );
             default:
                 return null;
         }
@@ -31,4 +31,5 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
     public int getCount( ) {
         return mNumOfTabs;
     }
+
 }
