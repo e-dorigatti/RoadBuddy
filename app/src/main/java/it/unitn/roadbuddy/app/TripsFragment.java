@@ -61,8 +61,8 @@ public class TripsFragment extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 String tripsPos = mTripsAdapter.getItem(position);
                 Intent detailIntent;
-                detailIntent = new Intent(getActivity(), TripsDetailActivity.class)
-                        .putExtra(Intent.EXTRA_TEXT, tripsPos);
+                detailIntent = new Intent(getActivity(), TripsDetailActivity.class);
+                        //.putExtra(Intent.EXTRA_TEXT, tripsPos);
                 startActivity(detailIntent);
 
             }

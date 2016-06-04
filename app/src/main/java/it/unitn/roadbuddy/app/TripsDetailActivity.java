@@ -40,7 +40,7 @@ public class TripsDetailActivity extends AppCompatActivity {
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
 
-            View rootView = inflater.inflate(R.layout.activity_trips_detail, container, false);
+            View rootView = inflater.inflate(R.layout.fragment_trips_detail, container, false);
             return rootView;
         }
     }
