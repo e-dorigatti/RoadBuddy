@@ -4,7 +4,10 @@ import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.preference.PreferenceManager;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -14,13 +17,21 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.model.LatLng;
 import it.unitn.roadbuddy.app.backend.BackendException;
+import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
 import java.sql.SQLException;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+        implements GoogleApiClient.ConnectionCallbacks,
+                   LocationListener {
 
     ViewPager mPager;
     PagerAdapter mAdapter;
@@ -29,6 +40,13 @@ public class MainActivity extends AppCompatActivity {
     ImageButton impostButton;
 
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
+
+    GoogleApiClient googleApiClient;
+
+    HandlerThread backgroundThread;
+    Handler backgroundTasksHandler;
+
+    long currentUserId;
 
     @Override
     protected void onCreate( Bundle savedInstanceState ) {
@@ -105,23 +123,39 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         } );
+
+        googleApiClient = new GoogleApiClient.Builder( this )
+                .addConnectionCallbacks( this )
+                .addApi( LocationServices.API )
+                .build( );
     }
 
     @Override
     protected void onStart( ) {
+
         // FIXME [ed] find a better place
         taskManager.startRunningTask( new AsyncInitializeDB( ), true );
 
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( this );
         if ( pref.getBoolean( SettingsFragment.KEY_PREF_DEV_ENABLED, false ) ) {
             String userName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, "<unset>" );
-            long userID = pref.getLong( SettingsFragment.KEY_PREF_USER_ID, -1 );
+            currentUserId = pref.getLong( SettingsFragment.KEY_PREF_USER_ID, -1 );
 
             Toast.makeText( this,
                             String.format( "You are currently running as user %s (id: %d)",
-                                           userName, userID ),
+                                           userName, currentUserId ),
                             Toast.LENGTH_SHORT ).show( );
         }
+        else {
+            // TODO handle *real* app users, with a login etc
+            currentUserId = 1;
+        }
+
+        backgroundThread = new HandlerThread( "background worker" );
+        backgroundThread.start( );
+        backgroundTasksHandler = new Handler( backgroundThread.getLooper( ) );
+
+        googleApiClient.connect( );
 
         super.onStart( );
     }
@@ -135,7 +169,50 @@ public class MainActivity extends AppCompatActivity {
             Log.e( getClass( ).getName( ), "on destroy", exc );
         }
 
+        LocationServices.FusedLocationApi.removeLocationUpdates(
+                googleApiClient, this
+        );
+
+        googleApiClient.disconnect( );
+        backgroundThread.quit( );
+
         super.onStop( );
+    }
+
+    @Override
+    public void onConnected( Bundle connectionHint ) {
+        // called when the google api client has successfully connected to whatever
+
+        // ask for periodic location updates running the listener on the background worker
+        LocationRequest requestType = LocationRequest
+                .create( )
+                .setPriority( LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY )
+                .setInterval( 5 * 60 * 1000 )
+                .setFastestInterval( 15 * 1000 );
+
+        LocationServices.FusedLocationApi.requestLocationUpdates(
+                googleApiClient, requestType,
+                this,
+                backgroundThread.getLooper( )
+        );
+    }
+
+    @Override
+    public void onConnectionSuspended( int n ) {
+
+    }
+
+    @Override
+    public void onLocationChanged( Location location ) {
+        try {
+            DAOFactory.getUserDAO( ).setCurrentLocation(
+                    currentUserId, new LatLng( location.getLatitude( ),
+                                               location.getLongitude( ) )
+            );
+        }
+        catch ( BackendException exc ) {
+            Log.e( getClass( ).getName( ), "while updating user position", exc );
+        }
     }
 
     class AsyncInitializeDB extends CancellableAsyncTask<Void, Void, Boolean> {

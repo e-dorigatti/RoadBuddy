@@ -107,7 +107,7 @@ public class SettingsFragment
         protected Long doInBackground( Object... newUserName ) {
             try {
                 User newUser = DAOFactory.getUserDAO( ).createUser(
-                        new User( -1, ( String ) newUserName[ 0 ] )
+                        new User( -1, ( String ) newUserName[ 0 ], null, null )
                 );
 
                 return newUser.getId( );
