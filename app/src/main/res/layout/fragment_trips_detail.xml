@@ -6,7 +6,7 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context="it.unitn.roadbuddy.app.TripsDetailActivityFragment"
+    tools:context="it.unitn.roadbuddy.app.TripsDetailActivity"
     tools:showIn="@layout/activity_trips_detail">
 
 

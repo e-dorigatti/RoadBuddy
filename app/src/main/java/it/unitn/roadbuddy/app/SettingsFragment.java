@@ -37,7 +37,6 @@ public class SettingsFragment
     public View onCreateView( LayoutInflater inflater,
                               ViewGroup container,
                               Bundle savedInstanceState ) {
-
         View settings = super.onCreateView( inflater, container, savedInstanceState );
         if ( settings == null )
             return null;

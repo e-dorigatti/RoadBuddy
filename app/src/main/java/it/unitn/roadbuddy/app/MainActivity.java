@@ -2,14 +2,17 @@ package it.unitn.roadbuddy.app;
 
 import android.app.ProgressDialog;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.ImageButton;
 import android.widget.Toast;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
@@ -19,40 +22,87 @@ import java.sql.SQLException;
 
 public class MainActivity extends AppCompatActivity {
 
+    ViewPager mPager;
+    PagerAdapter mAdapter;
+    ImageButton mapButton;
+    ImageButton viaggiButton;
+    ImageButton impostButton;
+
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     @Override
     protected void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
         setContentView( R.layout.activity_main );
-
         Toolbar toolbar = ( Toolbar ) findViewById( R.id.toolbar );
         setSupportActionBar( toolbar );
+        assert getSupportActionBar( ) != null;
+        getSupportActionBar( ).setDisplayShowTitleEnabled( false );
 
-        TabLayout tabLayout = ( TabLayout ) findViewById( R.id.tab_layout );
-        tabLayout.addTab( tabLayout.newTab( ).setText( R.string.map_tab_name ) );
-        tabLayout.addTab( tabLayout.newTab( ).setText( R.string.trips_tab_name ) );
-        tabLayout.addTab( tabLayout.newTab( ).setText( R.string.settings_tab_name ) );
-        tabLayout.setTabGravity( TabLayout.GRAVITY_FILL );
+        mPager = ( ViewPager ) findViewById( R.id.pager );
+        mAdapter = new PagerAdapter( getSupportFragmentManager( ) );
+        mPager.setAdapter( mAdapter );
 
-        final ViewPager viewPager = ( ViewPager ) findViewById( R.id.pager );
-        final PagerAdapter adapter = new PagerAdapter( getSupportFragmentManager( ), tabLayout.getTabCount( ) );
-        viewPager.setAdapter( adapter );
-        viewPager.addOnPageChangeListener( new TabLayout.TabLayoutOnPageChangeListener( tabLayout ) );
-        tabLayout.setOnTabSelectedListener( new TabLayout.OnTabSelectedListener( ) {
+        mapButton = ( ImageButton ) findViewById( R.id.button_map );
+        viaggiButton = ( ImageButton ) findViewById( R.id.button_viaggi );
+        impostButton = ( ImageButton ) findViewById( R.id.button_impostazioni );
+
+        mPager.addOnPageChangeListener( new ViewPager.OnPageChangeListener( ) {
             @Override
-            public void onTabSelected( TabLayout.Tab tab ) {
-                viewPager.setCurrentItem( tab.getPosition( ) );
-            }
-
-            @Override
-            public void onTabUnselected( TabLayout.Tab tab ) {
+            public void onPageScrolled( int position, float positionOffset, int positionOffsetPixels ) {
 
             }
 
             @Override
-            public void onTabReselected( TabLayout.Tab tab ) {
+            public void onPageSelected( int position ) {
+                switch ( position ) {
+                    case 0:
+                        mapButton.getBackground( ).setColorFilter( Color.BLUE, PorterDuff.Mode.SRC_ATOP );
+                        viaggiButton.getBackground( ).clearColorFilter( );
+                        impostButton.getBackground( ).clearColorFilter( );
+                        mAdapter.getTrip( );
+                        break;
+                    case 1:
+                        viaggiButton.getBackground( ).setColorFilter( Color.BLUE, PorterDuff.Mode.SRC_ATOP );
+                        mapButton.getBackground( ).clearColorFilter( );
+                        impostButton.getBackground( ).clearColorFilter( );
 
+                        break;
+                    case 2:
+                        impostButton.getBackground( ).setColorFilter( Color.BLUE, PorterDuff.Mode.SRC_ATOP );
+                        mapButton.getBackground( ).clearColorFilter( );
+                        viaggiButton.getBackground( ).clearColorFilter( );
+                        break;
+                }
+                mapButton.invalidate( );
+                viaggiButton.invalidate( );
+                impostButton.invalidate( );
+            }
+
+            @Override
+            public void onPageScrollStateChanged( int state ) {
+
+            }
+        } );
+
+        mapButton.getBackground( ).setColorFilter( Color.BLUE, PorterDuff.Mode.SRC_ATOP );
+
+        mapButton.setOnTouchListener( new View.OnTouchListener( ) {
+            public boolean onTouch( View v, MotionEvent event ) {
+                mPager.setCurrentItem( 0 );
+                return false;
+            }
+        } );
+        viaggiButton.setOnTouchListener( new View.OnTouchListener( ) {
+            public boolean onTouch( View v, MotionEvent event ) {
+                mPager.setCurrentItem( 1 );
+                return false;
+            }
+        } );
+        impostButton.setOnTouchListener( new View.OnTouchListener( ) {
+            public boolean onTouch( View v, MotionEvent event ) {
+                mPager.setCurrentItem( 2 );
+                return false;
             }
         } );
     }

@@ -140,8 +140,47 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
     }
 
     @Override
+    public List<Path> getPathsFromPosition(Context c, LatLng pos) throws BackendException {
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement(
+                    String.format(
+                            "SELECT %1$s, %2$s, %4$s, %5$s, %6$s FROM %3$s WHERE ST_DWithin(%2$s, ?, ?)",
+                            COLUMN_NAME_ID, COLUMN_NAME_PATH, getSchemaName( ), COLUMN_NAME_OWNER,
+                            COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION
+                    )
+            );
+            Point p = new Point(pos.latitude,pos.longitude);
+            stmt.setObject( 1, new PGgeometry(p ));
+            stmt.setFloat( 2, 3000f);
+
+            ResultSet res = stmt.executeQuery( );
+            List<Path> paths = new ArrayList<>( );
+
+            while ( res.next( ) ) {
+                long id = res.getLong( COLUMN_NAME_ID );
+                long owner = res.getLong( COLUMN_NAME_OWNER );
+                long distance = res.getLong( COLUMN_NAME_DISTANCE );
+                long duration = res.getLong( COLUMN_NAME_DURATION );
+
+                PGgeometry geom = ( PGgeometry ) res.getObject( COLUMN_NAME_PATH );
+                MultiLineString mls = ( MultiLineString ) geom.getGeometry( );
+
+                Path path = new Path( id, owner, distance, duration );
+                appendMultiLineStringToPath( path, mls );
+                paths.add( path );
+            }
+
+            return paths;
+        }
+        catch ( SQLException exc ) {
+            Log.e( getClass( ).getName( ), "while retrieving paths", exc );
+            throw new BackendException( exc.getMessage( ), exc );
+        }
+    }
+
+    @Override
     protected int getSchemaVersion( ) {
-        return 5;  // TODO [ed] increment at every schema change
+        return 8;  // TODO [ed] increment at every schema change
     }
 
     @Override

@@ -32,6 +32,10 @@
 
     <string name="location_access_denied">You won\'t be able to see your location on the map</string>
 
+    <string name="tab_map">Map</string>
+    <string name="tab_viaggi">Viaggi</string>
+    <string name="tab_impostazioni">Impostazioni</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_trips_detail">TripsDetailActivity</string>
