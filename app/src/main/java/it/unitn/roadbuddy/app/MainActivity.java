@@ -12,7 +12,6 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.Toast;
 import it.unitn.roadbuddy.app.backend.BackendException;
@@ -25,7 +24,9 @@ public class MainActivity extends AppCompatActivity {
 
     ViewPager mPager;
     PagerAdapter mAdapter;
-
+    ImageButton mapButton;
+    ImageButton viaggiButton;
+    ImageButton impostButton;
 
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
@@ -35,18 +36,16 @@ public class MainActivity extends AppCompatActivity {
         setContentView( R.layout.activity_main );
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        assert getSupportActionBar() != null;
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         mPager = ( ViewPager ) findViewById( R.id.pager );
         mAdapter = new PagerAdapter( getSupportFragmentManager( ));
         mPager.setAdapter(mAdapter);
 
-
-
-        final ImageButton mapButton = (ImageButton) findViewById(R.id.button_map);
-        mapButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
-        final ImageButton viaggiButton = (ImageButton) findViewById(R.id.button_viaggi);
-        final ImageButton impostButton = (ImageButton) findViewById(R.id.button_impostazioni);
+        mapButton = (ImageButton) findViewById(R.id.button_map);
+        viaggiButton = (ImageButton) findViewById(R.id.button_viaggi);
+        impostButton = (ImageButton) findViewById(R.id.button_impostazioni);
 
         mPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
@@ -56,17 +55,21 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onPageSelected(int position) {
-                switch (position){
-                    case 0: mapButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
+                switch (position) {
+                    case 0:
+                        mapButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
                         viaggiButton.getBackground().clearColorFilter();
                         impostButton.getBackground().clearColorFilter();
+                        mAdapter.getTrip();
                         break;
-                    case 1: viaggiButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
+                    case 1:
+                        viaggiButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
                         mapButton.getBackground().clearColorFilter();
                         impostButton.getBackground().clearColorFilter();
 
                         break;
-                    case 2: impostButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
+                    case 2:
+                        impostButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
                         mapButton.getBackground().clearColorFilter();
                         viaggiButton.getBackground().clearColorFilter();
                         break;
@@ -81,6 +84,8 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+        mapButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
 
         mapButton.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View v, MotionEvent event) {

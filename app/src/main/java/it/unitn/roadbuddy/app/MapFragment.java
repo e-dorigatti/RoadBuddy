@@ -8,6 +8,7 @@ import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -51,6 +52,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // Required empty public constructor
     }
 
+
+
     @Override
     public void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
@@ -64,7 +67,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public View onCreateView( LayoutInflater inflater, ViewGroup container,
                               Bundle savedInstanceState ) {
-
         return inflater.inflate( R.layout.fragment_map, container, false );
     }
 
@@ -72,6 +74,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated( View view, Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
 
+        floatingActionMenu = ( FloatingActionMenu ) view.findViewById( R.id.fab );
         mainLayout = new ViewContainer(
                 getLayoutInflater( savedInstanceState ), getFragmentManager( ),
                 ( FrameLayout ) view.findViewById( R.id.button_container )
@@ -84,6 +87,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
+
     }
 
     @Override
@@ -99,8 +103,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onResume( ) {
         if ( nfa != null )
             nfa.Resume( );
-
         super.onResume( );
+    }
+
+    @Override
+    public void onStart( ) {
+        super.onStart( );
     }
 
     @Override
@@ -113,7 +121,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         // show rotating animation
         Animation animRotate = AnimationUtils.loadAnimation( getContext( ), R.anim.rotate );
-        floatingActionMenu = ( FloatingActionMenu ) getView( ).findViewById( R.id.fab );
         if ( floatingActionMenu != null )
             floatingActionMenu.getMenuIconView( ).startAnimation( animRotate );
 
@@ -175,11 +182,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
                 List<CommentPOI> commentPOIs =
                         DAOFactory.getPoiDAOFactory( )
-                                  .getCommentPoiDAO( )
-                                  .getCommentPOIsInside(
-                                          context,
-                                          bounds[ 0 ]
-                                  );
+                                .getCommentPoiDAO( )
+                                .getCommentPOIsInside(
+                                        context,
+                                        bounds[ 0 ]
+                                );
 
                 for ( Path p : paths )
                     results.add( new DrawablePath( p ) );
