@@ -160,6 +160,7 @@ public class MainActivity extends AppCompatActivity
             // TODO handle *real* app users, with a login etc
             currentUserId = 1;
         }
+
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,

@@ -25,6 +25,7 @@ public class RestState implements NFAState,
     RelativeLayout buttonBar;
     FloatingActionButton btnAddPoi;
     FloatingActionButton btnAddPath;
+    FloatingActionButton btnStartRiding;
 
     @Override
     public void onStateEnter( final NFA nfa, MapFragment fragment ) {
@@ -38,7 +39,7 @@ public class RestState implements NFAState,
 
         fragment.sliderLayout.setView( null );
 
-        buttonBar = ( RelativeLayout ) fragment.mainLayout.setView( R.layout.buttons_layout_rs);
+        buttonBar = ( RelativeLayout ) fragment.mainLayout.setView( R.layout.buttons_layout_rs );
 
         btnAddPath = ( FloatingActionButton ) buttonBar.findViewById( R.id.btnAddPath );
         btnAddPath.setOnClickListener( new View.OnClickListener( ) {
@@ -53,6 +54,14 @@ public class RestState implements NFAState,
             @Override
             public void onClick( View v ) {
                 nfa.Transition( new AddPOIState( ) );
+            }
+        } );
+
+        btnStartRiding = ( FloatingActionButton ) buttonBar.findViewById( R.id.btnStartRiding );
+        btnStartRiding.setOnClickListener( new View.OnClickListener( ) {
+            @Override
+            public void onClick( View v ) {
+                nfa.Transition( new NavigationState( ) );
             }
         } );
 

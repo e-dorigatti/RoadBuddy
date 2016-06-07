@@ -27,7 +27,7 @@ public class TripsFragment extends Fragment {
     CancellableAsyncTaskManager taskManager;
     private List<Path> pathList = new ArrayList<>();
     private RecyclerView recyclerView;
-    private PathAdapter pAdapter;
+    //private PathAdapter pAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
     View rootView;
 
