@@ -5,29 +5,32 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
+
 import com.google.android.gms.maps.model.LatLng;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.Path;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 public class TripsFragment extends Fragment {
     ViewPager mPager;
     PagerAdapter mAdapter;
     CancellableAsyncTaskManager taskManager;
-
-    private ArrayAdapter<String> mTripsAdapter;
+    private List<Path> pathList = new ArrayList<>();
+    private RecyclerView recyclerView;
+    private PathAdapter pAdapter;
+    View rootView;
 
     public TripsFragment( ) {
         // Required empty public constructor
@@ -48,39 +51,17 @@ public class TripsFragment extends Fragment {
         this.taskManager = new CancellableAsyncTaskManager( );
 
         // Inflate the layout for this fragment
-        View rootView = inflater.inflate( R.layout.fragment_trips, container, false );
-
-        String[] data = {
-                "Trip1 - 3 hours - 5stars",
-                "Trip2 - 7 hours - 3stars",
-                "Trip3 - 1 hours - 4stars",
-                "Trip4 - 2 hours - 1stars"
-        };
+        inflater.inflate( R.layout.fragment_trips, container, false );
         LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
+        rootView = inflater.inflate(R.layout.fragment_trips, container, false);
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
 
-        List<String> tripList = new ArrayList<String>(
-                Arrays.asList( data ) );
+        //fake data
+        for(int i=0; i<3; i++){
+            Path path = new Path(i,i*3,i*4,i*5);
+            pathList.add(path);
+        }
 
-        mTripsAdapter = new ArrayAdapter<String>(
-                //current context
-                getActivity( ),
-                //ID of list of item layout
-                R.layout.list_item_trips,
-                //ID of the textview to populate
-                R.id.list_item_trips_textview,
-                //forecast data
-                tripList );
-        ListView listView = ( ListView ) rootView.findViewById( R.id.list_view_trips );
-        listView.setAdapter( mTripsAdapter );
-        listView.setOnItemClickListener( new AdapterView.OnItemClickListener( ) {
-            @Override
-            public void onItemClick( AdapterView<?> adapter, View view, int position, long id ) {
-                String v = ( String ) adapter.getAdapter( ).getItem( position );
-                mAdapter.setView( v );
-                mPager.setCurrentItem( 0 );
-            }
-        } );
         return rootView;
     }
 
@@ -106,6 +87,8 @@ public class TripsFragment extends Fragment {
     public void onDetach( ) {
         super.onDetach( );
     }
+
+
 
 
     class getTrips extends CancellableAsyncTask<LatLng, Integer, List<Path>> {
@@ -140,6 +123,16 @@ public class TripsFragment extends Fragment {
                 for ( Path p : res )
                     Log.v( "res", Long.toString( p.getId( ) ) );
             }
+            recyclerView = (RecyclerView) rootView.findViewById(R.id.recycler_view);
+
+            pAdapter = new PathAdapter(pathList);
+
+            RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getContext());
+            recyclerView.setLayoutManager(mLayoutManager);
+            recyclerView.setItemAnimator(new DefaultItemAnimator());
+            recyclerView.setAdapter(pAdapter);
+
+
             super.onPostExecute( res );
         }
     }
