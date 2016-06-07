@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -40,7 +41,6 @@ import java.util.Map;
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public static final int LOCATION_NPERMISSION_REQUEST_CODE = 123;
-    public static boolean hasLocationAccess = false;
 
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
@@ -131,6 +131,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
         else {
             // TODO call requestPermissions(...) or show a decent alert
+            ActivityCompat.requestPermissions(getActivity(),
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_NPERMISSION_REQUEST_CODE);
         }
     }
 
@@ -140,8 +143,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         Animation animRotate = AnimationUtils.loadAnimation( getContext( ), R.anim.rotate );
         floatingActionMenu = ( FloatingActionMenu ) getView( ).findViewById( R.id.fab );
         if ( floatingActionMenu != null && floatingActionMenu.getAnimation( ) == null )
-        if ( floatingActionMenu != null )
-            floatingActionMenu.getMenuIconView( ).startAnimation( animRotate );
+            if ( floatingActionMenu != null )
+                floatingActionMenu.getMenuIconView( ).startAnimation( animRotate );
 
         // run async task
         LatLngBounds bounds = googleMap.getProjection( ).getVisibleRegion( ).latLngBounds;

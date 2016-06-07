@@ -12,7 +12,6 @@ public class Path {
     protected List<List<LatLng>> legs = new ArrayList<>( );
     protected long owner;
     private long id;
-    private String region;
 
     private long duration;
     private long distance;
