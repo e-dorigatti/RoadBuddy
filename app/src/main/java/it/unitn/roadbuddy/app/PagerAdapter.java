@@ -50,4 +50,8 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
         }
     }
 
+    public Fragment getCurrentMP() {
+        return currentMP;
+    }
+
 }

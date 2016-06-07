@@ -9,6 +9,7 @@ import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
@@ -40,8 +41,7 @@ import java.util.Map;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
-    public static final int LOCATION_NPERMISSION_REQUEST_CODE = 123;
-
+    MainActivity mPActivity;
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
     ViewContainer sliderLayout;
@@ -63,11 +63,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
-
+        this.mPActivity = (MainActivity)getActivity();
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
         long user_id = pref.getLong( SettingsFragment.KEY_PREF_USER_ID, -1 );
 
         taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
+
     }
 
     @Override
@@ -121,20 +122,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onMapReady( GoogleMap map ) {
         googleMap = map;
         nfa = new NFA( this, new RestState( ) );
-
-        if ( ContextCompat.checkSelfPermission(
-                getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED ) {
-
+        if (mPActivity.isHasLocationPermission()){
             googleMap.setMyLocationEnabled( true );
-            googleMap.getUiSettings( ).setMyLocationButtonEnabled( true );
         }
-        else {
-            // TODO call requestPermissions(...) or show a decent alert
-            ActivityCompat.requestPermissions(getActivity(),
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    LOCATION_NPERMISSION_REQUEST_CODE);
-        }
+        googleMap.getUiSettings( ).setMyLocationButtonEnabled( true );
+
     }
 
     public void RefreshMapContent( ) {

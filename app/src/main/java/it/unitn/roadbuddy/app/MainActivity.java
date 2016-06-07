@@ -2,6 +2,7 @@ package it.unitn.roadbuddy.app;
 
 import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -11,8 +12,11 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -37,6 +41,9 @@ import java.sql.SQLException;
 public class MainActivity extends AppCompatActivity
         implements GoogleApiClient.ConnectionCallbacks,
         LocationListener {
+
+    public static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
+    boolean hasLocationPermission = false;
 
     ViewPager mPager;
     PagerAdapter mAdapter;
@@ -65,6 +72,7 @@ public class MainActivity extends AppCompatActivity
         mPager = (ViewPager) findViewById(R.id.pager);
         mAdapter = new PagerAdapter(getSupportFragmentManager());
         mPager.setAdapter(mAdapter);
+
 
         mapButton = (ImageButton) findViewById(R.id.button_map);
         viaggiButton = (ImageButton) findViewById(R.id.button_viaggi);
@@ -137,7 +145,6 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     protected void onStart() {
-
         // FIXME [ed] find a better place
         taskManager.startRunningTask(new AsyncInitializeDB(), true);
 
@@ -148,20 +155,57 @@ public class MainActivity extends AppCompatActivity
 
             Toast.makeText(this,
                     String.format("You are currently running as user %s (id: %d)",
-                            userName, currentUserId),
-                    Toast.LENGTH_SHORT).show();
+                            userName, currentUserId), Toast.LENGTH_SHORT).show();
         } else {
             // TODO handle *real* app users, with a login etc
             currentUserId = 1;
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+                // Show an expanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                showMessageOKCancel("You need to allow access to Contacts",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                ActivityCompat.requestPermissions(MainActivity.this,
+                                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                        LOCATION_PERMISSION_REQUEST_CODE);
+                            }
+                        });
+            } else {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        LOCATION_PERMISSION_REQUEST_CODE);
+            }
+
+        } else {
+            hasLocationPermission = true;
+        }
+
+        if (hasLocationPermission) {
+            googleApiClient.connect();
+            if (mAdapter.getCurrentMP() != null)
+            {
+                mAdapter.getCurrentMP().onStart();
+            }
         }
 
         backgroundThread = new HandlerThread("background worker");
         backgroundThread.start();
         backgroundTasksHandler = new Handler(backgroundThread.getLooper());
-
-        googleApiClient.connect();
-
         super.onStart();
+    }
+    private void showMessageOKCancel(String message, DialogInterface.OnClickListener okListener) {
+        new AlertDialog.Builder(MainActivity.this)
+                .setMessage(message)
+                .setPositiveButton("OK", okListener)
+                .setNegativeButton("Cancel", null)
+                .create()
+                .show();
     }
 
     @Override
@@ -171,16 +215,49 @@ public class MainActivity extends AppCompatActivity
         } catch (SQLException exc) {
             Log.e(getClass().getName(), "on destroy", exc);
         }
+        if (hasLocationPermission && googleApiClient.isConnected()) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(
+                    googleApiClient, this
+            );
 
-        LocationServices.FusedLocationApi.removeLocationUpdates(
-                googleApiClient, this
-        );
+            googleApiClient.disconnect();
+        }
 
-        googleApiClient.disconnect();
         backgroundThread.quit();
 
         super.onStop();
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case LOCATION_PERMISSION_REQUEST_CODE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                    hasLocationPermission = true;
+                    mAdapter = new PagerAdapter(getSupportFragmentManager());
+                    mPager.setAdapter(mAdapter);
+
+                } else {
+                    hasLocationPermission = false;
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                break;
+            }
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+                // other 'case' lines to check for other
+                // permissions this app might request
+        }
+
+    }
+
 
     @Override
     public void onConnected(Bundle connectionHint) {
@@ -192,39 +269,29 @@ public class MainActivity extends AppCompatActivity
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setInterval(5 * 60 * 1000)
                 .setFastestInterval(15 * 1000);
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        LocationServices.FusedLocationApi.requestLocationUpdates(
-                googleApiClient, requestType,
-                this,
-                backgroundThread.getLooper()
-        );
-    }
-
-    @Override
-    public void onConnectionSuspended( int n ) {
-
-    }
-
-    @Override
-    public void onLocationChanged( Location location ) {
-        try {
-            DAOFactory.getUserDAO( ).setCurrentLocation(
-                    currentUserId, new LatLng( location.getLatitude( ),
-                            location.getLongitude( ) )
+        if (hasLocationPermission) {
+            LocationServices.FusedLocationApi.requestLocationUpdates(
+                    googleApiClient, requestType,
+                    this,
+                    backgroundThread.getLooper()
             );
         }
-        catch ( BackendException exc ) {
-            Log.e( getClass( ).getName( ), "while updating user position", exc );
+    }
+
+    @Override
+    public void onConnectionSuspended(int n) {
+
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        try {
+            DAOFactory.getUserDAO().setCurrentLocation(
+                    currentUserId, new LatLng(location.getLatitude(),
+                            location.getLongitude())
+            );
+        } catch (BackendException exc) {
+            Log.e(getClass().getName(), "while updating user position", exc);
         }
     }
 
@@ -232,30 +299,29 @@ public class MainActivity extends AppCompatActivity
 
         ProgressDialog waitDialog;
 
-        public AsyncInitializeDB( ) {
-            super( taskManager );
+        public AsyncInitializeDB() {
+            super(taskManager);
         }
 
         @Override
-        protected void onPreExecute( ) {
-            waitDialog = new ProgressDialog( MainActivity.this );
-            waitDialog.setProgressStyle( ProgressDialog.STYLE_SPINNER );
-            waitDialog.setMessage( getString( R.string.app_initial_loading ) );
-            waitDialog.setIndeterminate( true );
-            waitDialog.setCanceledOnTouchOutside( false );
-            waitDialog.show( );
+        protected void onPreExecute() {
+            waitDialog = new ProgressDialog(MainActivity.this);
+            waitDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            waitDialog.setMessage(getString(R.string.app_initial_loading));
+            waitDialog.setIndeterminate(true);
+            waitDialog.setCanceledOnTouchOutside(false);
+            waitDialog.show();
         }
 
         @Override
-        protected Boolean doInBackground( Void... args ) {
-            if ( !PostgresUtils.Init( ) )
+        protected Boolean doInBackground(Void... args) {
+            if (!PostgresUtils.Init())
                 return false;
 
             try {
-                PostgresUtils.InitSchemas( );
-            }
-            catch ( BackendException exc ) {
-                Log.e( getClass( ).getName( ), "while initializing database", exc );
+                PostgresUtils.InitSchemas();
+            } catch (BackendException exc) {
+                Log.e(getClass().getName(), "while initializing database", exc);
                 return false;
             }
 
@@ -263,13 +329,16 @@ public class MainActivity extends AppCompatActivity
         }
 
         @Override
-        protected void onPostExecute( Boolean ok ) {
-            if ( ok ) {
-                waitDialog.hide( );
-            }
-            else {
-                finish( );
+        protected void onPostExecute(Boolean ok) {
+            if (ok) {
+                waitDialog.hide();
+            } else {
+                finish();
             }
         }
+    }
+
+    public boolean isHasLocationPermission() {
+        return hasLocationPermission;
     }
 }
