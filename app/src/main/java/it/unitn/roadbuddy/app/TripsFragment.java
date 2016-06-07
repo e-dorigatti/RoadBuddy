@@ -5,8 +5,6 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -30,6 +28,7 @@ public class TripsFragment extends Fragment {
     private List<Path> pathList = new ArrayList<>();
     private RecyclerView recyclerView;
     private PathAdapter pAdapter;
+    private RecyclerView.LayoutManager mLayoutManager;
     View rootView;
 
     public TripsFragment( ) {
@@ -39,6 +38,7 @@ public class TripsFragment extends Fragment {
 
     @Override
     public void onCreate( Bundle savedInstanceState ) {
+
         super.onCreate( savedInstanceState );
     }
 
@@ -53,6 +53,7 @@ public class TripsFragment extends Fragment {
         // Inflate the layout for this fragment
         inflater.inflate( R.layout.fragment_trips, container, false );
         LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
+
         rootView = inflater.inflate(R.layout.fragment_trips, container, false);
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
 
@@ -125,12 +126,12 @@ public class TripsFragment extends Fragment {
             }
             recyclerView = (RecyclerView) rootView.findViewById(R.id.recycler_view);
 
-            pAdapter = new PathAdapter(pathList);
+            /*pAdapter = new PathAdapter(pathList);
 
-            RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getContext());
+            mLayoutManager = new LinearLayoutManager(getContext());
             recyclerView.setLayoutManager(mLayoutManager);
             recyclerView.setItemAnimator(new DefaultItemAnimator());
-            recyclerView.setAdapter(pAdapter);
+            recyclerView.setAdapter(pAdapter);*/
 
 
             super.onPostExecute( res );
