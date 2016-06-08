@@ -22,11 +22,19 @@
             fab:menu_colorRipple="#D99200">
 
         <com.github.clans.fab.FloatingActionButton
+                android:id="@+id/btnStartRiding"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@mipmap/ic_flight_takeoff_white_24dp"
+                fab:fab_label="@string/rest_start_riding"
+                style="@style/RestMenuButtonsStyle"/>
+
+        <com.github.clans.fab.FloatingActionButton
             android:id="@+id/btnAddPoi"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@mipmap/ic_add_location_white_24dp"
-            fab:fab_label="Add point"
+            fab:fab_label="@string/rest_add_point"
             style="@style/RestMenuButtonsStyle"/>
 
         <com.github.clans.fab.FloatingActionButton
@@ -34,7 +42,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@mipmap/ic_map_white_24dp"
-            fab:fab_label="Add path"
+            fab:fab_label="@string/rest_add_path"
             style="@style/RestMenuButtonsStyle"/>
 
     </com.github.clans.fab.FloatingActionMenu>

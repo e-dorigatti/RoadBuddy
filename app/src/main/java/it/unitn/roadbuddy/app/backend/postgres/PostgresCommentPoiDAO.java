@@ -114,10 +114,9 @@ public class PostgresCommentPoiDAO extends PostgresDAOBase implements CommentPoi
         return String.format(
                 "CREATE TABLE %s(%s SERIAL PRIMARY KEY, " +
                         "%s GEOMETRY(POINT), %s TEXT, " +
-                        "%s INTEGER REFERENCES %s(%s) NOT NULL)",
+                        "%s INTEGER NOT NULL)",
                 getSchemaName( ), COLUMN_NAME_ID, COLUMN_NAME_LOCATION,
-                COLUMN_NAME_TEXT, COLUMN_NAME_OWNER, PostgresUserDAO.TABLE_NAME,
-                PostgresUserDAO.COLUMN_NAME_ID
+                COLUMN_NAME_TEXT, COLUMN_NAME_OWNER
         );
     }
 }

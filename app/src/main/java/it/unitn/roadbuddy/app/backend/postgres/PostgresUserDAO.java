@@ -14,10 +14,8 @@ import org.postgis.Point;
 import org.postgis.Polygon;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
+import java.util.Date;
 
 public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
 
@@ -26,6 +24,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
             COLUMN_NAME_USERNAME = "username",
             COLUMN_NAME_LAST_POSITION = "lastPosition",
             COLUMN_NAME_LAST_POSITION_UPDATED = "lastPositionUpdated",
+            COLUMN_NAME_TRIP = "trip",
             TABLE_NAME = "Users";
 
     private static PostgresUserDAO instance;
@@ -40,6 +39,37 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
         return instance;
     }
 
+    static LatLng readPosition( ResultSet res, String tableAlias ) throws SQLException {
+        if ( tableAlias != null && !tableAlias.isEmpty( ) )
+            tableAlias = tableAlias + ".";
+        else tableAlias = "";
+
+        PGgeometry geom = ( PGgeometry ) res.getObject(
+                tableAlias + COLUMN_NAME_LAST_POSITION
+        );
+
+        if ( geom != null ) {
+            Point point = ( Point ) geom.getGeometry( );
+            return new LatLng( point.getX( ), point.getY( ) );
+        }
+        else return null;
+    }
+
+    static Date readDate( ResultSet res, String tableAlias ) throws SQLException {
+        if ( tableAlias != null && !tableAlias.isEmpty( ) )
+            tableAlias = tableAlias + ".";
+        else tableAlias = "";
+
+        Timestamp ts = res.getTimestamp(
+                tableAlias + COLUMN_NAME_LAST_POSITION_UPDATED,
+                Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) )
+        );
+
+        if ( ts != null )
+            return new Date( ts.getTime( ) );
+        else return null;
+    }
+
     @Override
     public User createUser( User newUserData ) throws BackendException {
         if ( !BuildConfig.DEBUG )
@@ -48,10 +78,11 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmtInsertUser = conn.prepareStatement(
                     String.format(
-                            "INSERT INTO %s(%s, %s, %s) VALUES (?, ?, ?) RETURNING %s",
+                            "INSERT INTO %s(%s, %s, %s, %s) VALUES (?, ?, ?, ?) RETURNING %s",
                             getSchemaName( ), COLUMN_NAME_USERNAME,
                             COLUMN_NAME_LAST_POSITION,
                             COLUMN_NAME_LAST_POSITION_UPDATED,
+                            COLUMN_NAME_TRIP,
                             COLUMN_NAME_ID
                     )
 
@@ -72,13 +103,16 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
             }
             else stmtInsertUser.setObject( 3, null );
 
+            stmtInsertUser.setObject( 4, newUserData.getTrip( ) );
+
             ResultSet res = stmtInsertUser.executeQuery( );
             Utils.Assert( res.next( ), true );
 
             long newUserID = res.getLong( COLUMN_NAME_ID );
             return new User( newUserID, newUserData.getUserName( ),
                              newUserData.getLastPosition( ),
-                             newUserData.getLastPositionUpdated( ) );
+                             newUserData.getLastPositionUpdated( ),
+                             newUserData.getTrip( ) );
         }
         catch ( SQLException exc ) {
             throw new BackendException( exc.getMessage( ), exc );
@@ -90,16 +124,18 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmt = conn.prepareStatement(
                     String.format(
-                            "SELECT %s, %s, %s FROM %s WHERE %s = ?",
+                            "SELECT %s, %s, %s, %s FROM %s WHERE %s = ?",
                             COLUMN_NAME_USERNAME, COLUMN_NAME_LAST_POSITION,
-                            COLUMN_NAME_LAST_POSITION_UPDATED, getSchemaName( ), COLUMN_NAME_ID
+                            COLUMN_NAME_LAST_POSITION_UPDATED, COLUMN_NAME_TRIP,
+                            getSchemaName( ), COLUMN_NAME_ID
                     )
             );
             stmt.setLong( 1, id );
             ResultSet res = stmt.executeQuery( );
             if ( res.next( ) ) {
                 return new User( id, res.getString( COLUMN_NAME_USERNAME ),
-                                 readPosition( res ), readDate( res ) );
+                                 readPosition( res, "" ), readDate( res, "" ),
+                                 ( Long ) res.getObject( COLUMN_NAME_TRIP ) );
             }
             else return null;
         }
@@ -159,7 +195,8 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
             while ( res.next( ) ) {
                 User u = new User( res.getLong( COLUMN_NAME_ID ),
                                    res.getString( COLUMN_NAME_USERNAME ),
-                                   readPosition( res ), readDate( res ) );
+                                   readPosition( res, "" ), readDate( res, "" ),
+                                   ( Long ) res.getObject( COLUMN_NAME_TRIP ) );
                 users.add( u );
             }
 
@@ -171,29 +208,9 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
         }
     }
 
-    LatLng readPosition( ResultSet res ) throws SQLException {
-        PGgeometry geom = ( PGgeometry ) res.getObject( COLUMN_NAME_LAST_POSITION );
-        if ( geom != null ) {
-            Point point = ( Point ) geom.getGeometry( );
-            return new LatLng( point.getX( ), point.getY( ) );
-        }
-        else return null;
-    }
-
-    Date readDate( ResultSet res ) throws SQLException {
-        Timestamp ts = res.getTimestamp(
-                COLUMN_NAME_LAST_POSITION_UPDATED,
-                Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) )
-        );
-
-        if ( ts != null )
-            return new Date( ts.getTime( ) );
-        else return null;
-    }
-
     @Override
     protected int getSchemaVersion( ) {
-        return 2;  // TODO [ed] increment at every schema change
+        return 3;  // TODO [ed] increment at every schema change
     }
 
     @Override
@@ -207,9 +224,11 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
                 "CREATE TABLE %s(%s SERIAL PRIMARY KEY, " +
                         "%s VARCHAR(100), " +
                         "%s GEOMETRY(POINT), " +
-                        "%s TIMESTAMPTZ)",
+                        "%s TIMESTAMPTZ, " +
+                        "%s INTEGER)",
                 getSchemaName( ), COLUMN_NAME_ID, COLUMN_NAME_USERNAME,
-                COLUMN_NAME_LAST_POSITION, COLUMN_NAME_LAST_POSITION_UPDATED
+                COLUMN_NAME_LAST_POSITION, COLUMN_NAME_LAST_POSITION_UPDATED,
+                COLUMN_NAME_TRIP
         );
     }
 }

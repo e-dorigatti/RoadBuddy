@@ -36,6 +36,15 @@
     <string name="tab_viaggi">Viaggi</string>
     <string name="tab_impostazioni">Impostazioni</string>
 
+    <string name="rest_add_path">Add path</string>
+    <string name="rest_add_point">Add point</string>
+    <string name="rest_start_riding">Start riding!</string>
+    <string name="navigation_path_tip">You can select a path for navigation</string>
+    <string name="navigation_path_tip_yes">Cool, let me do it</string>
+    <string name="navigation_path_tip_no">No thanks, I don\'t need it</string>
+    <string name="navigation_trip_creation_error">There was an error while creating a new trip</string>
+    <string name="navigation_path_tip_select">Please select a path</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_trips_detail">TripsDetailActivity</string>

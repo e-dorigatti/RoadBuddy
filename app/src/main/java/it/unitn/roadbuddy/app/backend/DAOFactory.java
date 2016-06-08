@@ -2,13 +2,12 @@ package it.unitn.roadbuddy.app.backend;
 
 import it.unitn.roadbuddy.app.backend.postgres.PostgresPathDAO;
 import it.unitn.roadbuddy.app.backend.postgres.PostgresPoiDAOFactory;
+import it.unitn.roadbuddy.app.backend.postgres.PostgresTripDAO;
 import it.unitn.roadbuddy.app.backend.postgres.PostgresUserDAO;
 
 import java.sql.SQLException;
 
 public class DAOFactory {
-    private static final DAOSource source = DAOSource.POSTGRESQL;
-    private static boolean initialized = false;
 
     public static PoiDAOFactory getPoiDAOFactory( ) {
         return PostgresPoiDAOFactory.getInstance( );
@@ -32,7 +31,13 @@ public class DAOFactory {
         }
     }
 
-    public enum DAOSource {
-        POSTGRESQL
+    public static TripDAO getTripDAO( ) throws BackendException {
+        try {
+            return PostgresTripDAO.getInstance( );
+        }
+        catch ( SQLException exc ) {
+            throw new BackendException( exc.getMessage( ), exc );
+        }
     }
+
 }

@@ -10,12 +10,16 @@ public class User {
     private String userName;
     private LatLng lastPosition;
     private Date lastPositionUpdated;
+    private Long trip;
 
-    public User( long id, String userName, LatLng lastPosition, Date lastPositionUpdated ) {
+    public User( long id, String userName, LatLng lastPosition,
+                 Date lastPositionUpdated, Long trip ) {
+
         this.id = id;
         this.userName = userName;
         this.lastPosition = lastPosition;
         this.lastPositionUpdated = lastPositionUpdated;
+        this.trip = trip;
     }
 
     public long getId( ) {
@@ -32,5 +36,9 @@ public class User {
 
     public Date getLastPositionUpdated( ) {
         return lastPositionUpdated;
+    }
+
+    public Long getTrip( ) {
+        return trip;
     }
 }
