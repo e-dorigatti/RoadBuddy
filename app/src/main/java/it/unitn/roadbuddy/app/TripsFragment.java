@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -126,12 +128,12 @@ public class TripsFragment extends Fragment {
             }
             recyclerView = (RecyclerView) rootView.findViewById(R.id.recycler_view);
 
-            /*pAdapter = new PathAdapter(pathList);
+            pAdapter = new PathAdapter(pathList);
 
             mLayoutManager = new LinearLayoutManager(getContext());
             recyclerView.setLayoutManager(mLayoutManager);
             recyclerView.setItemAnimator(new DefaultItemAnimator());
-            recyclerView.setAdapter(pAdapter);*/
+            recyclerView.setAdapter(pAdapter);
 
 
             super.onPostExecute( res );
