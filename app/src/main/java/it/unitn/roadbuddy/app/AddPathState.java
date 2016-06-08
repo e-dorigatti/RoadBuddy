@@ -2,6 +2,8 @@ package it.unitn.roadbuddy.app;
 
 
 import android.graphics.Color;
+import android.support.v4.app.Fragment;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -362,6 +364,7 @@ public class AddPathState implements NFAState,
             if ( success ) {
                 fragment.showToast( R.string.new_path_saved );
                 nfa.Transition( new RestState( ) );
+
             }
             else {
                 if ( errorMessage != null ) {
