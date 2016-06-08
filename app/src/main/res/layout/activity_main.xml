@@ -29,8 +29,7 @@
                     android:layout_height="wrap_content"
                     android:background="?attr/colorPrimary"
                     android:src="@mipmap/ic_map_white_24dp"
-                    android:padding="8dp"
-                    android:focusable="false" />
+                    android:padding="8dp" />
                 <ImageButton
                     android:id="@+id/button_viaggi"
                     android:layout_width="wrap_content"
