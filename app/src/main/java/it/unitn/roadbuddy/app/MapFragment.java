@@ -118,13 +118,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady( GoogleMap map ) {
+
         googleMap = map;
         nfa = new NFA( this, new RestState( ) );
         if (mPActivity.isHasLocationPermission()){
             googleMap.setMyLocationEnabled( true );
+            googleMap.getUiSettings( ).setMyLocationButtonEnabled( true );
         }
-        googleMap.getUiSettings( ).setMyLocationButtonEnabled( true );
-
     }
 
     public void RefreshMapContent( ) {

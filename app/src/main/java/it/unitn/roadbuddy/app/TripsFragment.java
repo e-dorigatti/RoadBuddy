@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
-import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -24,13 +23,16 @@ import it.unitn.roadbuddy.app.backend.models.Path;
 
 
 public class TripsFragment extends Fragment {
+
+    private RecyclerView mRecyclerView;
+    private RecyclerView.Adapter mAdapter;
+    private RecyclerView.LayoutManager mLayoutManager;
+
     ViewPager mPager;
-    PagerAdapter mAdapter;
+    PagerAdapter mPagerAdapter;
     CancellableAsyncTaskManager taskManager;
     private List<Path> pathList = new ArrayList<>();
-    private RecyclerView recyclerView;
-    //private PathAdapter pAdapter;
-    private RecyclerView.LayoutManager mLayoutManager;
+
     View rootView;
 
     public TripsFragment( ) {
@@ -48,15 +50,21 @@ public class TripsFragment extends Fragment {
     public View onCreateView( LayoutInflater inflater, ViewGroup container,
                               Bundle savedInstanceState ) {
         // Inflate the layout for this fragment
+        rootView = inflater.inflate(R.layout.fragment_trips, container, false);
         this.mPager = ( ViewPager ) getActivity( ).findViewById( R.id.pager );
-        this.mAdapter = ( PagerAdapter ) mPager.getAdapter( );
+        this.mPagerAdapter = ( PagerAdapter ) mPager.getAdapter( );
+
+        mRecyclerView = (RecyclerView) rootView.findViewById(R.id.recycler_view);
+        // use a linear layout manager
+        mLayoutManager = new LinearLayoutManager(getContext());
+        mRecyclerView.setLayoutManager(mLayoutManager);
+
         this.taskManager = new CancellableAsyncTaskManager( );
 
         // Inflate the layout for this fragment
         inflater.inflate( R.layout.fragment_trips, container, false );
         LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
 
-        rootView = inflater.inflate(R.layout.fragment_trips, container, false);
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
 
         //fake data
@@ -66,6 +74,11 @@ public class TripsFragment extends Fragment {
         }
 
         return rootView;
+    }
+
+    public void updateList(){
+        LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
     }
 
     @Override
@@ -90,9 +103,6 @@ public class TripsFragment extends Fragment {
     public void onDetach( ) {
         super.onDetach( );
     }
-
-
-
 
     class getTrips extends CancellableAsyncTask<LatLng, Integer, List<Path>> {
 
@@ -122,18 +132,11 @@ public class TripsFragment extends Fragment {
 
         @Override
         protected void onPostExecute( List<Path> res ) {
-            if ( res != null ) {
-                for ( Path p : res )
-                    Log.v( "res", Long.toString( p.getId( ) ) );
-            }
-            recyclerView = (RecyclerView) rootView.findViewById(R.id.recycler_view);
 
-            pAdapter = new PathAdapter(pathList);
+            Log.v( "res", Long.toString( res.size() ));
 
-            mLayoutManager = new LinearLayoutManager(getContext());
-            recyclerView.setLayoutManager(mLayoutManager);
-            recyclerView.setItemAnimator(new DefaultItemAnimator());
-            recyclerView.setAdapter(pAdapter);
+            mAdapter = new TripsAdapter(res);
+            mRecyclerView.setAdapter(mAdapter);
 
 
             super.onPostExecute( res );

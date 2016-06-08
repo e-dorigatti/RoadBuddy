@@ -3,16 +3,13 @@ package it.unitn.roadbuddy.app;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
-import android.text.LoginFilter;
-import android.util.Log;
-import android.view.View;
-import android.widget.TextView;
 
 
 public class PagerAdapter extends FragmentStatePagerAdapter {
     int mNumOfTabs = 3;
     String view;
-    Fragment currentMP;
+    Fragment currentMF;
+    Fragment currentTF;
 
     public PagerAdapter( FragmentManager fm) {
         super(fm);
@@ -23,9 +20,9 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
 
         switch ( position ) {
             case 0:
-                return  currentMP = new MapFragment();
+                return  currentMF = new MapFragment();
             case 1:
-                return new TripsFragment( );
+                return  currentTF = new TripsFragment( );
             case 2:
                 return new SettingsFragment( );
             default:
@@ -46,12 +43,16 @@ public class PagerAdapter extends FragmentStatePagerAdapter {
         if(view != null){
             String tempView = this.view;
             this.view = null;
-            ((MapFragment) currentMP).sliderLayout.setView(R.layout.button_layout_ap);
+            ((MapFragment) currentMF).sliderLayout.setView(R.layout.button_layout_ap);
         }
     }
 
-    public Fragment getCurrentMP() {
-        return currentMP;
+    public Fragment getCurrentMF() {
+        return currentMF;
+    }
+
+    public Fragment getCurrentTF() {
+        return currentTF;
     }
 
 }

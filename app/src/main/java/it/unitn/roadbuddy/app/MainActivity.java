@@ -189,9 +189,9 @@ public class MainActivity extends AppCompatActivity
 
         if (hasLocationPermission) {
             googleApiClient.connect();
-            if (mAdapter.getCurrentMP() != null)
+            if (mAdapter.getCurrentMF() != null)
             {
-                mAdapter.getCurrentMP().onStart();
+                mAdapter.getCurrentMF().onStart();
             }
         }
 

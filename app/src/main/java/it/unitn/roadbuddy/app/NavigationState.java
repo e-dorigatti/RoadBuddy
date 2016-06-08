@@ -4,6 +4,8 @@ package it.unitn.roadbuddy.app;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.google.android.gms.maps.GoogleMap;
@@ -22,6 +24,8 @@ public class NavigationState implements NFAState {
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
     MapFragment fragment;
     NFA nfa;
+
+    Button addBuddy;
 
     @Override
     public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
@@ -62,12 +66,17 @@ public class NavigationState implements NFAState {
         this.nfa = nfa;
         this.googleMap = fragment.googleMap;
         this.googleMap.clear( );
+
+        this.fragment.sliderLayout.setView(R.layout.navigation_layout);
+        this.addBuddy = (Button) fragment.getView().findViewById(R.id.addBuddy);
+
     }
 
     @Override
     public void onStateExit( NFA nfa, MapFragment fragment ) {
 
     }
+
 
     class CreateTripAsync extends CancellableAsyncTask<Void, Void, Trip> {
 
