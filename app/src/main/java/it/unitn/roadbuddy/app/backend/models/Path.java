@@ -16,12 +16,37 @@ public class Path {
     private long duration;
     private long distance;
 
-    public Path( long id, long owner, long distance, long duration ) {
+    private String description;
+
+    public Path( long id, long owner, long distance, long duration, String description ) {
         this.id = id;
         this.owner = owner;
 
+        setDescription( description );
         setDistance( distance );
         setDuration( duration );
+    }
+
+    public static String formatDistance( long distance ) {
+        if ( distance <= 0 )
+            return "-";
+        if ( distance < 1000 )
+            return String.format( "%d m", distance );
+        else return String.format( "%s km", new DecimalFormat( "#.#" ).format( distance / 1000f ) );
+    }
+
+    public static String formatDuration( long duration ) {
+        long totalSeconds = duration % 60;
+        long totalMinutes = duration / 60;
+        long totalHours = totalMinutes / 60;
+
+        if ( duration <= 0 )
+            return "-";
+        else if ( totalHours > 0 )
+            return String.format( "%d h %d mim", totalHours, totalMinutes % 60 );
+        else if ( totalMinutes > 0 )
+            return String.format( "%d min", totalMinutes );
+        else return String.format( "%d sec", totalSeconds );
     }
 
     public long getId( ) {
@@ -62,26 +87,12 @@ public class Path {
         this.distance = distance;
     }
 
-    public static String formatDistance( long distance ) {
-        if ( distance <= 0 )
-            return "-";
-        if ( distance < 1000 )
-            return String.format( "%d m", distance );
-        else return String.format( "%s km", new DecimalFormat( "#.#" ).format( distance / 1000f ) );
+    public String getDescription( ) {
+        return description;
     }
 
-    public static String formatDuration( long duration ) {
-        long totalSeconds = duration % 60;
-        long totalMinutes = duration / 60;
-        long totalHours = totalMinutes / 60;
-
-        if ( duration <= 0 )
-            return "-";
-        else if ( totalHours > 0 )
-            return String.format( "%d h %d mim", totalHours, totalMinutes % 60 );
-        else if ( totalMinutes > 0 )
-            return String.format( "%d min", totalMinutes );
-        else return String.format( "%d sec", totalSeconds );
+    public void setDescription( String description ) {
+        this.description = description;
     }
 }
 

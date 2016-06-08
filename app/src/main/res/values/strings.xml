@@ -29,6 +29,8 @@
 
     <string name="path_edit_total_distance">Total Distance: %s</string>
     <string name="path_edit_total_duration">Expected Duration: %s</string>
+    <string name="path_edit_geocoding_error">Cannot get selected location name</string>
+    <string name="path_edit_geocoding_pending">Loading...</string>
 
     <string name="location_access_denied">You won\'t be able to see your location on the map</string>
 

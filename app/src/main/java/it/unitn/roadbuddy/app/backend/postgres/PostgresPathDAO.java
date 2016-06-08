@@ -24,6 +24,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
             COLUMN_NAME_OWNER = "owner",
             COLUMN_NAME_DISTANCE = "distance",
             COLUMN_NAME_DURATION = "duration",
+            COLUMN_NAME_DESCRIPTION = "description",
             TABLE_NAME = "Paths";
 
     private static PostgresPathDAO instance;
@@ -80,9 +81,10 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmt = conn.prepareStatement(
                     String.format(
-                            "INSERT INTO %s(%s, %s, %s, %s) VALUES (?, ?, ?, ?)",
+                            "INSERT INTO %s(%s, %s, %s, %s, %s) VALUES (?, ?, ?, ?, ?)",
                             getSchemaName( ), COLUMN_NAME_PATH, COLUMN_NAME_OWNER,
-                            COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION
+                            COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION,
+                            COLUMN_NAME_DESCRIPTION
                     )
             );
 
@@ -91,6 +93,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
             stmt.setLong( 2, path.getOwner( ) );
             stmt.setLong( 3, path.getDistance( ) );
             stmt.setLong( 4, path.getDuration( ) );
+            stmt.setString( 5, path.getDescription( ) );
 
             stmt.execute( );
         }
@@ -105,9 +108,9 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmt = conn.prepareStatement(
                     String.format(
-                            "SELECT %1$s, %2$s, %4$s, %5$s, %6$s FROM %3$s WHERE ST_Intersects(?, %2$s)",
+                            "SELECT %1$s, %2$s, %4$s, %5$s, %6$s, %7$s FROM %3$s WHERE ST_Intersects(?, %2$s)",
                             COLUMN_NAME_ID, COLUMN_NAME_PATH, getSchemaName( ), COLUMN_NAME_OWNER,
-                            COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION
+                            COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION, COLUMN_NAME_DESCRIPTION
                     )
             );
 
@@ -122,11 +125,12 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
                 long owner = res.getLong( COLUMN_NAME_OWNER );
                 long distance = res.getLong( COLUMN_NAME_DISTANCE );
                 long duration = res.getLong( COLUMN_NAME_DURATION );
+                String description = res.getString( COLUMN_NAME_DESCRIPTION );
 
                 PGgeometry geom = ( PGgeometry ) res.getObject( COLUMN_NAME_PATH );
                 MultiLineString mls = ( MultiLineString ) geom.getGeometry( );
 
-                Path path = new Path( id, owner, distance, duration );
+                Path path = new Path( id, owner, distance, duration, description );
                 appendMultiLineStringToPath( path, mls );
                 paths.add( path );
             }
@@ -140,18 +144,18 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
     }
 
     @Override
-    public List<Path> getPathsFromPosition(Context c, LatLng pos) throws BackendException {
+    public List<Path> getPathsFromPosition( Context c, LatLng pos ) throws BackendException {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmt = conn.prepareStatement(
                     String.format(
-                            "SELECT %1$s, %2$s, %4$s, %5$s, %6$s FROM %3$s WHERE ST_DWithin(%2$s, ?, ?)",
+                            "SELECT %1$s, %2$s, %4$s, %5$s, %6$s, %7$s FROM %3$s WHERE ST_DWithin(%2$s, ?, ?)",
                             COLUMN_NAME_ID, COLUMN_NAME_PATH, getSchemaName( ), COLUMN_NAME_OWNER,
-                            COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION
+                            COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION, COLUMN_NAME_DESCRIPTION
                     )
             );
-            Point p = new Point(pos.latitude,pos.longitude);
-            stmt.setObject( 1, new PGgeometry(p ));
-            stmt.setFloat( 2, 3000f);
+            Point p = new Point( pos.latitude, pos.longitude );
+            stmt.setObject( 1, new PGgeometry( p ) );
+            stmt.setFloat( 2, 3000f );
 
             ResultSet res = stmt.executeQuery( );
             List<Path> paths = new ArrayList<>( );
@@ -161,11 +165,12 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
                 long owner = res.getLong( COLUMN_NAME_OWNER );
                 long distance = res.getLong( COLUMN_NAME_DISTANCE );
                 long duration = res.getLong( COLUMN_NAME_DURATION );
+                String description = res.getString( COLUMN_NAME_DESCRIPTION );
 
                 PGgeometry geom = ( PGgeometry ) res.getObject( COLUMN_NAME_PATH );
                 MultiLineString mls = ( MultiLineString ) geom.getGeometry( );
 
-                Path path = new Path( id, owner, distance, duration );
+                Path path = new Path( id, owner, distance, duration, description );
                 appendMultiLineStringToPath( path, mls );
                 paths.add( path );
             }
@@ -180,7 +185,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
 
     @Override
     protected int getSchemaVersion( ) {
-        return 8;  // TODO [ed] increment at every schema change
+        return 9;  // TODO [ed] increment at every schema change
     }
 
     @Override
@@ -195,10 +200,12 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
                         "%s GEOMETRY(MULTILINESTRING), " +
                         "%s INTEGER REFERENCES %s(%s) NOT NULL, " +
                         "%s INTEGER NOT NULL, " +
-                        "%s INTEGER NOT NULL)",
+                        "%s INTEGER NOT NULL, " +
+                        "%s TEXT)",
                 getSchemaName( ), COLUMN_NAME_ID, COLUMN_NAME_PATH,
-                COLUMN_NAME_OWNER, TABLE_NAME,  COLUMN_NAME_ID,
-                COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION
+                COLUMN_NAME_OWNER, TABLE_NAME, COLUMN_NAME_ID,
+                COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION,
+                COLUMN_NAME_DESCRIPTION
         );
     }
 }
