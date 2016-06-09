@@ -3,7 +3,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.1.0'
+        classpath 'com.android.tools.build:gradle:2.1.2'
     }
 }
 apply plugin: 'com.android.application'
@@ -56,4 +56,5 @@ dependencies {
     compile 'com.github.clans:fab:1.6.3'
     compile 'com.sothree.slidinguppanel:library:3.3.0'
     compile 'com.google.maps:google-maps-services:+'
+    compile 'com.android.support:cardview-v7:23.0.0'
 }
