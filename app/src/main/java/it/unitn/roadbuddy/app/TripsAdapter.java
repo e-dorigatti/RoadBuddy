@@ -10,9 +10,6 @@ import java.util.List;
 
 import it.unitn.roadbuddy.app.backend.models.Path;
 
-/**
- * Created by Marco on 08/06/2016.
- */
 public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHolder> {
 
     private List<Path> pathList;

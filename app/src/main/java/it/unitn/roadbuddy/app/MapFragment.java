@@ -25,6 +25,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
@@ -43,6 +44,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     MainActivity mPActivity;
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
+    com.sothree.slidinguppanel.SlidingUpPanelLayout slidingLayout;
     ViewContainer sliderLayout;
 
     GoogleMap googleMap;
@@ -88,6 +90,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 getLayoutInflater(savedInstanceState), getFragmentManager(),
                 (FrameLayout) view.findViewById(R.id.sliderLayout)
         );
+        slidingLayout = (com.sothree.slidinguppanel.SlidingUpPanelLayout) view.findViewById(R.id.sliding_layout);
+        slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+
 
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -159,8 +164,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( selectedDrawable != null ) {
             selectedDrawable.setSelected( getContext( ), googleMap, true );
             sliderLayout.setFragment( selectedDrawable.getInfoFragment( ) );
+            slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
         }
-        else sliderLayout.setFragment( null );
+        else{
+            sliderLayout.setFragment( null );
+            slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+        }
     }
 
     class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Integer, List<Drawable>> {

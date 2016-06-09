@@ -3,12 +3,21 @@ package it.unitn.roadbuddy.app;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.support.annotation.NonNull;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.google.android.gms.maps.GoogleMap;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.Path;
@@ -24,6 +33,10 @@ public class NavigationState implements NFAState {
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
     MapFragment fragment;
     NFA nfa;
+    EmptyRecyclerView mEmptyRecyclerView;
+    RecyclerView.Adapter mAdapter;
+    RecyclerView.LayoutManager mLayoutManager;
+    TextView emptyView;
 
     Button addBuddy;
 
@@ -61,20 +74,26 @@ public class NavigationState implements NFAState {
             builder.show( );
         }
         else navigationPathDrawable = ( DrawablePath ) fragment.selectedDrawable;
-
         this.fragment = fragment;
+        fragment.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
         this.nfa = nfa;
         this.googleMap = fragment.googleMap;
         this.googleMap.clear( );
 
         this.fragment.sliderLayout.setView(R.layout.navigation_layout);
-        this.addBuddy = (Button) fragment.getView().findViewById(R.id.addBuddy);
+        this.addBuddy = (Button) fragment.getActivity().findViewById(R.id.addBuddy);
+        this.mEmptyRecyclerView = ( EmptyRecyclerView ) fragment.getActivity().findViewById( R.id.my_navigation_recycler_view);
+        //this.emptyView = (TextView) fragment.getActivity().findViewById(R.id.empty_view);
+        //mEmptyRecyclerView.setEmptyView(emptyView);
+        // use a linear layout manager
+        this.mLayoutManager = new LinearLayoutManager( fragment.getContext( ) );
+        mEmptyRecyclerView.setLayoutManager( mLayoutManager );
 
     }
 
     @Override
     public void onStateExit( NFA nfa, MapFragment fragment ) {
-
+        this.fragment.slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
     }
 
 
