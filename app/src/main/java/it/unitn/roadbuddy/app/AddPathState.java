@@ -316,6 +316,10 @@ public class AddPathState implements NFAState,
             }
 
             fail( );
+
+            pendingRequests -= 1;
+            if ( pendingRequests == 0 )
+                stopMarkerAnimation( );
         }
 
         void fail( ) {
