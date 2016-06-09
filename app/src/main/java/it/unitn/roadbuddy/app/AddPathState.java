@@ -21,6 +21,7 @@ import com.google.maps.GeocodingApiRequest;
 import com.google.maps.model.AddressComponent;
 import com.google.maps.model.AddressComponentType;
 import com.google.maps.model.GeocodingResult;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.Path;
 
@@ -112,6 +113,9 @@ public class AddPathState implements NFAState,
 
         infoFragment = EditedPathInfoFragment.newInstance( );
         fragment.sliderLayout.setFragment( infoFragment );
+        fragment.slidingLayout.setPanelState(
+                SlidingUpPanelLayout.PanelState.COLLAPSED
+        );
 
         fragment.showToast( R.string.long_tap_to_add );
     }
@@ -122,6 +126,10 @@ public class AddPathState implements NFAState,
         map.setOnCameraChangeListener( null );
         map.setOnMapClickListener( null );
         map.setOnMarkerClickListener( null );
+
+        fragment.slidingLayout.setPanelState(
+                SlidingUpPanelLayout.PanelState.HIDDEN
+        );
 
         taskManager.stopRunningTasksOfType( SavePathAsync.class );
         clearPath( );
