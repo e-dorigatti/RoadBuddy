@@ -110,6 +110,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onResume() {
+        slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
         if (nfa != null)
             nfa.Resume();
         super.onResume();
