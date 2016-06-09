@@ -40,7 +40,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
     }
 
     static LatLng readPosition( ResultSet res, String tableAlias ) throws SQLException {
-        if ( tableAlias != null && !tableAlias.isEmpty( ) )
+        if ( tableAlias != null && !tableAlias.isEmpty( ) && !tableAlias.endsWith( "." ) )
             tableAlias = tableAlias + ".";
         else tableAlias = "";
 
@@ -56,7 +56,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
     }
 
     static Date readDate( ResultSet res, String tableAlias ) throws SQLException {
-        if ( tableAlias != null && !tableAlias.isEmpty( ) )
+        if ( tableAlias != null && !tableAlias.isEmpty( ) && !tableAlias.endsWith( "." ) )
             tableAlias = tableAlias + ".";
         else tableAlias = "";
 

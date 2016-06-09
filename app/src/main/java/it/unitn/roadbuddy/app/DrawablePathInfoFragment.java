@@ -25,6 +25,7 @@ public class DrawablePathInfoFragment extends SliderContentFragment {
 
         TextView txtDuration = ( TextView ) view.findViewById( R.id.txtTotalDuration );
         TextView txtDistance = ( TextView ) view.findViewById( R.id.txtTotalDistance );
+        TextView txtDescription = ( TextView ) view.findViewById( R.id.txtPathDescription );
 
         txtDistance.setText(
                 String.format( getString( R.string.path_edit_total_distance ),
@@ -35,6 +36,8 @@ public class DrawablePathInfoFragment extends SliderContentFragment {
                 String.format( getString( R.string.path_edit_total_duration ),
                                Path.formatDuration( drawablePath.getPath( ).getDuration( ) )
                 ) );
+
+        txtDescription.setText( drawablePath.getPath( ).getDescription( ) );
 
         return view;
     }

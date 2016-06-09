@@ -10,7 +10,6 @@ import android.widget.TextView;
 import com.google.android.gms.maps.model.LatLng;
 import it.unitn.roadbuddy.app.backend.models.Path;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,12 +73,16 @@ public class EditedPathInfoFragment extends SliderContentFragment {
                 ) );
     }
 
-    public void appendWaypoint( LatLng point, long distanceTo, long durationTo ) {
-        addWaypoint( waypoints.size( ), point, distanceTo, durationTo );
+    public void popWaypoint( ) {
+        deleteWaypoint( waypoints.size( ) - 1 );
     }
 
-    public void addWaypoint( int position, LatLng point, long distanceTo, long durationTo ) {
-        WaypointInfo waypoint = new WaypointInfo( point, distanceTo, durationTo );
+    public void appendWaypoint( LatLng point, long distanceTo, long durationTo, String name ) {
+        addWaypoint( waypoints.size( ), point, distanceTo, durationTo, name );
+    }
+
+    public void addWaypoint( int position, LatLng point, long distanceTo, long durationTo, String name ) {
+        WaypointInfo waypoint = new WaypointInfo( point, distanceTo, durationTo, name );
         waypoints.add( position, waypoint );
         adapter.insert( waypoint, position );
 
@@ -115,25 +118,29 @@ public class EditedPathInfoFragment extends SliderContentFragment {
         private LatLng point;
         private long distanceTo;
         private long durationTo;
+        private String description;
 
-        public WaypointInfo( LatLng point, long distanceTo, long durationTo ) {
+        public WaypointInfo( LatLng point, long distanceTo, long durationTo, String description ) {
             this.point = point;
             this.distanceTo = distanceTo;
             this.durationTo = durationTo;
+            this.description = description;
         }
 
         public LatLng getPoint( ) {
             return point;
         }
 
-
         public long getDistanceTo( ) {
             return distanceTo;
         }
 
-
         public long getDurationTo( ) {
             return durationTo;
+        }
+
+        public String getDescription( ) {
+            return description;
         }
 
         public View getView( int position, View convertView, ViewGroup parent ) {
@@ -141,7 +148,8 @@ public class EditedPathInfoFragment extends SliderContentFragment {
 
             TextView txt = new TextView( getContext( ) );
             txt.setText( String.format(
-                    "Waypoint %d - Distance: %s, Duration %s", position + 1,
+                    "%d) %s - Distance: %s, Duration %s", position + 1,
+                    waypoint.getDescription( ),
                     Path.formatDistance( waypoint.getDistanceTo( ) ),
                     Path.formatDuration( waypoint.getDurationTo( ) )
             ) );
