@@ -43,18 +43,16 @@ public class MainActivity extends AppCompatActivity
         LocationListener {
 
     public static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
-    boolean hasLocationPermission = false;
+    boolean locationPermissionEnabled = false;
 
     ViewPager mPager;
     PagerAdapter mAdapter;
     ImageButton mapButton;
-    ImageButton viaggiButton;
+    ImageButton tripButton;
     ImageButton impostButton;
 
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager();
-
     GoogleApiClient googleApiClient;
-
     HandlerThread backgroundThread;
     Handler backgroundTasksHandler;
 
@@ -67,17 +65,14 @@ public class MainActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         assert getSupportActionBar() != null;
-        getSupportActionBar().setDisplayShowTitleEnabled(false);
+
+        mapButton = (ImageButton) findViewById(R.id.button_map);
+        tripButton = (ImageButton) findViewById(R.id.button_viaggi);
+        impostButton = (ImageButton) findViewById(R.id.button_impostazioni);
 
         mPager = (ViewPager) findViewById(R.id.pager);
         mAdapter = new PagerAdapter(getSupportFragmentManager());
         mPager.setAdapter(mAdapter);
-
-
-        mapButton = (ImageButton) findViewById(R.id.button_map);
-        viaggiButton = (ImageButton) findViewById(R.id.button_viaggi);
-        impostButton = (ImageButton) findViewById(R.id.button_impostazioni);
-
         mPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
@@ -88,25 +83,24 @@ public class MainActivity extends AppCompatActivity
             public void onPageSelected(int position) {
                 switch (position) {
                     case 0:
-                        mapButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
-                        viaggiButton.getBackground().clearColorFilter();
+                        mapButton.getBackground().setColorFilter(Color.rgb(48, 63, 159), PorterDuff.Mode.SRC_ATOP);
+                        tripButton.getBackground().clearColorFilter();
                         impostButton.getBackground().clearColorFilter();
-                        mAdapter.getTrip();
                         break;
                     case 1:
-                        viaggiButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
+                        tripButton.getBackground().setColorFilter(Color.rgb(48, 63, 159), PorterDuff.Mode.SRC_ATOP);
                         mapButton.getBackground().clearColorFilter();
                         impostButton.getBackground().clearColorFilter();
 
                         break;
                     case 2:
-                        impostButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
+                        impostButton.getBackground().setColorFilter(Color.rgb(48, 63, 159), PorterDuff.Mode.SRC_ATOP);
                         mapButton.getBackground().clearColorFilter();
-                        viaggiButton.getBackground().clearColorFilter();
+                        tripButton.getBackground().clearColorFilter();
                         break;
                 }
                 mapButton.invalidate();
-                viaggiButton.invalidate();
+                tripButton.invalidate();
                 impostButton.invalidate();
             }
 
@@ -116,7 +110,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        mapButton.getBackground().setColorFilter(Color.BLUE, PorterDuff.Mode.SRC_ATOP);
+        mapButton.getBackground().setColorFilter(Color.rgb(48, 63, 159), PorterDuff.Mode.SRC_ATOP);
 
         mapButton.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View v, MotionEvent event) {
@@ -124,7 +118,7 @@ public class MainActivity extends AppCompatActivity
                 return false;
             }
         });
-        viaggiButton.setOnTouchListener(new View.OnTouchListener() {
+        tripButton.setOnTouchListener(new View.OnTouchListener() {
             public boolean onTouch(View v, MotionEvent event) {
                 mPager.setCurrentItem(1);
                 return false;
@@ -184,13 +178,12 @@ public class MainActivity extends AppCompatActivity
             }
 
         } else {
-            hasLocationPermission = true;
+            locationPermissionEnabled = true;
         }
 
-        if (hasLocationPermission) {
+        if (locationPermissionEnabled) {
             googleApiClient.connect();
-            if (mAdapter.getCurrentMF() != null)
-            {
+            if (mAdapter.getCurrentMF() != null) {
                 mAdapter.getCurrentMF().onStart();
             }
         }
@@ -200,6 +193,7 @@ public class MainActivity extends AppCompatActivity
         backgroundTasksHandler = new Handler(backgroundThread.getLooper());
         super.onStart();
     }
+
     private void showMessageOKCancel(String message, DialogInterface.OnClickListener okListener) {
         new AlertDialog.Builder(MainActivity.this)
                 .setMessage(message)
@@ -216,7 +210,7 @@ public class MainActivity extends AppCompatActivity
         } catch (SQLException exc) {
             Log.e(getClass().getName(), "on destroy", exc);
         }
-        if (hasLocationPermission && googleApiClient.isConnected()) {
+        if (locationPermissionEnabled && googleApiClient.isConnected()) {
             LocationServices.FusedLocationApi.removeLocationUpdates(
                     googleApiClient, this
             );
@@ -239,12 +233,12 @@ public class MainActivity extends AppCompatActivity
 
                     // permission was granted, yay! Do the
                     // contacts-related task you need to do.
-                    hasLocationPermission = true;
+                    locationPermissionEnabled = true;
                     mAdapter = new PagerAdapter(getSupportFragmentManager());
                     mPager.setAdapter(mAdapter);
 
                 } else {
-                    hasLocationPermission = false;
+                    locationPermissionEnabled = false;
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
                 }
@@ -270,7 +264,8 @@ public class MainActivity extends AppCompatActivity
                 .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
                 .setInterval(5 * 60 * 1000)
                 .setFastestInterval(15 * 1000);
-        if (hasLocationPermission) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
             LocationServices.FusedLocationApi.requestLocationUpdates(
                     googleApiClient, requestType,
                     this,
@@ -339,7 +334,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    public boolean isHasLocationPermission() {
-        return hasLocationPermission;
+    public boolean isLocationPermissionEnabled() {
+        return locationPermissionEnabled;
     }
 }

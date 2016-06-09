@@ -9,11 +9,8 @@ import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,11 +19,13 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLngBounds;
+
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.CommentPOI;
@@ -48,81 +47,82 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     GoogleMap googleMap;
     NFA nfa;
-    Map<String, Drawable> shownDrawables = new HashMap<>( );
+    Map<String, Drawable> shownDrawables = new HashMap<>();
     Drawable selectedDrawable;
     User currentUser;
 
-    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager();
 
-    public MapFragment( ) {
+    public MapFragment() {
         // Required empty public constructor
     }
 
     @Override
-    public void onCreate( Bundle savedInstanceState ) {
-        super.onCreate( savedInstanceState );
-        this.mPActivity = (MainActivity)getActivity();
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
-        long user_id = pref.getLong( SettingsFragment.KEY_PREF_USER_ID, -1 );
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        this.mPActivity = (MainActivity) getActivity();
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        long user_id = pref.getLong(SettingsFragment.KEY_PREF_USER_ID, -1);
 
-        taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
+        taskManager.startRunningTask(new GetCurrentUserAsync(), true, user_id);
 
     }
 
     @Override
-    public View onCreateView( LayoutInflater inflater, ViewGroup container,
-                              Bundle savedInstanceState ) {
-        return inflater.inflate( R.layout.fragment_map, container, false );
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_map, container, false);
     }
 
     @Override
-    public void onViewCreated( View view, Bundle savedInstanceState ) {
-        super.onViewCreated( view, savedInstanceState );
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-        floatingActionMenu = ( FloatingActionMenu ) view.findViewById( R.id.fab );
+        floatingActionMenu = (FloatingActionMenu) view.findViewById(R.id.fab);
         mainLayout = new ViewContainer(
-                getLayoutInflater( savedInstanceState ), getFragmentManager( ),
-                ( FrameLayout ) view.findViewById( R.id.button_container )
+                getLayoutInflater(savedInstanceState), getFragmentManager(),
+                (FrameLayout) view.findViewById(R.id.button_container)
         );
 
         sliderLayout = new ViewContainer(
-                getLayoutInflater( savedInstanceState ), getFragmentManager( ),
-                ( FrameLayout ) view.findViewById( R.id.sliderLayout )
+                getLayoutInflater(savedInstanceState), getFragmentManager(),
+                (FrameLayout) view.findViewById(R.id.sliderLayout)
         );
 
-        SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
-        mapFragment.getMapAsync( this );
+        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
 
     }
 
     @Override
-    public void onPause( ) {
-        taskManager.stopRunningTasksOfType( RefreshMapAsync.class );
-        if ( nfa != null )
-            nfa.Pause( );
+    public void onPause() {
+        taskManager.stopRunningTasksOfType(RefreshMapAsync.class);
+        if (nfa != null)
+            nfa.Pause();
 
-        super.onPause( );
+        super.onPause();
     }
 
     @Override
-    public void onResume( ) {
-        if ( nfa != null )
-            nfa.Resume( );
-        super.onResume( );
+    public void onResume() {
+        if (nfa != null)
+            nfa.Resume();
+        super.onResume();
     }
 
     @Override
-    public void onStart( ) {
-        super.onStart( );
+    public void onStart() {
+        super.onStart();
     }
 
     @Override
-    public void onMapReady( GoogleMap map ) {
+    public void onMapReady(GoogleMap map) {
 
         googleMap = map;
-        nfa = new NFA( this, new RestState( ) );
-        if (mPActivity.isHasLocationPermission()){
-            googleMap.setMyLocationEnabled( true );
+        nfa = new NFA(this, new RestState());
+
+        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            googleMap.setMyLocationEnabled(true);
             googleMap.getUiSettings( ).setMyLocationButtonEnabled( true );
         }
     }
