@@ -13,6 +13,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -20,6 +21,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -53,6 +55,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     Drawable selectedDrawable;
     User currentUser;
 
+    FloatingActionButton button_viaggi;
+    FloatingActionButton button_impost;
+
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager();
 
     public MapFragment() {
@@ -67,8 +72,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         long user_id = pref.getLong(SettingsFragment.KEY_PREF_USER_ID, -1);
 
         taskManager.startRunningTask(new GetCurrentUserAsync(), true, user_id);
-
-    }
+            }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -79,6 +83,23 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        button_viaggi = (FloatingActionButton) view.findViewById(R.id.button_map_viaggi);
+        button_impost = (FloatingActionButton) view.findViewById(R.id.button_map_impost);
+
+
+        button_viaggi.setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent event) {
+                mPActivity.mPager.setCurrentItem(1);
+                return false;
+            }
+        });
+        button_impost.setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent event) {
+                mPActivity.mPager.setCurrentItem(2);
+                return false;
+            }
+        });
 
         floatingActionMenu = (FloatingActionMenu) view.findViewById(R.id.fab);
         mainLayout = new ViewContainer(

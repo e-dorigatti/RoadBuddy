@@ -25,6 +25,7 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
@@ -47,9 +48,6 @@ public class MainActivity extends AppCompatActivity
 
     ViewPager mPager;
     PagerAdapter mAdapter;
-    ImageButton mapButton;
-    ImageButton tripButton;
-    ImageButton impostButton;
 
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager();
     GoogleApiClient googleApiClient;
@@ -62,74 +60,10 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        assert getSupportActionBar() != null;
-
-        mapButton = (ImageButton) findViewById(R.id.button_map);
-        tripButton = (ImageButton) findViewById(R.id.button_viaggi);
-        impostButton = (ImageButton) findViewById(R.id.button_impostazioni);
 
         mPager = (ViewPager) findViewById(R.id.pager);
         mAdapter = new PagerAdapter(getSupportFragmentManager());
         mPager.setAdapter(mAdapter);
-        mPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                switch (position) {
-                    case 0:
-                        mapButton.getBackground().setColorFilter(Color.rgb(48, 63, 159), PorterDuff.Mode.SRC_ATOP);
-                        tripButton.getBackground().clearColorFilter();
-                        impostButton.getBackground().clearColorFilter();
-                        break;
-                    case 1:
-                        tripButton.getBackground().setColorFilter(Color.rgb(48, 63, 159), PorterDuff.Mode.SRC_ATOP);
-                        mapButton.getBackground().clearColorFilter();
-                        impostButton.getBackground().clearColorFilter();
-
-                        break;
-                    case 2:
-                        impostButton.getBackground().setColorFilter(Color.rgb(48, 63, 159), PorterDuff.Mode.SRC_ATOP);
-                        mapButton.getBackground().clearColorFilter();
-                        tripButton.getBackground().clearColorFilter();
-                        break;
-                }
-                mapButton.invalidate();
-                tripButton.invalidate();
-                impostButton.invalidate();
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-
-            }
-        });
-
-        mapButton.getBackground().setColorFilter(Color.rgb(48, 63, 159), PorterDuff.Mode.SRC_ATOP);
-
-        mapButton.setOnTouchListener(new View.OnTouchListener() {
-            public boolean onTouch(View v, MotionEvent event) {
-                mPager.setCurrentItem(0);
-                return false;
-            }
-        });
-        tripButton.setOnTouchListener(new View.OnTouchListener() {
-            public boolean onTouch(View v, MotionEvent event) {
-                mPager.setCurrentItem(1);
-                return false;
-            }
-        });
-        impostButton.setOnTouchListener(new View.OnTouchListener() {
-            public boolean onTouch(View v, MotionEvent event) {
-                mPager.setCurrentItem(2);
-                return false;
-            }
-        });
 
         googleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)

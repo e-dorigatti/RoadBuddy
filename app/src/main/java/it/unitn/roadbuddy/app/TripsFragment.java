@@ -9,8 +9,11 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+
+import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.maps.model.LatLng;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
@@ -22,6 +25,7 @@ import java.util.List;
 
 public class TripsFragment extends Fragment {
 
+    MainActivity mPActivity;
     ViewPager mPager;
     PagerAdapter mPagerAdapter;
     CancellableAsyncTaskManager taskManager;
@@ -31,6 +35,9 @@ public class TripsFragment extends Fragment {
     List<Path> pathList = new ArrayList<>( );
     View emptyView;
 
+    FloatingActionButton button_map;
+    FloatingActionButton button_impost;
+
     public TripsFragment( ) {
         // Required empty public constructor
 
@@ -38,7 +45,7 @@ public class TripsFragment extends Fragment {
 
     @Override
     public void onCreate( Bundle savedInstanceState ) {
-
+        this.mPActivity = (MainActivity) getActivity();
         super.onCreate( savedInstanceState );
     }
 
@@ -52,6 +59,23 @@ public class TripsFragment extends Fragment {
     @Override
     public void onViewCreated( View view, @Nullable Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
+
+        button_map = (FloatingActionButton) getActivity().findViewById(R.id.button_trips_map);
+        button_impost = (FloatingActionButton) getActivity().findViewById(R.id.button_trips_impost);
+
+
+        button_map.setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent event) {
+                mPActivity.mPager.setCurrentItem(0);
+                return false;
+            }
+        });
+        button_impost.setOnTouchListener(new View.OnTouchListener() {
+            public boolean onTouch(View v, MotionEvent event) {
+                mPActivity.mPager.setCurrentItem(2);
+                return false;
+            }
+        });
         this.mPager = ( ViewPager ) getActivity( ).findViewById( R.id.pager );
         this.mRecyclerView = ( EmptyRecyclerView ) view.findViewById( R.id.recycler_view );
         this.emptyView = view.findViewById(R.id.empty_view);
