@@ -8,6 +8,7 @@ import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 import com.github.clans.fab.FloatingActionButton;
@@ -41,7 +42,7 @@ public class AddPOIState implements NFAState,
         fragment.googleMap.setOnMapClickListener( this );
 
         fragment.showToast( R.string.long_tap_to_add );
-        RelativeLayout buttonBar = (RelativeLayout) fragment.mainLayout.setView(R.layout.button_layout_poi);
+        LinearLayout buttonBar = (LinearLayout) fragment.mainLayout.setView(R.layout.button_layout_poi);
         FloatingActionButton btnAnnulla = (FloatingActionButton) buttonBar.findViewById(R.id.annulla);
         btnAnnulla.setOnClickListener( new View.OnClickListener( ) {
             @Override
