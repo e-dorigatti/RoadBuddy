@@ -5,9 +5,7 @@
     android:layout_height="match_parent">
 
 
-    <SearchView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"></SearchView>
+
     <!-- Replaced android.support.v7.widget.RecyclerView with the
      new EmptyRecyclerView -->
 
@@ -15,6 +13,7 @@
         android:id="@+id/recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@id/search_bar"
          />
 
     <!-- Added an empty view which will be shown when the EmptyRecyclerView
@@ -49,4 +48,8 @@
             android:layout_toEndOf="@+id/button_trips_map"
             style="@style/NoRestMenuButtonsStyle"/>
     </RelativeLayout>
+    <SearchView
+        android:id="@id/search_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"></SearchView>
 </RelativeLayout>
