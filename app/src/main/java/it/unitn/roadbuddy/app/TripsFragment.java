@@ -122,13 +122,8 @@ public class TripsFragment extends Fragment {
 
         @Override
         protected void onPostExecute( List<Path> res ) {
-
-            Log.v( "res", Long.toString( res.size( ) ) );
-
             mAdapter = new TripsAdapter( res );
             mRecyclerView.setAdapter( mAdapter );
-
-
             super.onPostExecute( res );
         }
     }
