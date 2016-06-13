@@ -30,10 +30,10 @@ public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHold
     @Override
     public void onBindViewHolder(TripsAdapter.PathViewHolder holder, int position) {
         Path pi = pathList.get(position);
-        holder.vId.setText( Long.toString(pi.getId()) );
-        holder.vOwner.setText( Long.toString(pi.getOwner()) );
-        holder.vDistance.setText( Long.toString(pi.getDistance()) );
-        holder.vDuration.setText( Long.toString(pi.getDuration()) );
+        holder.vId.setText("Path: " + Long.toString(pi.getId()) );
+        holder.vOwner.setText("Owner: " + Long.toString(pi.getOwner()) );
+        holder.vDistance.setText( "Distance: " + Long.toString(pi.getDistance()) );
+        holder.vDuration.setText("Expected duration: " + Long.toString(pi.getDuration()) );
 
     }
 
