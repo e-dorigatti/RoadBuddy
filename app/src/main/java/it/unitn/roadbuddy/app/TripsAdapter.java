@@ -1,5 +1,6 @@
 package it.unitn.roadbuddy.app;
 
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +11,9 @@ import java.util.List;
 
 import it.unitn.roadbuddy.app.backend.models.Path;
 
+/**
+ * Created by Marco on 08/06/2016.
+ */
 public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHolder> {
 
     private List<Path> pathList;
@@ -43,6 +47,7 @@ public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHold
     }
 
     public static class PathViewHolder extends RecyclerView.ViewHolder {
+        protected CardView cv;
         protected TextView vId;
         protected TextView vOwner;
         protected TextView vDuration;
@@ -50,10 +55,15 @@ public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHold
 
         public PathViewHolder(View itemView) {
             super(itemView);
+            cv = (CardView)itemView.findViewById(R.id.cv);
             vId = (TextView) itemView.findViewById(R.id.path_id);
             vOwner = (TextView) itemView.findViewById(R.id.path_owner);
             vDuration= (TextView) itemView.findViewById(R.id.path_duration);
             vDistance = (TextView) itemView.findViewById(R.id.path_distance);
         }
+    }
+    @Override
+    public void onAttachedToRecyclerView(RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
     }
 }

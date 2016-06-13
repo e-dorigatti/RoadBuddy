@@ -11,13 +11,15 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
 import com.google.android.gms.maps.model.LatLng;
-import it.unitn.roadbuddy.app.backend.BackendException;
-import it.unitn.roadbuddy.app.backend.DAOFactory;
-import it.unitn.roadbuddy.app.backend.models.Path;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import it.unitn.roadbuddy.app.backend.BackendException;
+import it.unitn.roadbuddy.app.backend.DAOFactory;
+import it.unitn.roadbuddy.app.backend.models.Path;
 
 
 public class TripsFragment extends Fragment {
@@ -25,11 +27,11 @@ public class TripsFragment extends Fragment {
     ViewPager mPager;
     PagerAdapter mPagerAdapter;
     CancellableAsyncTaskManager taskManager;
-    EmptyRecyclerView mRecyclerView;
-    RecyclerView.Adapter mAdapter;
-    RecyclerView.LayoutManager mLayoutManager;
-    List<Path> pathList = new ArrayList<>( );
-    View emptyView;
+    View rootView;
+    private RecyclerView mRecyclerView;
+    private RecyclerView.Adapter mAdapter;
+    private RecyclerView.LayoutManager mLayoutManager;
+    private List<Path> pathList = new ArrayList<>( );
 
     public TripsFragment( ) {
         // Required empty public constructor
@@ -46,22 +48,19 @@ public class TripsFragment extends Fragment {
     public View onCreateView( LayoutInflater inflater, ViewGroup container,
                               Bundle savedInstanceState ) {
         // Inflate the layout for this fragment
-        return inflater.inflate( R.layout.fragment_trips, container, false );
-    }
-
-    @Override
-    public void onViewCreated( View view, @Nullable Bundle savedInstanceState ) {
-        super.onViewCreated( view, savedInstanceState );
+        rootView = inflater.inflate( R.layout.fragment_trips, container, false );
         this.mPager = ( ViewPager ) getActivity( ).findViewById( R.id.pager );
-        this.mRecyclerView = ( EmptyRecyclerView ) view.findViewById( R.id.recycler_view );
-        this.emptyView = view.findViewById(R.id.empty_view);
-        mRecyclerView.setEmptyView(emptyView);
         this.mPagerAdapter = ( PagerAdapter ) mPager.getAdapter( );
+
+        mRecyclerView = ( RecyclerView ) rootView.findViewById( R.id.recycler_view );
         // use a linear layout manager
-        this.mLayoutManager = new LinearLayoutManager( getContext( ) );
+        mLayoutManager = new LinearLayoutManager( getContext( ) );
         mRecyclerView.setLayoutManager( mLayoutManager );
 
         this.taskManager = new CancellableAsyncTaskManager( );
+
+        // Inflate the layout for this fragment
+        inflater.inflate( R.layout.fragment_trips, container, false );
         LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
 
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
@@ -71,6 +70,20 @@ public class TripsFragment extends Fragment {
             Path path = new Path( i, i * 3, i * 4, i * 5, Integer.toString( i ) );
             pathList.add( path );
         }
+
+        return rootView;
+    }
+
+    public void updateList( ) {
+        LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
+    }
+
+    @Override
+    public void onViewCreated( View view, @Nullable Bundle savedInstanceState ) {
+
+        super.onViewCreated( view, savedInstanceState );
+
     }
 
     @Override
@@ -87,11 +100,6 @@ public class TripsFragment extends Fragment {
     @Override
     public void onDetach( ) {
         super.onDetach( );
-    }
-
-    public void updateList( ) {
-        LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
-        taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
     }
 
     class getTrips extends CancellableAsyncTask<LatLng, Integer, List<Path>> {
