@@ -52,7 +52,7 @@ public class PostgresCommentPoiDAO extends PostgresDAOBase implements CommentPoi
             Point p = new Point( poi.getLatitude( ), poi.getLongitude( ) );
             stmt.setObject( 1, new PGgeometry( p ) );
             stmt.setString( 2, poi.getText( ) );
-            stmt.setLong( 3, poi.getOwner( ) );
+            stmt.setInt( 3, poi.getOwner( ) );
 
             stmt.execute( );
         }
@@ -80,8 +80,8 @@ public class PostgresCommentPoiDAO extends PostgresDAOBase implements CommentPoi
             List<CommentPOI> pois = new ArrayList<>( );
 
             while ( res.next( ) ) {
-                long id = res.getLong( COLUMN_NAME_ID );
-                long owner = res.getLong( COLUMN_NAME_OWNER );
+                int id = res.getInt( COLUMN_NAME_ID );
+                int owner = res.getInt( COLUMN_NAME_OWNER );
 
                 PGgeometry geom = ( PGgeometry ) res.getObject( COLUMN_NAME_LOCATION );
                 Point point = ( Point ) geom.getGeometry( );

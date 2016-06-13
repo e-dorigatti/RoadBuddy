@@ -6,14 +6,14 @@ import com.google.android.gms.maps.model.LatLng;
 import java.util.Date;
 
 public class User {
-    private long id;
+    private int id;
     private String userName;
     private LatLng lastPosition;
     private Date lastPositionUpdated;
-    private Long trip;
+    private Integer trip;
 
-    public User( long id, String userName, LatLng lastPosition,
-                 Date lastPositionUpdated, Long trip ) {
+    public User( int id, String userName, LatLng lastPosition,
+                 Date lastPositionUpdated, Integer trip ) {
 
         this.id = id;
         this.userName = userName;
@@ -22,7 +22,7 @@ public class User {
         this.trip = trip;
     }
 
-    public long getId( ) {
+    public int getId( ) {
         return id;
     }
 
@@ -38,7 +38,7 @@ public class User {
         return lastPositionUpdated;
     }
 
-    public Long getTrip( ) {
+    public Integer getTrip( ) {
         return trip;
     }
 }

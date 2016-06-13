@@ -10,15 +10,15 @@ import java.util.List;
 public class Path {
 
     protected List<List<LatLng>> legs = new ArrayList<>( );
-    protected long owner;
-    private long id;
+    protected int owner;
+    private int id;
 
     private long duration;
     private long distance;
 
     private String description;
 
-    public Path( long id, long owner, long distance, long duration, String description ) {
+    public Path( int id, int owner, long distance, long duration, String description ) {
         this.id = id;
         this.owner = owner;
 
@@ -49,11 +49,11 @@ public class Path {
         else return String.format( "%d sec", totalSeconds );
     }
 
-    public long getId( ) {
+    public int getId( ) {
         return id;
     }
 
-    public long getOwner( ) {
+    public int getOwner( ) {
         return owner;
     }
 

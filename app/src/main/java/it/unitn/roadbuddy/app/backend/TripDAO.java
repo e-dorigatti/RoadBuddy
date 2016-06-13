@@ -9,6 +9,6 @@ public interface TripDAO {
 
     Trip createTrip( Path path, User creator ) throws BackendException;
 
-    Trip getTrip( long id ) throws BackendException;
+    Trip getTrip( int id ) throws BackendException;
 
 }

@@ -5,41 +5,40 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import it.unitn.roadbuddy.app.backend.models.Path;
 
 import java.util.List;
-
-import it.unitn.roadbuddy.app.backend.models.Path;
 
 public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHolder> {
 
     private List<Path> pathList;
 
-    public TripsAdapter(List<Path> pathList) {
+    public TripsAdapter( List<Path> pathList ) {
         this.pathList = pathList;
     }
 
     @Override
-    public TripsAdapter.PathViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public TripsAdapter.PathViewHolder onCreateViewHolder( ViewGroup parent, int viewType ) {
         View itemView = LayoutInflater.
-                from(parent.getContext()).
-                inflate(R.layout.trip_list_row, parent, false);
+                                              from( parent.getContext( ) ).
+                                              inflate( R.layout.trip_list_row, parent, false );
 
-        return new PathViewHolder(itemView);
+        return new PathViewHolder( itemView );
     }
 
     @Override
-    public void onBindViewHolder(TripsAdapter.PathViewHolder holder, int position) {
-        Path pi = pathList.get(position);
-        holder.vId.setText("Path: " + Long.toString(pi.getId()) );
-        holder.vOwner.setText("Owner: " + Long.toString(pi.getOwner()) );
-        holder.vDistance.setText( "Distance: " + Long.toString(pi.getDistance()) );
-        holder.vDuration.setText("Expected duration: " + Long.toString(pi.getDuration()) );
+    public void onBindViewHolder( TripsAdapter.PathViewHolder holder, int position ) {
+        Path pi = pathList.get( position );
+        holder.vId.setText( "Path: " + Long.toString( pi.getId( ) ) );
+        holder.vOwner.setText( "Owner: " + Long.toString( pi.getOwner( ) ) );
+        holder.vDistance.setText( "Distance: " + Long.toString( pi.getDistance( ) ) );
+        holder.vDuration.setText( "Expected duration: " + Long.toString( pi.getDuration( ) ) );
 
     }
 
     @Override
-    public int getItemCount() {
-        return pathList.size();
+    public int getItemCount( ) {
+        return pathList != null ? pathList.size( ) : 0;
     }
 
     public static class PathViewHolder extends RecyclerView.ViewHolder {
@@ -48,12 +47,12 @@ public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHold
         protected TextView vDuration;
         protected TextView vDistance;
 
-        public PathViewHolder(View itemView) {
-            super(itemView);
-            vId = (TextView) itemView.findViewById(R.id.path_id);
-            vOwner = (TextView) itemView.findViewById(R.id.path_owner);
-            vDuration= (TextView) itemView.findViewById(R.id.path_duration);
-            vDistance = (TextView) itemView.findViewById(R.id.path_distance);
+        public PathViewHolder( View itemView ) {
+            super( itemView );
+            vId = ( TextView ) itemView.findViewById( R.id.path_id );
+            vOwner = ( TextView ) itemView.findViewById( R.id.path_owner );
+            vDuration = ( TextView ) itemView.findViewById( R.id.path_duration );
+            vDistance = ( TextView ) itemView.findViewById( R.id.path_distance );
         }
     }
 }
