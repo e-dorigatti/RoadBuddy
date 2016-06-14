@@ -10,7 +10,7 @@ import com.google.android.gms.maps.model.internal.IPolylineDelegate;
 public class CommentPOI extends PointOfInterest {
     private String text;
 
-    public CommentPOI( long id, double latitude, double longitude, String text, long owner ) {
+    public CommentPOI( int id, double latitude, double longitude, String text, int owner ) {
         super( POIType.COMMENT, id, latitude, longitude, owner );
         this.text = text;
     }

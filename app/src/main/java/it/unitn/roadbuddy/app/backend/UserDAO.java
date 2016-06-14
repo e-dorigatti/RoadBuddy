@@ -9,9 +9,9 @@ import java.util.List;
 public interface UserDAO {
     User createUser( User newUserData ) throws BackendException;
 
-    User getUser( long id ) throws BackendException;
+    User getUser( int id ) throws BackendException;
 
-    void setCurrentLocation( long id, LatLng location ) throws BackendException;
+    void setCurrentLocation( int id, LatLng location ) throws BackendException;
 
     List<User> getUsersInside( LatLngBounds bounds ) throws BackendException;
 }

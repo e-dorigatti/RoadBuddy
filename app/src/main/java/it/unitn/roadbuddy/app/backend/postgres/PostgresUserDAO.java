@@ -40,9 +40,8 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
     }
 
     static LatLng readPosition( ResultSet res, String tableAlias ) throws SQLException {
-        if ( tableAlias != null && !tableAlias.isEmpty( ) && !tableAlias.endsWith( "." ) )
-            tableAlias = tableAlias + ".";
-        else tableAlias = "";
+        if ( tableAlias == null )
+            tableAlias = "";
 
         PGgeometry geom = ( PGgeometry ) res.getObject(
                 tableAlias + COLUMN_NAME_LAST_POSITION
@@ -56,9 +55,8 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
     }
 
     static Date readDate( ResultSet res, String tableAlias ) throws SQLException {
-        if ( tableAlias != null && !tableAlias.isEmpty( ) && !tableAlias.endsWith( "." ) )
-            tableAlias = tableAlias + ".";
-        else tableAlias = "";
+        if ( tableAlias == null )
+            tableAlias = "";
 
         Timestamp ts = res.getTimestamp(
                 tableAlias + COLUMN_NAME_LAST_POSITION_UPDATED,
@@ -108,7 +106,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
             ResultSet res = stmtInsertUser.executeQuery( );
             Utils.Assert( res.next( ), true );
 
-            long newUserID = res.getLong( COLUMN_NAME_ID );
+            int newUserID = res.getInt( COLUMN_NAME_ID );
             return new User( newUserID, newUserData.getUserName( ),
                              newUserData.getLastPosition( ),
                              newUserData.getLastPositionUpdated( ),
@@ -120,7 +118,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
     }
 
     @Override
-    public User getUser( long id ) throws BackendException {
+    public User getUser( int id ) throws BackendException {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmt = conn.prepareStatement(
                     String.format(
@@ -130,12 +128,12 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
                             getSchemaName( ), COLUMN_NAME_ID
                     )
             );
-            stmt.setLong( 1, id );
+            stmt.setInt( 1, id );
             ResultSet res = stmt.executeQuery( );
             if ( res.next( ) ) {
                 return new User( id, res.getString( COLUMN_NAME_USERNAME ),
                                  readPosition( res, "" ), readDate( res, "" ),
-                                 ( Long ) res.getObject( COLUMN_NAME_TRIP ) );
+                                 ( Integer ) res.getObject( COLUMN_NAME_TRIP ) );
             }
             else return null;
         }
@@ -145,7 +143,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
     }
 
     @Override
-    public void setCurrentLocation( long id, LatLng location ) throws BackendException {
+    public void setCurrentLocation( int id, LatLng location ) throws BackendException {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmt = conn.prepareStatement(
                     String.format(
@@ -166,7 +164,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
                     Calendar.getInstance( )
             );
 
-            stmt.setLong( 3, id );
+            stmt.setInt( 3, id );
 
             stmt.execute( );
         }
@@ -193,10 +191,10 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
             List<User> users = new ArrayList<>( );
 
             while ( res.next( ) ) {
-                User u = new User( res.getLong( COLUMN_NAME_ID ),
+                User u = new User( res.getInt( COLUMN_NAME_ID ),
                                    res.getString( COLUMN_NAME_USERNAME ),
                                    readPosition( res, "" ), readDate( res, "" ),
-                                   ( Long ) res.getObject( COLUMN_NAME_TRIP ) );
+                                   ( Integer ) res.getObject( COLUMN_NAME_TRIP ) );
                 users.add( u );
             }
 

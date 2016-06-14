@@ -83,6 +83,7 @@ public class RestState implements NFAState,
         fragment.googleMap.setOnPolylineClickListener( null );
 
         fragment.mainLayout.removeView( );
+        fragment.taskManager.stopRunningTasksOfType( MapFragment.RefreshMapAsync.class );
     }
 
     @Override

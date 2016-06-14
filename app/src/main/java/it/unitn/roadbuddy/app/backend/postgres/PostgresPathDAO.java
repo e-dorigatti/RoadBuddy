@@ -90,7 +90,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
 
             MultiLineString mls = pathToMultiLineString( path );
             stmt.setObject( 1, new PGgeometry( mls ) );
-            stmt.setLong( 2, path.getOwner( ) );
+            stmt.setInt( 2, path.getOwner( ) );
             stmt.setLong( 3, path.getDistance( ) );
             stmt.setLong( 4, path.getDuration( ) );
             stmt.setString( 5, path.getDescription( ) );
@@ -121,8 +121,8 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
             List<Path> paths = new ArrayList<>( );
 
             while ( res.next( ) ) {
-                long id = res.getLong( COLUMN_NAME_ID );
-                long owner = res.getLong( COLUMN_NAME_OWNER );
+                int id = res.getInt( COLUMN_NAME_ID );
+                int owner = res.getInt( COLUMN_NAME_OWNER );
                 long distance = res.getLong( COLUMN_NAME_DISTANCE );
                 long duration = res.getLong( COLUMN_NAME_DURATION );
                 String description = res.getString( COLUMN_NAME_DESCRIPTION );
@@ -161,8 +161,8 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
             List<Path> paths = new ArrayList<>( );
 
             while ( res.next( ) ) {
-                long id = res.getLong( COLUMN_NAME_ID );
-                long owner = res.getLong( COLUMN_NAME_OWNER );
+                int id = res.getInt( COLUMN_NAME_ID );
+                int owner = res.getInt( COLUMN_NAME_OWNER );
                 long distance = res.getLong( COLUMN_NAME_DISTANCE );
                 long duration = res.getLong( COLUMN_NAME_DURATION );
                 String description = res.getString( COLUMN_NAME_DESCRIPTION );

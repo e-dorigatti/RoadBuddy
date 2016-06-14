@@ -53,7 +53,7 @@ public class PostgresTripDAO extends PostgresDAOBase implements TripDAO {
     }
 
     @Override
-    public Trip getTrip( long id ) throws BackendException {
+    public Trip getTrip( int id ) throws BackendException {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
 
             if ( DAOFactory.getPathDAO( ).getClass( ) == PostgresPathDAO.class &&
@@ -100,13 +100,13 @@ public class PostgresTripDAO extends PostgresDAOBase implements TripDAO {
         );
 
         if ( path != null )
-            stmtCreateTrip.setLong( 1, path.getId( ) );
+            stmtCreateTrip.setInt( 1, path.getId( ) );
         else stmtCreateTrip.setObject( 1, null );
 
         ResultSet res = stmtCreateTrip.executeQuery( );
         Utils.Assert( res.next( ), true );
 
-        long tripId = res.getLong( COLUMN_NAME_ID );
+        int tripId = res.getInt( COLUMN_NAME_ID );
 
         if ( creator != null ) {
             PreparedStatement stmtUpateCreator = conn.prepareStatement(
@@ -117,7 +117,8 @@ public class PostgresTripDAO extends PostgresDAOBase implements TripDAO {
                             PostgresUserDAO.COLUMN_NAME_ID
                     )
             );
-            stmtUpateCreator.setLong( 1, creator.getId( ) );
+            stmtUpateCreator.setInt( 1, tripId );
+            stmtUpateCreator.setInt( 2, creator.getId( ) );
 
             int updatedCount = stmtUpateCreator.executeUpdate( );
             if ( updatedCount != 1 ) {  // definitely should not happen
@@ -132,75 +133,76 @@ public class PostgresTripDAO extends PostgresDAOBase implements TripDAO {
     }
 
 
-    protected Trip getTripWithinPostgres( Connection conn, long id ) throws SQLException {
-        String usersAlias = "u.", pathsAlias = "p.", tripsAlias = "t.";
+    protected Trip getTripWithinPostgres( Connection conn, int id ) throws SQLException {
+        String usersAlias = "u", pathsAlias = "p", tripsAlias = "t";
 
         PreparedStatement stmt = conn.prepareStatement(
                 String.format(
-                        "SELECT %s%s, %s%s, %s%s, %s%s, %s%s, %s%s, %s%s, %s%s, %s%s, %s%s, %s%s" +
-                                "FROM %s %s, %s %s, %s %s" +
-                                "WHERE %s%s = %s%s AND %s%s = %s%s AND %s%s = ?",
+                        "SELECT %1$s.%4$s AS %1$s_%4$s, %1$s.%5$s AS %1$s_%5$s, %1$s.%6$s AS %1$s_%6$s, " +
+                                "%1$s.%7$s AS %1$s_%7$s, %1$s.%8$s AS %1$s_%8$s, %2$s.%9$s AS %2$s_%9$s, " +
+                                "%2$s.%10$s AS %2$s_%10$s, %2$s.%11$s AS %2$s_%11$s, %2$s.%12$s AS %2$s_%12$s, " +
+                                "%2$s.%13$s AS %2$s_%13$s, %3$s.%14$s AS %3$s_%14$s " +
 
-                        // selected user data
-                        usersAlias, PostgresUserDAO.COLUMN_NAME_ID,
-                        usersAlias, PostgresUserDAO.COLUMN_NAME_USERNAME,
-                        usersAlias, PostgresUserDAO.COLUMN_NAME_LAST_POSITION,
-                        usersAlias, PostgresUserDAO.COLUMN_NAME_LAST_POSITION_UPDATED,
-                        usersAlias, PostgresUserDAO.COLUMN_NAME_TRIP,
+                                "FROM %16$s AS %1$s, %17$s AS %2$s, %18$s AS %3$s " +
+                                "WHERE %1$s.%8$s = %3$s.%14$s AND %2$s.%9$s = %3$s.%15$s AND %3$s.%14$s = ?",
 
-                        // selected path data
-                        pathsAlias, PostgresPathDAO.COLUMN_NAME_ID,
-                        pathsAlias, PostgresPathDAO.COLUMN_NAME_OWNER,
-                        pathsAlias, PostgresPathDAO.COLUMN_NAME_DISTANCE,
-                        pathsAlias, PostgresPathDAO.COLUMN_NAME_DURATION,
-                        pathsAlias, PostgresPathDAO.COLUMN_NAME_DESCRIPTION,
+                        // aliases (1-3)
+                        usersAlias, pathsAlias, tripsAlias,
 
-                        // selected trip data
-                        tripsAlias, PostgresTripDAO.COLUMN_NAME_ID,
+                        // user columns (4-8)
+                        PostgresUserDAO.COLUMN_NAME_ID,
+                        PostgresUserDAO.COLUMN_NAME_USERNAME,
+                        PostgresUserDAO.COLUMN_NAME_LAST_POSITION,
+                        PostgresUserDAO.COLUMN_NAME_LAST_POSITION_UPDATED,
+                        PostgresUserDAO.COLUMN_NAME_TRIP,
 
-                        // from clause
-                        PostgresUserDAO.TABLE_NAME, usersAlias.substring( 0, usersAlias.length( ) - 1 ),
-                        PostgresPathDAO.TABLE_NAME, pathsAlias.substring( 0, pathsAlias.length( ) - 1 ),
-                        PostgresTripDAO.TABLE_NAME, tripsAlias.substring( 0, tripsAlias.length( ) - 1 ),
+                        // path columns (9-13)
+                        PostgresPathDAO.COLUMN_NAME_ID,
+                        PostgresPathDAO.COLUMN_NAME_OWNER,
+                        PostgresPathDAO.COLUMN_NAME_DISTANCE,
+                        PostgresPathDAO.COLUMN_NAME_DURATION,
+                        PostgresPathDAO.COLUMN_NAME_DESCRIPTION,
 
-                        // join users and trips
-                        usersAlias, PostgresUserDAO.COLUMN_NAME_TRIP,
-                        tripsAlias, PostgresTripDAO.COLUMN_NAME_ID,
+                        // trips column (14-15)
+                        PostgresTripDAO.COLUMN_NAME_ID,
+                        PostgresTripDAO.COLUMN_NAME_PATH,
 
-                        // join paths and trips
-                        pathsAlias, PostgresPathDAO.COLUMN_NAME_ID,
-                        tripsAlias, PostgresTripDAO.COLUMN_NAME_PATH,
-
-                        // select only the requested trip
-                        tripsAlias, PostgresTripDAO.COLUMN_NAME_ID
+                        // table names (16-18)
+                        PostgresUserDAO.TABLE_NAME,
+                        PostgresPathDAO.TABLE_NAME,
+                        PostgresTripDAO.TABLE_NAME
                 )
         );
 
-        stmt.setLong( 1, id );
+        stmt.setInt( 1, id );
 
         ResultSet res = stmt.executeQuery( );
 
         // the data about the trip and the path will be repeated for every user
         List<User> participants = null;
         Path path = null;
-        long tripId = -1;
+        int tripId = -1;
+
+        usersAlias = usersAlias + "_";
+        pathsAlias = pathsAlias + "_";
+        tripsAlias = tripsAlias + "_";
 
         while ( res.next( ) ) {
             if ( participants == null ) {
                 path = new Path(
-                        res.getLong( pathsAlias + PostgresPathDAO.COLUMN_NAME_ID ),
-                        res.getLong( pathsAlias + PostgresPathDAO.COLUMN_NAME_OWNER ),
+                        res.getInt( pathsAlias + PostgresPathDAO.COLUMN_NAME_ID ),
+                        res.getInt( pathsAlias + PostgresPathDAO.COLUMN_NAME_OWNER ),
                         res.getLong( pathsAlias + PostgresPathDAO.COLUMN_NAME_DISTANCE ),
                         res.getLong( pathsAlias + PostgresPathDAO.COLUMN_NAME_DURATION ),
                         res.getString( pathsAlias + PostgresPathDAO.COLUMN_NAME_DESCRIPTION )
                 );
 
-                tripId = res.getLong( tripsAlias + PostgresTripDAO.COLUMN_NAME_ID );
+                tripId = res.getInt( tripsAlias + PostgresTripDAO.COLUMN_NAME_ID );
                 participants = new ArrayList<>( );
             }
 
             User u = new User(
-                    res.getLong( usersAlias + PostgresUserDAO.COLUMN_NAME_ID ),
+                    res.getInt( usersAlias + PostgresUserDAO.COLUMN_NAME_ID ),
                     res.getString( usersAlias + PostgresUserDAO.COLUMN_NAME_USERNAME ),
                     PostgresUserDAO.readPosition( res, usersAlias ),
                     PostgresUserDAO.readDate( res, usersAlias ),
