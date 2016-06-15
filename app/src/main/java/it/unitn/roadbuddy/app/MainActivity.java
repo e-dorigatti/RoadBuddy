@@ -1,7 +1,6 @@
 package it.unitn.roadbuddy.app;
 
 import android.Manifest;
-import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -34,7 +33,9 @@ public class MainActivity extends AppCompatActivity
         implements GoogleApiClient.ConnectionCallbacks,
                    LocationListener {
 
+    public static final String INTENT_JOIN_TRIP = "join-trip";
     public static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
+
     boolean locationPermissionEnabled = false;
 
     ViewPager mPager;
@@ -44,6 +45,8 @@ public class MainActivity extends AppCompatActivity
     GoogleApiClient googleApiClient;
     HandlerThread backgroundThread;
     Handler backgroundTasksHandler;
+
+    CheckInvitesRunnable inviteRunnable;
 
     int currentUserId;
 
@@ -119,6 +122,11 @@ public class MainActivity extends AppCompatActivity
         backgroundThread = new HandlerThread( "background worker" );
         backgroundThread.start( );
         backgroundTasksHandler = new Handler( backgroundThread.getLooper( ) );
+
+        inviteRunnable = new CheckInvitesRunnable(
+                backgroundTasksHandler, getApplicationContext( ), currentUserId
+        );
+
         super.onStart( );
     }
 

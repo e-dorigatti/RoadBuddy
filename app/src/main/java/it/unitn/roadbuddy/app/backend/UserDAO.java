@@ -11,7 +11,11 @@ public interface UserDAO {
 
     User getUser( int id ) throws BackendException;
 
+    User getUser( String userName ) throws BackendException;
+
     void setCurrentLocation( int id, LatLng location ) throws BackendException;
 
     List<User> getUsersInside( LatLngBounds bounds ) throws BackendException;
+
+    List<User> getUsersOfTrip( int trip ) throws BackendException;
 }

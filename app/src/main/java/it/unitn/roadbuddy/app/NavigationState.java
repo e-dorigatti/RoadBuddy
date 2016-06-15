@@ -8,7 +8,10 @@ import android.support.v7.widget.RecyclerView;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
-import android.widget.*;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import com.google.android.gms.maps.GoogleMap;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import it.unitn.roadbuddy.app.backend.BackendException;
@@ -16,6 +19,9 @@ import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.Path;
 import it.unitn.roadbuddy.app.backend.models.Trip;
 import it.unitn.roadbuddy.app.backend.models.User;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class NavigationState implements NFAState {
 
@@ -30,7 +36,7 @@ public class NavigationState implements NFAState {
     RecyclerView.Adapter mAdapter;
     RecyclerView.LayoutManager mLayoutManager;
 
-    Button btnInviteBuddy;
+    List<User> buddies = new ArrayList<>( );
 
     @Override
     public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
@@ -150,6 +156,39 @@ public class NavigationState implements NFAState {
 
         taskManager.stopRunningTasksOfType( CreateTripAsync.class );
         taskManager.stopRunningTasksOfType( SendInviteAsync.class );
+    }
+
+    class RefreshBuddiesAsync extends CancellableAsyncTask<Void, Void, List<User>> {
+
+        String exceptionMessage;
+
+        public RefreshBuddiesAsync( ) {
+            super( taskManager );
+        }
+
+        @Override
+        protected List<User> doInBackground( Void... voids ) {
+            try {
+                return DAOFactory.getUserDAO( ).getUsersOfTrip( currentTrip.getId( ) );
+            }
+            catch ( BackendException exc ) {
+                Log.e( getClass( ).getName( ), "while getting users of trip", exc );
+                exceptionMessage = exc.getMessage( );
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( List<User> res ) {
+            if ( res == null ) {
+                fragment.showToast( R.string.generic_backend_error );
+            }
+            else {
+                buddies = res;
+            }
+
+            super.onPostExecute( res );
+        }
     }
 
     class SendInviteAsync extends CancellableAsyncTask<String, Void, Boolean> {

@@ -121,7 +121,6 @@ public class SettingsFragment
      * THIS IS ONLY MEANT TO BE USED DURING DEVELOPMENT *
      * ***********************************************+**
      */
-    // FIXME use strings
     class ChangeAppUserAsync extends AsyncTask<Object, Integer, Integer> {
 
         String exceptionMessage;
@@ -129,11 +128,17 @@ public class SettingsFragment
         @Override
         protected Integer doInBackground( Object... newUserName ) {
             try {
-                User newUser = DAOFactory.getUserDAO( ).createUser(
-                        new User( -1, ( String ) newUserName[ 0 ], null, null, null )
-                );
+                String userName = ( String ) newUserName[ 0 ];
+                User user;
 
-                return newUser.getId( );
+                user = DAOFactory.getUserDAO( ).getUser( userName );
+                if ( user == null ) {
+                    user = DAOFactory.getUserDAO( ).createUser(
+                            new User( -1, userName, null, null, null )
+                    );
+                }
+
+                return user.getId( );
             }
             catch ( BackendException exc ) {
                 Log.e( getClass( ).getName( ), "while changing current user", exc );

@@ -52,6 +52,9 @@
     <string name="navigation_invite_sent">Invite Sent!</string>
     <string name="navigation_invite_fail">There is no user with that username..</string>
 
+    <string name="invite_notification_title">Invited to a trip!</string>
+    <string name="invite_notification_text">%s has invited you to join his trip</string>
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_trips_detail">TripsDetailActivity</string>

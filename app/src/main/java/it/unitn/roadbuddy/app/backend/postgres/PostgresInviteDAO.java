@@ -5,6 +5,9 @@ import android.util.Log;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.InviteDAO;
+import it.unitn.roadbuddy.app.backend.models.Invite;
+import it.unitn.roadbuddy.app.backend.models.Trip;
+import it.unitn.roadbuddy.app.backend.models.User;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -19,6 +22,7 @@ public class PostgresInviteDAO extends PostgresDAOBase implements InviteDAO {
             COLUMN_NAME_INVITER = "inviter",
             COLUMN_NAME_INVITEE = "invitee",
             COLUMN_NAME_TRIP = "trip",
+            COLUMN_NAME_ID = "id",
             TABLE_NAME = "Invites";
 
     private static PostgresInviteDAO instance;
@@ -67,23 +71,38 @@ public class PostgresInviteDAO extends PostgresDAOBase implements InviteDAO {
     }
 
     @Override
-    public List<Integer> retrieveInvites( int user ) throws BackendException {
+    public List<Invite> retrieveInvites( int user ) throws BackendException {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmt = conn.prepareStatement(
                     String.format(
-                            "SELECT %s FROM %s WHERE %s = ?",
-                            TABLE_NAME, COLUMN_NAME_TRIP, COLUMN_NAME_INVITEE
+                            "SELECT %s, %s, %s FROM %s WHERE %s = ?",
+                            COLUMN_NAME_ID, COLUMN_NAME_TRIP, COLUMN_NAME_INVITER,
+                            TABLE_NAME, COLUMN_NAME_INVITEE
                     )
             );
 
             stmt.setInt( 1, user );
 
-
             ResultSet res = stmt.executeQuery( );
-            List<Integer> invites = new ArrayList<>( );
+            List<Invite> invites = new ArrayList<>( );
             while ( res.next( ) ) {
-                int trip = res.getInt( COLUMN_NAME_TRIP );
-                invites.add( trip );
+
+                /**
+                 * For performance reasons we should add an explicit case for when the trip dao
+                 * and/or the user dao use the postgres backend and retrieve this information with
+                 * an explicit join (just like we do in the trip dao, for example)
+                 *
+                 * On the other hand, currently the invites are retrieved periodically in a background
+                 * thread so we can afford a couple of seconds of delay. We could not do this (probably)
+                 * if we left the user waiting for this operation to complete, as the UI should be
+                 * fast and responsive.
+                 */
+                Trip trip = DAOFactory.getTripDAO( ).getTrip( res.getInt( COLUMN_NAME_TRIP ) );
+                User inviter = DAOFactory.getUserDAO( ).getUser( res.getInt( COLUMN_NAME_INVITER ) );
+                int id = res.getInt( COLUMN_NAME_ID );
+
+                Invite invite = new Invite( id, inviter, null, trip );
+                invites.add( invite );
             }
 
             return invites;
@@ -96,14 +115,14 @@ public class PostgresInviteDAO extends PostgresDAOBase implements InviteDAO {
 
     @Override
     protected int getSchemaVersion( ) {
-        return 0;  // TODO [ed] increment at every schema change
+        return 1;  // TODO [ed] increment at every schema change
     }
 
     @Override
     protected String getCreateTableStatement( ) {
         return String.format(
-                "CREATE TABLE %s(%s INTEGER, %s INTEGER, %s INTEGER)",
-                TABLE_NAME, COLUMN_NAME_INVITEE, COLUMN_NAME_INVITER, COLUMN_NAME_TRIP
+                "CREATE TABLE %s(%s SERIAL PRIMARY KEY, %s INTEGER, %s INTEGER, %s INTEGER)",
+                TABLE_NAME, COLUMN_NAME_ID, COLUMN_NAME_INVITEE, COLUMN_NAME_INVITER, COLUMN_NAME_TRIP
         );
     }
 

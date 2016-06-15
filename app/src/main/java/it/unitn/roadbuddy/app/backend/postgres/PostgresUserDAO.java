@@ -68,6 +68,58 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
         else return null;
     }
 
+
+    @Override
+    public User getUser( int id ) throws BackendException {
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement(
+                    String.format(
+                            "SELECT %s, %s, %s, %s FROM %s WHERE %s = ?",
+                            COLUMN_NAME_USERNAME, COLUMN_NAME_LAST_POSITION,
+                            COLUMN_NAME_LAST_POSITION_UPDATED, COLUMN_NAME_TRIP,
+                            getSchemaName( ), COLUMN_NAME_ID
+                    )
+            );
+            stmt.setInt( 1, id );
+            ResultSet res = stmt.executeQuery( );
+            if ( res.next( ) ) {
+                return new User( id, res.getString( COLUMN_NAME_USERNAME ),
+                                 readPosition( res, "" ), readDate( res, "" ),
+                                 ( Integer ) res.getObject( COLUMN_NAME_TRIP ) );
+            }
+            else return null;
+        }
+        catch ( SQLException exc ) {
+            throw new BackendException( exc.getMessage( ), exc );
+        }
+    }
+
+
+    @Override
+    public User getUser( String userName ) throws BackendException {
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement(
+                    String.format(
+                            "SELECT %s, %s, %s, %s FROM %s WHERE %s = ?",
+                            COLUMN_NAME_ID, COLUMN_NAME_LAST_POSITION,
+                            COLUMN_NAME_LAST_POSITION_UPDATED, COLUMN_NAME_TRIP,
+                            getSchemaName( ), COLUMN_NAME_USERNAME
+                    )
+            );
+            stmt.setString( 1, userName );
+            ResultSet res = stmt.executeQuery( );
+            if ( res.next( ) ) {
+                return new User( res.getInt( COLUMN_NAME_ID ), userName,
+                                 readPosition( res, "" ), readDate( res, "" ),
+                                 ( Integer ) res.getObject( COLUMN_NAME_TRIP ) );
+            }
+            else return null;
+        }
+        catch ( SQLException exc ) {
+            throw new BackendException( exc.getMessage( ), exc );
+        }
+    }
+
     @Override
     public User createUser( User newUserData ) throws BackendException {
         if ( !BuildConfig.DEBUG )
@@ -111,31 +163,6 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
                              newUserData.getLastPosition( ),
                              newUserData.getLastPositionUpdated( ),
                              newUserData.getTrip( ) );
-        }
-        catch ( SQLException exc ) {
-            throw new BackendException( exc.getMessage( ), exc );
-        }
-    }
-
-    @Override
-    public User getUser( int id ) throws BackendException {
-        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
-            PreparedStatement stmt = conn.prepareStatement(
-                    String.format(
-                            "SELECT %s, %s, %s, %s FROM %s WHERE %s = ?",
-                            COLUMN_NAME_USERNAME, COLUMN_NAME_LAST_POSITION,
-                            COLUMN_NAME_LAST_POSITION_UPDATED, COLUMN_NAME_TRIP,
-                            getSchemaName( ), COLUMN_NAME_ID
-                    )
-            );
-            stmt.setInt( 1, id );
-            ResultSet res = stmt.executeQuery( );
-            if ( res.next( ) ) {
-                return new User( id, res.getString( COLUMN_NAME_USERNAME ),
-                                 readPosition( res, "" ), readDate( res, "" ),
-                                 ( Integer ) res.getObject( COLUMN_NAME_TRIP ) );
-            }
-            else return null;
         }
         catch ( SQLException exc ) {
             throw new BackendException( exc.getMessage( ), exc );
@@ -202,13 +229,45 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
         }
         catch ( SQLException exc ) {
             Log.e( getClass( ).getName( ), "exception while retrieving comment pois", exc );
-            throw new BackendException( "exception while retrieving comment pois", exc );
+            throw new BackendException( exc.getMessage( ), exc );
+        }
+    }
+
+    @Override
+    public List<User> getUsersOfTrip( int trip ) throws BackendException {
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement(
+                    String.format(
+                            "SELECT %s, %s, %s, %s, %s FROM %s WHERE %s = ?",
+                            COLUMN_NAME_ID, COLUMN_NAME_USERNAME, COLUMN_NAME_LAST_POSITION,
+                            COLUMN_NAME_LAST_POSITION_UPDATED, COLUMN_NAME_TRIP, TABLE_NAME,
+                            COLUMN_NAME_TRIP
+                    )
+            );
+
+            stmt.setInt( 1, trip );
+
+            ResultSet res = stmt.executeQuery( );
+            List<User> users = new ArrayList<>( );
+
+            while ( res.next( ) ) {
+                User u = new User( res.getInt( COLUMN_NAME_ID ),
+                                   res.getString( COLUMN_NAME_USERNAME ),
+                                   readPosition( res, "" ), readDate( res, "" ),
+                                   ( Integer ) res.getObject( COLUMN_NAME_TRIP ) );
+                users.add( u );
+            }
+
+            return users;
+        }
+        catch ( SQLException exc ) {
+            throw new BackendException( exc.getMessage( ), exc );
         }
     }
 
     @Override
     protected int getSchemaVersion( ) {
-        return 3;  // TODO [ed] increment at every schema change
+        return 4;  // TODO [ed] increment at every schema change
     }
 
     @Override
@@ -220,7 +279,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
     protected String getCreateTableStatement( ) {
         return String.format(
                 "CREATE TABLE %s(%s SERIAL PRIMARY KEY, " +
-                        "%s VARCHAR(100), " +
+                        "%s VARCHAR(100) UNIQUE, " +
                         "%s GEOMETRY(POINT), " +
                         "%s TIMESTAMPTZ, " +
                         "%s INTEGER)",
