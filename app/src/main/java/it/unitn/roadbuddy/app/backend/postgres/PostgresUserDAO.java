@@ -266,6 +266,24 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
     }
 
     @Override
+    public boolean joinTrip( int userId, int tripId ) throws BackendException {
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement( String.format(
+                    "UPDATE %s SET %s = ? WHERE %s = ?",
+                    TABLE_NAME, COLUMN_NAME_TRIP, COLUMN_NAME_ID
+            ) );
+
+            stmt.setInt( 1, tripId );
+            stmt.setInt( 2, userId );
+
+            return stmt.executeUpdate( ) == 1;
+        }
+        catch ( SQLException exc ) {
+            throw new BackendException( exc.getMessage( ), exc );
+        }
+    }
+
+    @Override
     protected int getSchemaVersion( ) {
         return 4;  // TODO [ed] increment at every schema change
     }

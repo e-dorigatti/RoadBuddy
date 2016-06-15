@@ -33,23 +33,22 @@ import it.unitn.roadbuddy.app.backend.models.CommentPOI;
 import it.unitn.roadbuddy.app.backend.models.Path;
 import it.unitn.roadbuddy.app.backend.models.User;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
-    MainActivity mPActivity;
+    MainActivity mainActivity;
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
     com.sothree.slidinguppanel.SlidingUpPanelLayout slidingLayout;
     ViewContainer sliderLayout;
 
+    Map<String, Drawable> shownDrawablesByMapId = new HashMap<>( );
+    Map<Integer, Drawable> shownDrawablesByModel = new HashMap<>( );
+
     GoogleMap googleMap;
     NFA nfa;
-    Map<String, Drawable> shownDrawables = new HashMap<>( );
     Drawable selectedDrawable;
     User currentUser;
 
@@ -58,6 +57,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
+    NFAState initialState;
+
     public MapFragment( ) {
         // Required empty public constructor
     }
@@ -65,16 +66,29 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
-        this.mPActivity = ( MainActivity ) getActivity( );
+        this.mainActivity = ( MainActivity ) getActivity( );
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
         int user_id = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
 
         taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
+
+        if ( mainActivity.intent != null &&
+                mainActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
+
+            int tripId = Integer.parseInt( mainActivity.intent.getData( ).getFragment( ) );
+            String inviter = mainActivity.intent.getExtras( ).getString( MainActivity.JOIN_TRIP_INVITER_KEY );
+            initialState = new NavigationState( tripId, inviter );
+
+            // set the intent to null to say it has been consumed
+            mainActivity.intent = null;
+        }
+        else initialState = new RestState( );
     }
 
     @Override
     public View onCreateView( LayoutInflater inflater, ViewGroup container,
                               Bundle savedInstanceState ) {
+
         return inflater.inflate( R.layout.fragment_map, container, false );
     }
 
@@ -88,13 +102,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         button_viaggi.setOnTouchListener( new View.OnTouchListener( ) {
             public boolean onTouch( View v, MotionEvent event ) {
-                mPActivity.mPager.setCurrentItem( 1 );
+                mainActivity.mPager.setCurrentItem( 1 );
                 return false;
             }
         } );
         button_impost.setOnTouchListener( new View.OnTouchListener( ) {
             public boolean onTouch( View v, MotionEvent event ) {
-                mPActivity.mPager.setCurrentItem( 2 );
+                mainActivity.mPager.setCurrentItem( 2 );
                 return false;
             }
         } );
@@ -114,7 +128,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
-
     }
 
     @Override
@@ -143,7 +156,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onMapReady( GoogleMap map ) {
 
         googleMap = map;
-        nfa = new NFA( this, new RestState( ) );
+        nfa = new NFA( this, initialState );
 
         if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) == PackageManager.PERMISSION_GRANTED ) {
             googleMap.setMyLocationEnabled( true );
@@ -151,8 +164,24 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    public void RefreshMapContent( ) {
+    // draws a drawable and adds it to the index
+    void addDrawable( Drawable drawable ) {
+        String mapId = drawable.DrawToMap( getContext( ), googleMap );
+        int modelId = drawable.getModelId( );
 
+        shownDrawablesByModel.put( modelId, drawable );
+        shownDrawablesByMapId.put( mapId, drawable );
+    }
+
+    // removes a drawable from the map and from the index
+    void removeDrawable( Drawable drawable ) {
+        drawable.RemoveFromMap( getContext( ) );
+
+        shownDrawablesByModel.remove( drawable.getModelId( ) );
+        shownDrawablesByMapId.remove( drawable.getMapId( ) );
+    }
+
+    public void RefreshMapContent( ) {
         // show rotating animation
         Animation animRotate = AnimationUtils.loadAnimation( getContext( ), R.anim.rotate );
         floatingActionMenu = ( FloatingActionMenu ) getView( ).findViewById( R.id.fab );
@@ -192,31 +221,42 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void clearMap( ) {
-        for ( Map.Entry<String, Drawable> entry : shownDrawables.entrySet( ) ) {
+        for ( Map.Entry<String, Drawable> entry : shownDrawablesByMapId.entrySet( ) ) {
             if ( entry.getValue( ) != selectedDrawable ) {
                 entry.getValue( ).RemoveFromMap( getContext( ) );
             }
         }
-        shownDrawables.clear( );
+
+        shownDrawablesByMapId.clear( );
+        shownDrawablesByModel.clear( );
 
         if ( selectedDrawable != null ) {
-            String id = selectedDrawable.DrawToMap( getContext( ), googleMap );
-            shownDrawables.put( id, selectedDrawable );
+            addDrawable( selectedDrawable );
         }
     }
 
-    class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Integer, List<Drawable>> {
+    class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Drawable, Boolean> {
 
         String exceptionMessage;
         Context context;
 
+        /**
+         * drawables which were not returned by the backend will be removed from the
+         * map because they are not visible anymore
+         */
+        Set<Integer> missingDrawables;
+
         public RefreshMapAsync( Context context ) {
             super( taskManager );
             this.context = context;
+
+            // get a copy of the key set, otherwise when removing from it we
+            // will remove from the map, too
+            missingDrawables = new HashSet<>( shownDrawablesByModel.keySet( ) );
         }
 
         @Override
-        protected List<Drawable> doInBackground( LatLngBounds... bounds ) {
+        protected Boolean doInBackground( LatLngBounds... bounds ) {
             /**
              * Sleep a while to let the user adjust the viewport
              *
@@ -225,14 +265,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
              * and cancelled when the view is moved again
              */
             SystemClock.sleep( 2500 );
-            if ( isCancelled( ) ) return null;
+            if ( isCancelled( ) ) return false;
 
             try {
-                List<Drawable> results = new ArrayList<>( );
 
                 List<Path> paths = DAOFactory.getPathDAO( ).getPathsInside(
                         context, bounds[ 0 ]
                 );
+
+                for ( Path p : paths ) {
+                    publishProgress( new DrawablePath( p ) );
+                }
 
                 List<CommentPOI> commentPOIs =
                         DAOFactory.getPoiDAOFactory( )
@@ -242,40 +285,48 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                                           bounds[ 0 ]
                                   );
 
-                for ( Path p : paths )
-                    results.add( new DrawablePath( p ) );
+                for ( CommentPOI p : commentPOIs ) {
+                    publishProgress( new DrawableCommentPOI( p ) );
+                }
 
-                for ( CommentPOI p : commentPOIs )
-                    results.add( new DrawableCommentPOI( p ) );
-
-                return results;
+                return true;
             }
             catch ( BackendException e ) {
                 Log.e( getClass( ).getName( ), "while refreshing map", e );
                 exceptionMessage = e.getMessage( );
-                return null;
+                return false;
             }
         }
 
         @Override
-        protected void onPostExecute( List<Drawable> drawables ) {
-            if ( drawables != null ) {
-                clearMap( );
+        protected void onProgressUpdate( Drawable... values ) {
+            super.onProgressUpdate( values );
 
-                for ( Drawable d : drawables ) {
-                    String displayed = d.DrawToMap( context, googleMap );
-                    shownDrawables.put( displayed, d );
+            Drawable drawable = values[ 0 ];
 
-                    if ( d.equals( selectedDrawable ) ) {
-                        // they represent the same database object but are actually different references
-                        selectedDrawable = d;
-                        d.setSelected( context, googleMap, true );
-                    }
-                    else d.setSelected( context, googleMap, false );
-                }
+            // FIXME [ed] shownDrawablesByModel is always empty!!!
+            Drawable oldDrawable = shownDrawablesByModel.get( drawable.getModelId( ) );
+            if ( oldDrawable != null )
+                removeDrawable( oldDrawable );
+
+            addDrawable( drawable );
+            missingDrawables.remove( drawable.getModelId( ) );
+
+            if ( drawable.equals( selectedDrawable ) ) {
+                // they represent the same database object but are actually
+                // different references so replace them but keep it selected
+                selectedDrawable = drawable;
+                drawable.setSelected( context, googleMap, true );
             }
-            else if ( exceptionMessage != null ) {
-                showToast( exceptionMessage );
+            else drawable.setSelected( context, googleMap, false );
+        }
+
+        @Override
+        protected void onPostExecute( Boolean success ) {
+            if ( success ) {
+                for ( Integer drawable : missingDrawables ) {
+                    removeDrawable( shownDrawablesByModel.get( drawable ) );
+                }
             }
             else {
                 showToast( R.string.generic_backend_error );
@@ -283,6 +334,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
             if ( floatingActionMenu != null )
                 floatingActionMenu.getMenuIconView( ).clearAnimation( );
+
+            super.onPostExecute( success );
         }
     }
 

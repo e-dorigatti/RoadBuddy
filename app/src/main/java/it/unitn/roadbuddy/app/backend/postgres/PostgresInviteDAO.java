@@ -71,6 +71,25 @@ public class PostgresInviteDAO extends PostgresDAOBase implements InviteDAO {
     }
 
     @Override
+    public void removeInvite( int invite ) throws BackendException {
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement(
+                    String.format(
+                            "DELETE FROM %s WHERE %s = ?",
+                            TABLE_NAME, COLUMN_NAME_ID
+                    )
+            );
+
+            stmt.setInt( 1, invite );
+            stmt.execute( );
+        }
+        catch ( SQLException exc ) {
+            Log.e( getClass( ).getName( ), "while retrieving invites", exc );
+            throw new BackendException( exc.getMessage( ), exc );
+        }
+    }
+
+    @Override
     public List<Invite> retrieveInvites( int user ) throws BackendException {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmt = conn.prepareStatement(

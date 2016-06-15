@@ -18,4 +18,6 @@ public interface UserDAO {
     List<User> getUsersInside( LatLngBounds bounds ) throws BackendException;
 
     List<User> getUsersOfTrip( int trip ) throws BackendException;
+
+    boolean joinTrip( int userId, int tripId ) throws BackendException;
 }

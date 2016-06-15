@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.Invite;
@@ -61,6 +62,13 @@ public class CheckInvitesRunnable implements Runnable {
     }
 
     void sendNotification( Invite invite ) {
+        try {
+            DAOFactory.getInviteDAO( ).removeInvite( invite.getId( ) );
+        }
+        catch ( BackendException exc ) {
+            Log.e( getClass( ).getName( ), "while deleting invite", exc );
+        }
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder( context )
                 .setSmallIcon( R.drawable.common_plus_signin_btn_icon_dark )
                 .setContentTitle( context.getString( R.string.invite_notification_title ) )
@@ -69,12 +77,14 @@ public class CheckInvitesRunnable implements Runnable {
                                 context.getString( R.string.invite_notification_text ),
                                 invite.getInviter( ).getUserName( )
                         )
-                );
+                )
+                .setAutoCancel( true );  // auto cancel = remove when tapped
 
         Uri intentUri = Uri.fromParts(
                 "roadbuddy", MainActivity.INTENT_JOIN_TRIP, Integer.toString( invite.getTrip( ).getId( ) )
         );
         Intent intent = new Intent( MainActivity.INTENT_JOIN_TRIP, intentUri, context, MainActivity.class );
+        intent.putExtra( MainActivity.JOIN_TRIP_INVITER_KEY, invite.getInviter( ).getUserName( ) );
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create( context );
         stackBuilder.addParentStack( MainActivity.class );

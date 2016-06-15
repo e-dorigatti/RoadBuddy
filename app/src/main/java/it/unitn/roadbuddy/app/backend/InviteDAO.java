@@ -8,4 +8,6 @@ public interface InviteDAO {
     boolean addInvite( int inviter, String invitee, int trip ) throws BackendException;
 
     List<Invite> retrieveInvites( int user ) throws BackendException;
+
+    void removeInvite( int invite ) throws BackendException;
 }

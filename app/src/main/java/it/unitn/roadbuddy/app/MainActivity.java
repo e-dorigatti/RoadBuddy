@@ -2,6 +2,7 @@ package it.unitn.roadbuddy.app;
 
 import android.Manifest;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -34,6 +35,8 @@ public class MainActivity extends AppCompatActivity
                    LocationListener {
 
     public static final String INTENT_JOIN_TRIP = "join-trip";
+    public static final String JOIN_TRIP_INVITER_KEY = "trip-inviter";
+
     public static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
 
     boolean locationPermissionEnabled = false;
@@ -48,6 +51,15 @@ public class MainActivity extends AppCompatActivity
 
     CheckInvitesRunnable inviteRunnable;
 
+    /**
+     * Store the intent used to launch the app as well as the previous
+     * saved instance state. The map fragment will need most of them
+     * to decide which state to launch (e.g. joining a trip or resuming
+     * the previous activity)
+     */
+    Intent intent;
+    Bundle savedInstanceState;
+
     int currentUserId;
 
     @Override
@@ -58,6 +70,9 @@ public class MainActivity extends AppCompatActivity
         mPager = ( ViewPager ) findViewById( R.id.pager );
         mAdapter = new PagerAdapter( getSupportFragmentManager( ) );
         mPager.setAdapter( mAdapter );
+
+        this.intent = getIntent( );
+        this.savedInstanceState = savedInstanceState;
 
         googleApiClient = new GoogleApiClient.Builder( this )
                 .addConnectionCallbacks( this )
@@ -213,6 +228,8 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onLocationChanged( Location location ) {
+        // gets run in a background thread
+
         try {
             DAOFactory.getUserDAO( ).setCurrentLocation(
                     currentUserId, new LatLng( location.getLatitude( ),
