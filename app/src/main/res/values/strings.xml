@@ -1,9 +1,10 @@
 <resources>
     <string name="app_name">RoadBuddy</string>
 
-    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="google_maps_key">AIzaSyDIbDr0ZKOgQomCZtKmLKUmL4W5pPFyRoU</string>
+
+    <string name="cancel">Cancel</string>
 
     <string name="generic_backend_error">There was an error while communicating with the backend..</string>
     <string name="new_poi_saved">Point saved!</string>
@@ -46,6 +47,10 @@
     <string name="navigation_path_tip_no">No thanks, I don\'t need it</string>
     <string name="navigation_trip_creation_error">There was an error while creating a new trip</string>
     <string name="navigation_path_tip_select">Please select a path</string>
+    <string name="navigation_invite">Invite a Buddy</string>
+    <string name="navigation_do_invite">Invite!</string>
+    <string name="navigation_invite_sent">Invite Sent!</string>
+    <string name="navigation_invite_fail">There is no user with that username..</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

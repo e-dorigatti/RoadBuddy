@@ -112,7 +112,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         slidingLayout = ( com.sothree.slidinguppanel.SlidingUpPanelLayout ) view.findViewById( R.id.sliding_layout );
         slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
 
-
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
 

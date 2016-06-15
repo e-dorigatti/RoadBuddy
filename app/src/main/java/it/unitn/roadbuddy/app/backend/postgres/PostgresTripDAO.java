@@ -143,8 +143,9 @@ public class PostgresTripDAO extends PostgresDAOBase implements TripDAO {
                                 "%2$s.%10$s AS %2$s_%10$s, %2$s.%11$s AS %2$s_%11$s, %2$s.%12$s AS %2$s_%12$s, " +
                                 "%2$s.%13$s AS %2$s_%13$s, %3$s.%14$s AS %3$s_%14$s " +
 
-                                "FROM %16$s AS %1$s, %17$s AS %2$s, %18$s AS %3$s " +
-                                "WHERE %1$s.%8$s = %3$s.%14$s AND %2$s.%9$s = %3$s.%15$s AND %3$s.%14$s = ?",
+                                "FROM %18$s AS %3$s JOIN %16$s AS %1$s ON %1$s.%8$s = %3$s.%14$s " +
+                                "LEFT OUTER JOIN %17$s AS %2$s ON %2$s.%9$s = %3$s.%15$s " +
+                                "WHERE %3$s.%14$s = ?",
 
                         // aliases (1-3)
                         usersAlias, pathsAlias, tripsAlias,
@@ -189,13 +190,16 @@ public class PostgresTripDAO extends PostgresDAOBase implements TripDAO {
 
         while ( res.next( ) ) {
             if ( participants == null ) {
-                path = new Path(
-                        res.getInt( pathsAlias + PostgresPathDAO.COLUMN_NAME_ID ),
-                        res.getInt( pathsAlias + PostgresPathDAO.COLUMN_NAME_OWNER ),
-                        res.getLong( pathsAlias + PostgresPathDAO.COLUMN_NAME_DISTANCE ),
-                        res.getLong( pathsAlias + PostgresPathDAO.COLUMN_NAME_DURATION ),
-                        res.getString( pathsAlias + PostgresPathDAO.COLUMN_NAME_DESCRIPTION )
-                );
+                Object pathId = res.getObject( pathsAlias + PostgresPathDAO.COLUMN_NAME_ID );
+                if ( pathId != null ) {
+                    path = new Path(
+                            ( int ) pathId,
+                            res.getInt( pathsAlias + PostgresPathDAO.COLUMN_NAME_OWNER ),
+                            res.getLong( pathsAlias + PostgresPathDAO.COLUMN_NAME_DISTANCE ),
+                            res.getLong( pathsAlias + PostgresPathDAO.COLUMN_NAME_DURATION ),
+                            res.getString( pathsAlias + PostgresPathDAO.COLUMN_NAME_DESCRIPTION )
+                    );
+                }
 
                 tripId = res.getInt( tripsAlias + PostgresTripDAO.COLUMN_NAME_ID );
                 participants = new ArrayList<>( );
