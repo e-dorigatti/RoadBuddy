@@ -71,5 +71,13 @@ public class CancellableAsyncTaskManager {
 
         task.executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, args );
     }
+
+    public synchronized void stopAllRunningTasks( ) {
+        for ( Map.Entry<CancellableAsyncTask<?, ?, ?>, Class<?>>
+                entry : runningTaskByInstance.entrySet( ) ) {
+
+            entry.getKey( ).cancel( true );
+        }
+    }
 }
 

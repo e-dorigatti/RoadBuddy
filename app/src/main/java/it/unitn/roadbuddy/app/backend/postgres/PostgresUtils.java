@@ -4,6 +4,7 @@ import android.util.Log;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.zaxxer.hikari.HikariDataSource;
 import it.unitn.roadbuddy.app.BuildConfig;
+import it.unitn.roadbuddy.app.Utils;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import org.postgis.LinearRing;
 import org.postgis.Point;
@@ -30,26 +31,12 @@ public class PostgresUtils {
     private HikariDataSource dataSource;
 
     private PostgresUtils( ) throws SQLException {
+        Utils.Assert( Init( ), true );
 
         dataSource = new HikariDataSource( );
         dataSource.setJdbcUrl( URL );
         dataSource.setUsername( USER );
         dataSource.setPassword( PASSWORD );
-
-        getConnection( ).prepareStatement(
-                "CREATE TABLE IF NOT EXISTS SchemaVersions(schema TEXT PRIMARY KEY, version INTEGER)"
-        ).execute( );
-    }
-
-    public static void InitSchemas( ) throws BackendException {
-        try {
-            PostgresUserDAO.getInstance( );
-            PostgresPathDAO.getInstance( );
-            PostgresCommentPoiDAO.getInstance( );
-        }
-        catch ( SQLException exc ) {
-            throw new BackendException( exc.getMessage( ), exc );
-        }
     }
 
     public static synchronized PostgresUtils getInstance( ) throws SQLException {
@@ -62,15 +49,9 @@ public class PostgresUtils {
         try {
             Class.forName( "org.postgresql.Driver" );
 
-            PostgresUtils.getInstance( ).getConnection( ).close( );
-
             return true;
         }
         catch ( ClassNotFoundException e ) {
-            Log.e( PostgresUtils.class.getName( ), "on init", e );
-            return false;
-        }
-        catch ( SQLException e ) {
             Log.e( PostgresUtils.class.getName( ), "on init", e );
             return false;
         }

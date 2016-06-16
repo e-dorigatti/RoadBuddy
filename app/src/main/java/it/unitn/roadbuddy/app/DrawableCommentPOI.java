@@ -23,6 +23,23 @@ public class DrawableCommentPOI implements Drawable {
         return marker.getId( );
     }
 
+    public CommentPOI getPOI( ) {
+        return poi;
+    }
+
+    @Override
+    public int getModelId( ) {
+        return poi.getId( );
+    }
+
+    @Override
+    public String getMapId( ) {
+        if ( marker != null )
+            return marker.getId( );
+        else return null;
+    }
+
+    @Override
     public void RemoveFromMap( Context context ) {
         if ( marker != null ) {
             marker.remove( );
@@ -30,6 +47,7 @@ public class DrawableCommentPOI implements Drawable {
         }
     }
 
+    @Override
     public void setSelected( Context context, GoogleMap map, boolean selected ) {
         if ( marker == null )
             return;
@@ -40,9 +58,6 @@ public class DrawableCommentPOI implements Drawable {
             marker.hideInfoWindow( );
     }
 
-    public CommentPOI getPOI( ) {
-        return poi;
-    }
 
     @Override
     public boolean equals( Drawable other ) {
