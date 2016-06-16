@@ -40,7 +40,7 @@ import it.unitn.roadbuddy.app.backend.models.User;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
-    MainActivity mainActivity;
+    MainActivity mPActivity;
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
     com.sothree.slidinguppanel.SlidingUpPanelLayout slidingLayout;
@@ -68,21 +68,21 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
-        this.mainActivity = ( MainActivity ) getActivity( );
+        this.mPActivity = ( MainActivity ) getActivity( );
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
         int user_id = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
 
         taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
 
-        if ( mainActivity.intent != null &&
-                mainActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
+        if ( mPActivity.intent != null &&
+                mPActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
 
-            int tripId = Integer.parseInt( mainActivity.intent.getData( ).getFragment( ) );
-            String inviter = mainActivity.intent.getExtras( ).getString( MainActivity.JOIN_TRIP_INVITER_KEY );
+            int tripId = Integer.parseInt( mPActivity.intent.getData( ).getFragment( ) );
+            String inviter = mPActivity.intent.getExtras( ).getString( MainActivity.JOIN_TRIP_INVITER_KEY );
             initialState = new NavigationState( tripId, inviter );
 
             // set the intent to null to say it has been consumed
-            mainActivity.intent = null;
+            mPActivity.intent = null;
         }
         else initialState = new RestState( );
     }
@@ -104,13 +104,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         button_viaggi.setOnTouchListener( new View.OnTouchListener( ) {
             public boolean onTouch( View v, MotionEvent event ) {
-                mainActivity.mPager.setCurrentItem( 1 );
+                mPActivity.mPager.setCurrentItem( 1 );
                 return false;
             }
         } );
         button_impost.setOnTouchListener( new View.OnTouchListener( ) {
             public boolean onTouch( View v, MotionEvent event ) {
-                mainActivity.mPager.setCurrentItem( 2 );
+                mPActivity.mPager.setCurrentItem( 2 );
                 return false;
             }
         } );

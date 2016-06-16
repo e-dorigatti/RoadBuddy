@@ -7,18 +7,17 @@ import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.maps.model.LatLng;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import it.unitn.roadbuddy.app.backend.BackendException;
@@ -33,10 +32,11 @@ public class TripsFragment extends Fragment {
     PagerAdapter mPagerAdapter;
     CancellableAsyncTaskManager taskManager;
     EmptyRecyclerView mRecyclerView;
-    RecyclerView.Adapter mAdapter;
+    TripsAdapter mAdapter;
     RecyclerView.LayoutManager mLayoutManager;
-    List<Path> pathList = new ArrayList<>( );
     View emptyView;
+    View tripsView;
+    private SearchView searchView;
 
     FloatingActionButton button_map;
     FloatingActionButton button_impost;
@@ -58,7 +58,8 @@ public class TripsFragment extends Fragment {
     public View onCreateView( LayoutInflater inflater, ViewGroup container,
                               Bundle savedInstanceState ) {
         // Inflate the layout for this fragment
-        return inflater.inflate( R.layout.fragment_trips, container, false );
+        tripsView = inflater.inflate( R.layout.fragment_trips, container, false );
+        return tripsView;
 
     }
 
@@ -85,20 +86,25 @@ public class TripsFragment extends Fragment {
             }
         });
 
+        //prepare the SearchView
+        //searchView = (SearchView) searchView.findViewById(R.id.search_bar);
+        //SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+
+
         // Associate searchable configuration with the SearchView
-       /* SearchManager searchManager =
+      /*  SearchManager searchManager =
                 (SearchManager) getSystemService(Context.SEARCH_SERVICE);
         SearchView searchView =
-                (SearchView) menu.findItem(R.id.search).getActionView();
+                (SearchView) trips_view.findItem(R.id.search).getActionView();
         searchView.setSearchableInfo(
                 searchManager.getSearchableInfo(getComponentName()));*/
-
 
         this.mPager = ( ViewPager ) getActivity( ).findViewById( R.id.pager );
         this.mRecyclerView = ( EmptyRecyclerView ) view.findViewById( R.id.recycler_view );
         this.emptyView = view.findViewById(R.id.empty_view);
         mRecyclerView.setEmptyView(emptyView);
         this.mPagerAdapter = ( PagerAdapter ) mPager.getAdapter( );
+
         // use a linear layout manager
         this.mLayoutManager = new LinearLayoutManager( getContext( ) );
         mRecyclerView.setLayoutManager( mLayoutManager );
@@ -164,9 +170,8 @@ public class TripsFragment extends Fragment {
             mRecyclerView.addOnItemTouchListener(new RecyclerTouchListener(getContext(), mRecyclerView, new ClickListener() {
                 @Override
                 public void onClick(View view, int position) {
-                    //Path path = pathList.get(position);
-                    mPActivity.mPager.setCurrentItem(0);
-                    Toast.makeText(getContext(),"Path:"  + " is selected!", Toast.LENGTH_SHORT).show();
+                    Path path = mAdapter.getPath(position);
+                    mPActivity.showChoosenPath(path);
                 }
 
                 @Override

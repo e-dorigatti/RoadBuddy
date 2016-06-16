@@ -17,17 +17,23 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
+
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
-import it.unitn.roadbuddy.app.backend.BackendException;
-import it.unitn.roadbuddy.app.backend.DAOFactory;
-import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import java.sql.SQLException;
+
+import it.unitn.roadbuddy.app.backend.BackendException;
+import it.unitn.roadbuddy.app.backend.DAOFactory;
+import it.unitn.roadbuddy.app.backend.models.Path;
+import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
 
 public class MainActivity extends AppCompatActivity
@@ -239,6 +245,19 @@ public class MainActivity extends AppCompatActivity
         catch ( BackendException exc ) {
             Log.e( getClass( ).getName( ), "while updating user position", exc );
         }
+    }
+
+    public void showChoosenPath(Path path){
+        mPager.setCurrentItem(0);
+        LinearLayout linearLayout = (LinearLayout) getLayoutInflater().inflate( R.layout.fragment_drawable_path_info_large, null );
+        TextView txtPathDescription = (TextView) linearLayout.findViewById(R.id.txtPathDescription);
+        TextView txtTotalDistance = (TextView) linearLayout.findViewById(R.id.txtTotalDistance);
+        TextView txtTotalDuration = (TextView) linearLayout.findViewById(R.id.txtTotalDuration);
+        txtPathDescription.setText(path.getDescription());
+        txtTotalDistance.setText("Distance: " + Long.toString(path.getDistance()));
+        txtTotalDuration.setText("Expected Duration: " + Long.toString(path.getDuration()));
+        ((MapFragment)mAdapter.getCurrentMF()).slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
+        ((MapFragment)mAdapter.getCurrentMF()).sliderLayout.setView(linearLayout);
     }
 
     public boolean isLocationPermissionEnabled( ) {
