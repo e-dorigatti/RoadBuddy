@@ -7,10 +7,12 @@ import android.preference.PreferenceManager;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
+import android.widget.FrameLayout;
 import android.widget.Toast;
+import com.github.clans.fab.FloatingActionButton;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.User;
@@ -24,13 +26,17 @@ public class SettingsFragment
             KEY_PREF_USER_ID = "pref_dev_user_id",
             KEY_PREF_DEV_ENABLED = "pref_dev_enabled";
 
-
+    MainActivity mPActivity;
     AsyncTask runningAsyncTask;
     String currentUserName;
+
+    FloatingActionButton button_viaggi;
+    FloatingActionButton button_map;
 
     @Override
     public void onCreatePreferences( Bundle savedInstanceState, String rootKey ) {
         addPreferencesFromResource( R.xml.preferences );
+        this.mPActivity = ( MainActivity ) getActivity( );
     }
 
     @Override
@@ -40,10 +46,27 @@ public class SettingsFragment
         View settings = super.onCreateView( inflater, container, savedInstanceState );
         if ( settings == null )
             return null;
-
         View mainLayout = inflater.inflate( R.layout.fragment_settings, container, false );
-        ( ( LinearLayout ) mainLayout ).addView( settings );
-
+        FrameLayout settingsFrame = ( FrameLayout ) mainLayout.findViewById( R.id.settings );
+        button_viaggi = ( FloatingActionButton ) mainLayout.findViewById( R.id.button_sett_viaggi );
+        button_map = ( FloatingActionButton ) mainLayout.findViewById( R.id.button_sett_map );
+        if ( button_viaggi == null )
+            Log.v( "button", "è  null" );
+        else
+            Log.v( "button", "non è null" );
+        button_map.setOnTouchListener( new View.OnTouchListener( ) {
+            public boolean onTouch( View v, MotionEvent event ) {
+                mPActivity.mPager.setCurrentItem( 0 );
+                return false;
+            }
+        } );
+        button_viaggi.setOnTouchListener( new View.OnTouchListener( ) {
+            public boolean onTouch( View v, MotionEvent event ) {
+                mPActivity.mPager.setCurrentItem( 1 );
+                return false;
+            }
+        } );
+        settingsFrame.addView( settings );
         return mainLayout;
     }
 
@@ -99,12 +122,12 @@ public class SettingsFragment
      * ***********************************************+**
      */
     // FIXME use strings
-    class ChangeAppUserAsync extends AsyncTask<Object, Integer, Long> {
+    class ChangeAppUserAsync extends AsyncTask<Object, Integer, Integer> {
 
         String exceptionMessage;
 
         @Override
-        protected Long doInBackground( Object... newUserName ) {
+        protected Integer doInBackground( Object... newUserName ) {
             try {
                 User newUser = DAOFactory.getUserDAO( ).createUser(
                         new User( -1, ( String ) newUserName[ 0 ], null, null, null )
@@ -115,17 +138,17 @@ public class SettingsFragment
             catch ( BackendException exc ) {
                 Log.e( getClass( ).getName( ), "while changing current user", exc );
                 exceptionMessage = exc.getMessage( );
-                return -1L;
+                return null;
             }
         }
 
         @Override
-        protected void onPostExecute( Long userID ) {
+        protected void onPostExecute( Integer userID ) {
             SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getContext( ) );
             SharedPreferences.Editor editor = pref.edit( );
 
-            if ( userID >= 0 ) {
-                editor.putLong( KEY_PREF_USER_ID, userID );
+            if ( userID != null ) {
+                editor.putInt( KEY_PREF_USER_ID, userID );
                 editor.apply( );
 
                 getActivity( ).recreate( );

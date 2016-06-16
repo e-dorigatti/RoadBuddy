@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
+
 import com.akexorcist.googledirection.DirectionCallback;
 import com.akexorcist.googledirection.GoogleDirection;
 import com.akexorcist.googledirection.constant.AvoidType;
@@ -71,7 +72,7 @@ public class AddPathState implements NFAState,
         map.setOnMapClickListener( this );
         map.clear( );
 
-        lyOkCancel = ( LinearLayout ) fragment.mainLayout.setView(
+        lyOkCancel = (LinearLayout) fragment.mainLayout.setView(
                 R.layout.button_layout_ap
         );
 

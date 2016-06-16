@@ -13,20 +13,20 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-
+import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
-
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.CommentPOI;
@@ -49,86 +49,105 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     GoogleMap googleMap;
     NFA nfa;
-    Map<String, Drawable> shownDrawables = new HashMap<>();
+    Map<String, Drawable> shownDrawables = new HashMap<>( );
     Drawable selectedDrawable;
     User currentUser;
 
-    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager();
+    FloatingActionButton button_viaggi;
+    FloatingActionButton button_impost;
 
-    public MapFragment() {
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
+
+    public MapFragment( ) {
         // Required empty public constructor
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        this.mPActivity = (MainActivity) getActivity();
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        long user_id = pref.getLong(SettingsFragment.KEY_PREF_USER_ID, -1);
+    public void onCreate( Bundle savedInstanceState ) {
+        super.onCreate( savedInstanceState );
+        this.mPActivity = ( MainActivity ) getActivity( );
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
+        int user_id = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
 
-        taskManager.startRunningTask(new GetCurrentUserAsync(), true, user_id);
-
+        taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_map, container, false);
+    public View onCreateView( LayoutInflater inflater, ViewGroup container,
+                              Bundle savedInstanceState ) {
+        return inflater.inflate( R.layout.fragment_map, container, false );
     }
 
     @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onViewCreated( View view, Bundle savedInstanceState ) {
+        super.onViewCreated( view, savedInstanceState );
 
-        floatingActionMenu = (FloatingActionMenu) view.findViewById(R.id.fab);
+        button_viaggi = ( FloatingActionButton ) view.findViewById( R.id.button_map_viaggi );
+        button_impost = ( FloatingActionButton ) view.findViewById( R.id.button_map_impost );
+
+
+        button_viaggi.setOnTouchListener( new View.OnTouchListener( ) {
+            public boolean onTouch( View v, MotionEvent event ) {
+                mPActivity.mPager.setCurrentItem( 1 );
+                return false;
+            }
+        } );
+        button_impost.setOnTouchListener( new View.OnTouchListener( ) {
+            public boolean onTouch( View v, MotionEvent event ) {
+                mPActivity.mPager.setCurrentItem( 2 );
+                return false;
+            }
+        } );
+
+        floatingActionMenu = ( FloatingActionMenu ) view.findViewById( R.id.fab );
         mainLayout = new ViewContainer(
-                getLayoutInflater(savedInstanceState), getFragmentManager(),
-                (FrameLayout) view.findViewById(R.id.button_container)
+                getLayoutInflater( savedInstanceState ), getFragmentManager( ),
+                ( FrameLayout ) view.findViewById( R.id.button_container )
         );
 
         sliderLayout = new ViewContainer(
-                getLayoutInflater(savedInstanceState), getFragmentManager(),
-                (FrameLayout) view.findViewById(R.id.sliderLayout)
+                getLayoutInflater( savedInstanceState ), getFragmentManager( ),
+                ( FrameLayout ) view.findViewById( R.id.sliderLayout )
         );
-        slidingLayout = (com.sothree.slidinguppanel.SlidingUpPanelLayout) view.findViewById(R.id.sliding_layout);
-        slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+        slidingLayout = ( com.sothree.slidinguppanel.SlidingUpPanelLayout ) view.findViewById( R.id.sliding_layout );
+        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
 
 
-        SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+        SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
+        mapFragment.getMapAsync( this );
 
     }
 
     @Override
-    public void onPause() {
-        taskManager.stopRunningTasksOfType(RefreshMapAsync.class);
-        if (nfa != null)
-            nfa.Pause();
+    public void onPause( ) {
+        taskManager.stopRunningTasksOfType( RefreshMapAsync.class );
+        if ( nfa != null )
+            nfa.Pause( );
 
-        super.onPause();
+        super.onPause( );
     }
 
     @Override
-    public void onResume() {
-        slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
-        if (nfa != null)
-            nfa.Resume();
-        super.onResume();
+    public void onResume( ) {
+        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+        if ( nfa != null )
+            nfa.Resume( );
+        super.onResume( );
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
+    public void onStart( ) {
+        super.onStart( );
     }
 
     @Override
-    public void onMapReady(GoogleMap map) {
+    public void onMapReady( GoogleMap map ) {
 
         googleMap = map;
-        nfa = new NFA(this, new RestState());
+        nfa = new NFA( this, new RestState( ) );
 
-        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            googleMap.setMyLocationEnabled(true);
+        if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) == PackageManager.PERMISSION_GRANTED ) {
+            googleMap.setMyLocationEnabled( true );
             googleMap.getUiSettings( ).setMyLocationButtonEnabled( true );
         }
     }
@@ -165,11 +184,25 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( selectedDrawable != null ) {
             selectedDrawable.setSelected( getContext( ), googleMap, true );
             sliderLayout.setFragment( selectedDrawable.getInfoFragment( ) );
-            slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+            slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
         }
-        else{
+        else {
             sliderLayout.setFragment( null );
-            slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+            slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+        }
+    }
+
+    public void clearMap( ) {
+        for ( Map.Entry<String, Drawable> entry : shownDrawables.entrySet( ) ) {
+            if ( entry.getValue( ) != selectedDrawable ) {
+                entry.getValue( ).RemoveFromMap( getContext( ) );
+            }
+        }
+        shownDrawables.clear( );
+
+        if ( selectedDrawable != null ) {
+            String id = selectedDrawable.DrawToMap( getContext( ), googleMap );
+            shownDrawables.put( id, selectedDrawable );
         }
     }
 
@@ -204,11 +237,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
                 List<CommentPOI> commentPOIs =
                         DAOFactory.getPoiDAOFactory( )
-                                .getCommentPoiDAO( )
-                                .getCommentPOIsInside(
-                                        context,
-                                        bounds[ 0 ]
-                                );
+                                  .getCommentPoiDAO( )
+                                  .getCommentPOIsInside(
+                                          context,
+                                          bounds[ 0 ]
+                                  );
 
                 for ( Path p : paths )
                     results.add( new DrawablePath( p ) );
@@ -228,11 +261,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         @Override
         protected void onPostExecute( List<Drawable> drawables ) {
             if ( drawables != null ) {
-                for ( Map.Entry<String, Drawable> entry : shownDrawables.entrySet( ) ) {
-                    entry.getValue( ).RemoveFromMap( context );
-                }
+                clearMap( );
 
-                shownDrawables.clear( );
                 for ( Drawable d : drawables ) {
                     String displayed = d.DrawToMap( context, googleMap );
                     shownDrawables.put( displayed, d );
@@ -257,7 +287,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-    class GetCurrentUserAsync extends CancellableAsyncTask<Long, Integer, User> {
+    class GetCurrentUserAsync extends CancellableAsyncTask<Integer, Integer, User> {
 
         String exceptionMessage;
 
@@ -266,7 +296,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
 
         @Override
-        protected User doInBackground( Long... userID ) {
+        protected User doInBackground( Integer... userID ) {
             try {
                 return DAOFactory.getUserDAO( ).getUser( userID[ 0 ] );
             }

@@ -10,24 +10,47 @@
         sothree:umanoShadowHeight="4dp">
 
     <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                 xmlns:tools="http://schemas.android.com/tools"
-                 android:layout_width="match_parent"
-                 android:layout_height="match_parent"
-                 tools:context=".MapFragment"
-                 android:id="@+id/button_container">
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MapFragment"
+        android:id="@+id/button_container">
 
         <fragment
-                android:id="@+id/map"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                class="com.google.android.gms.maps.SupportMapFragment"
-                tools:layout="@layout/abc_list_menu_item_icon"/>
+            android:id="@+id/map"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fitsSystemWindows="true"
+            tools:layout="@layout/abc_list_menu_item_icon"
+            class="com.google.android.gms.maps.SupportMapFragment"/>
+
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal">
+            <com.github.clans.fab.FloatingActionButton
+                android:id="@+id/button_map_viaggi"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@mipmap/ic_add_location_white_24dp"
+                android:layout_marginLeft="6dp"
+                style="@style/NoRestMenuButtonsStyle"/>
+            <com.github.clans.fab.FloatingActionButton
+                android:id="@+id/button_map_impost"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@mipmap/ic_more_vert_white_24dp"
+                android:layout_marginLeft="6dp"
+                style="@style/NoRestMenuButtonsStyle"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentEnd="false"
+                android:layout_toEndOf="@+id/button_map_viaggi"/>
+        </RelativeLayout>
 
     </FrameLayout>
 
     <FrameLayout android:layout_width="match_parent"
                  android:layout_height="match_parent"
                  android:id="@+id/sliderLayout">
-
     </FrameLayout>
 </com.sothree.slidinguppanel.SlidingUpPanelLayout>

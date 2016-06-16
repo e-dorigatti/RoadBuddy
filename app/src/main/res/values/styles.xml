@@ -1,20 +1,9 @@
 <resources>
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <!--   your app branding color for the app bar -->
-        <item name="colorPrimary">#3F51B5</item>
-        <!--   darker variant for the status bar and contextual app bars -->
-        <item name="colorPrimaryDark">#303F9F</item>
-        <!--   theme UI controls like checkboxes and text fields -->
-        <item name="colorAccent">#FF4081</item>
-        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
-    </style>
-
     <style name="RestMenuButtonsStyle">
         <item name="fab_size">mini</item>
         <item name="fab_shadowColor">#444</item>
-        <item name="fab_colorNormal">#FF4081</item>
-        <item name="fab_colorPressed">#F2AB00</item>
+        <item name="fab_colorNormal">#3F51B5</item>
+        <item name="fab_colorPressed">#303F9F</item>
         <item name="fab_colorRipple">#D99200</item>
     </style>
 
@@ -29,8 +18,8 @@
     <style name="NoRestMenuButtonsStyle">
         <item name="fab_size">mini</item>
         <item name="fab_shadowColor">#444</item>
-        <item name="fab_colorNormal">#FF4081</item>
-        <item name="fab_colorPressed">#F2AB00</item>
+        <item name="fab_colorNormal">#3F51B5</item>
+        <item name="fab_colorPressed">#303F9F</item>
         <item name="fab_colorRipple">#D99200</item>
     </style>
 
@@ -41,10 +30,6 @@
         <item name="android:maxLines">2</item>
         <item name="android:ellipsize">end</item>
     </style>
-
-    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-
-    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
 </resources>
 
