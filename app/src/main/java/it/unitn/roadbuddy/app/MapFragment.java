@@ -41,6 +41,7 @@ import it.unitn.roadbuddy.app.backend.models.User;
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     MainActivity mPActivity;
+    TripsFragment mTFactivity;
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
     com.sothree.slidinguppanel.SlidingUpPanelLayout slidingLayout;
@@ -60,6 +61,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     NFAState initialState;
+
+    //While selecting a Trip from recycler view we save a temporary path id to select it with
+    //setSelectedDrawable(showDrawablesByModel(temp_id)
+    Integer temp_id;
 
     public MapFragment( ) {
         // Required empty public constructor
@@ -83,6 +88,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
             // set the intent to null to say it has been consumed
             mPActivity.intent = null;
+        }
+        else if( mPActivity.intent != null &&
+                mPActivity.intent.getAction( ).equals( TripsFragment.INTENT_SELECTED_TRIP ) ){
+
+                temp_id = mPActivity.intent.getExtras( ).getInt(TripsFragment.INTENT_SELECTED_TRIP);
+                initialState = new RestState( );
         }
         else initialState = new RestState( );
     }
@@ -320,6 +331,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 selectedDrawable = drawable;
                 drawable.setSelected( context, googleMap, true );
             }
+            else if(drawable.equals(shownDrawablesByModel.get(temp_id))){
+                Drawable d = shownDrawablesByModel.get(temp_id);
+                setSelectedDrawable(d);
+                temp_id = null;
+            }
             else drawable.setSelected( context, googleMap, false );
         }
 
@@ -373,6 +389,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 showToast( R.string.generic_backend_error );
             }
         }
+    }
+    public void showTrip(Path path){
+        setSelectedDrawable(shownDrawablesByModel.get(path.getId()));
     }
 }
 
@@ -450,4 +469,6 @@ class ViewContainer {
     public void hideParent( ) {
         //container.setVisibility( View.INVISIBLE );
     }
+
+
 }

@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -21,6 +22,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
@@ -38,7 +41,7 @@ import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
 public class MainActivity extends AppCompatActivity
         implements GoogleApiClient.ConnectionCallbacks,
-                   LocationListener {
+        LocationListener {
 
     public static final String INTENT_JOIN_TRIP = "join-trip";
     public static final String JOIN_TRIP_INVITER_KEY = "trip-inviter";
@@ -50,7 +53,7 @@ public class MainActivity extends AppCompatActivity
     ViewPager mPager;
     PagerAdapter mAdapter;
 
-    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager();
     GoogleApiClient googleApiClient;
     HandlerThread backgroundThread;
     Handler backgroundTasksHandler;
@@ -68,199 +71,230 @@ public class MainActivity extends AppCompatActivity
 
     int currentUserId;
 
+    private GoogleApiClient client;
+
     @Override
-    protected void onCreate( Bundle savedInstanceState ) {
-        super.onCreate( savedInstanceState );
-        setContentView( R.layout.activity_main );
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
 
-        mPager = ( ViewPager ) findViewById( R.id.pager );
-        mAdapter = new PagerAdapter( getSupportFragmentManager( ) );
-        mPager.setAdapter( mAdapter );
+        mPager = (ViewPager) findViewById(R.id.pager);
+        mAdapter = new PagerAdapter(getSupportFragmentManager());
+        mPager.setAdapter(mAdapter);
 
-        this.intent = getIntent( );
+        this.intent = getIntent();
         this.savedInstanceState = savedInstanceState;
 
-        googleApiClient = new GoogleApiClient.Builder( this )
-                .addConnectionCallbacks( this )
-                .addApi( LocationServices.API )
-                .build( );
+        googleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addApi(LocationServices.API)
+                .build();
+
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     @Override
-    protected void onStart( ) {
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( this );
-        if ( pref.getBoolean( SettingsFragment.KEY_PREF_DEV_ENABLED, false ) ) {
-            String userName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, "<unset>" );
-            currentUserId = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
+    protected void onStart() {
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        if (pref.getBoolean(SettingsFragment.KEY_PREF_DEV_ENABLED, false)) {
+            String userName = pref.getString(SettingsFragment.KEY_PREF_USER_NAME, "<unset>");
+            currentUserId = pref.getInt(SettingsFragment.KEY_PREF_USER_ID, -1);
 
-            Toast.makeText( this,
-                            String.format( "You are currently running as user %s (id: %d)",
-                                           userName, currentUserId ), Toast.LENGTH_SHORT ).show( );
-        }
-        else {
+            Toast.makeText(this,
+                    String.format("You are currently running as user %s (id: %d)",
+                            userName, currentUserId), Toast.LENGTH_SHORT).show();
+        } else {
             // TODO handle *real* app users, with a login etc
             currentUserId = 1;
         }
 
-        if ( ContextCompat.checkSelfPermission( this, Manifest.permission.ACCESS_FINE_LOCATION ) !=
-                PackageManager.PERMISSION_GRANTED ) {
-            if ( ActivityCompat.shouldShowRequestPermissionRationale(
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
+                PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(
                     this,
-                    Manifest.permission.ACCESS_FINE_LOCATION ) ) {
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {
 
                 showMessageOKCancel(
                         "You need to allow access to the current position",
-                        new DialogInterface.OnClickListener( ) {
+                        new DialogInterface.OnClickListener() {
                             @Override
-                            public void onClick( DialogInterface dialog, int which ) {
+                            public void onClick(DialogInterface dialog, int which) {
                                 ActivityCompat.requestPermissions(
                                         MainActivity.this,
-                                        new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
-                                        LOCATION_PERMISSION_REQUEST_CODE );
+                                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                        LOCATION_PERMISSION_REQUEST_CODE);
                             }
                         }
                 );
-            }
-            else {
+            } else {
                 ActivityCompat.requestPermissions(
                         this,
-                        new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                         LOCATION_PERMISSION_REQUEST_CODE
                 );
             }
-        }
-        else {
+        } else {
             locationPermissionEnabled = true;
         }
 
-        if ( locationPermissionEnabled ) {
-            googleApiClient.connect( );
-            if ( mAdapter.getCurrentMF( ) != null ) {
-                mAdapter.getCurrentMF( ).onStart( );
+        if (locationPermissionEnabled) {
+            googleApiClient.connect();
+            if (mAdapter.getCurrentMF() != null) {
+                mAdapter.getCurrentMF().onStart();
             }
         }
 
-        backgroundThread = new HandlerThread( "background worker" );
-        backgroundThread.start( );
-        backgroundTasksHandler = new Handler( backgroundThread.getLooper( ) );
+        backgroundThread = new HandlerThread("background worker");
+        backgroundThread.start();
+        backgroundTasksHandler = new Handler(backgroundThread.getLooper());
 
         inviteRunnable = new CheckInvitesRunnable(
-                backgroundTasksHandler, getApplicationContext( ), currentUserId
+                backgroundTasksHandler, getApplicationContext(), currentUserId
         );
 
-        super.onStart( );
+        super.onStart();
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Main Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://it.unitn.roadbuddy.app/http/host/path")
+        );
+        AppIndex.AppIndexApi.start(client, viewAction);
     }
 
-    private void showMessageOKCancel( String message, DialogInterface.OnClickListener okListener ) {
-        new AlertDialog.Builder( MainActivity.this )
-                .setMessage( message )
-                .setPositiveButton( "OK", okListener )
-                .setNegativeButton( "Cancel", null )
-                .create( )
-                .show( );
+    private void showMessageOKCancel(String message, DialogInterface.OnClickListener okListener) {
+        new AlertDialog.Builder(MainActivity.this)
+                .setMessage(message)
+                .setPositiveButton("OK", okListener)
+                .setNegativeButton("Cancel", null)
+                .create()
+                .show();
     }
 
     @Override
-    protected void onStop( ) {
+    protected void onStop() {
         try {
-            PostgresUtils.getInstance( ).close( );  // FIXME [ed] find a better place
+            PostgresUtils.getInstance().close();  // FIXME [ed] find a better place
+        } catch (SQLException exc) {
+            Log.e(getClass().getName(), "on destroy", exc);
         }
-        catch ( SQLException exc ) {
-            Log.e( getClass( ).getName( ), "on destroy", exc );
-        }
-        if ( locationPermissionEnabled && googleApiClient.isConnected( ) ) {
+        if (locationPermissionEnabled && googleApiClient.isConnected()) {
             LocationServices.FusedLocationApi.removeLocationUpdates(
                     googleApiClient, this
             );
 
-            googleApiClient.disconnect( );
+            googleApiClient.disconnect();
         }
 
-        backgroundThread.quit( );
+        backgroundThread.quit();
 
-        super.onStop( );
+        super.onStop();
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        Action viewAction = Action.newAction(
+                Action.TYPE_VIEW, // TODO: choose an action type.
+                "Main Page", // TODO: Define a title for the content shown.
+                // TODO: If you have web page content that matches this app activity's content,
+                // make sure this auto-generated web page URL is correct.
+                // Otherwise, set the URL to null.
+                Uri.parse("http://host/path"),
+                // TODO: Make sure this auto-generated app URL is correct.
+                Uri.parse("android-app://it.unitn.roadbuddy.app/http/host/path")
+        );
+        AppIndex.AppIndexApi.end(client, viewAction);
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.disconnect();
     }
 
     @Override
-    public void onRequestPermissionsResult( int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults ) {
-        switch ( requestCode ) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
             case LOCATION_PERMISSION_REQUEST_CODE: {
-                if ( grantResults.length > 0
-                        && grantResults[ 0 ] == PackageManager.PERMISSION_GRANTED ) {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                     locationPermissionEnabled = true;
-                    googleApiClient.connect( );
+                    googleApiClient.connect();
 
-                    mAdapter = new PagerAdapter( getSupportFragmentManager( ) );
-                    mPager.setAdapter( mAdapter );
-                }
-                else {
+                    mAdapter = new PagerAdapter(getSupportFragmentManager());
+                    mPager.setAdapter(mAdapter);
+                } else {
                     locationPermissionEnabled = false;
                 }
                 break;
             }
 
             default:
-                super.onRequestPermissionsResult( requestCode, permissions, grantResults );
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
 
     }
 
     @Override
-    public void onConnected( Bundle connectionHint ) {
+    public void onConnected(Bundle connectionHint) {
         // called when the google api client has successfully connected to whatever
 
         // ask for periodic location updates running the listener on the background worker
         LocationRequest requestType = LocationRequest
-                .create( )
-                .setPriority( LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY )
-                .setInterval( 5 * 60 * 1000 )
-                .setFastestInterval( 15 * 1000 );
+                .create()
+                .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
+                .setInterval(5 * 60 * 1000)
+                .setFastestInterval(15 * 1000);
 
-        if ( ActivityCompat.checkSelfPermission( this, Manifest.permission.ACCESS_FINE_LOCATION )
-                == PackageManager.PERMISSION_GRANTED ) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
             LocationServices.FusedLocationApi.requestLocationUpdates(
                     googleApiClient, requestType,
                     this,
-                    backgroundThread.getLooper( )
+                    backgroundThread.getLooper()
             );
         }
     }
 
     @Override
-    public void onConnectionSuspended( int n ) {
+    public void onConnectionSuspended(int n) {
 
     }
 
     @Override
-    public void onLocationChanged( Location location ) {
+    public void onLocationChanged(Location location) {
         // gets run in a background thread
 
         try {
-            DAOFactory.getUserDAO( ).setCurrentLocation(
-                    currentUserId, new LatLng( location.getLatitude( ),
-                                               location.getLongitude( ) )
+            DAOFactory.getUserDAO().setCurrentLocation(
+                    currentUserId, new LatLng(location.getLatitude(),
+                            location.getLongitude())
             );
-        }
-        catch ( BackendException exc ) {
-            Log.e( getClass( ).getName( ), "while updating user position", exc );
+        } catch (BackendException exc) {
+            Log.e(getClass().getName(), "while updating user position", exc);
         }
     }
 
-    public void showChoosenPath(Path path){
+    public void showChoosenPath(Path path) {
         mPager.setCurrentItem(0);
-        LinearLayout linearLayout = (LinearLayout) getLayoutInflater().inflate( R.layout.fragment_drawable_path_info_large, null );
+        LinearLayout linearLayout = (LinearLayout) getLayoutInflater().inflate(R.layout.fragment_drawable_path_info_large, null);
         TextView txtPathDescription = (TextView) linearLayout.findViewById(R.id.txtPathDescription);
         TextView txtTotalDistance = (TextView) linearLayout.findViewById(R.id.txtTotalDistance);
         TextView txtTotalDuration = (TextView) linearLayout.findViewById(R.id.txtTotalDuration);
         txtPathDescription.setText(path.getDescription());
         txtTotalDistance.setText("Distance: " + Long.toString(path.getDistance()));
         txtTotalDuration.setText("Expected Duration: " + Long.toString(path.getDuration()));
-        ((MapFragment)mAdapter.getCurrentMF()).slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
-        ((MapFragment)mAdapter.getCurrentMF()).sliderLayout.setView(linearLayout);
+        ((MapFragment) mAdapter.getCurrentMF()).slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+        ((MapFragment) mAdapter.getCurrentMF()).sliderLayout.setView(linearLayout);
+        //((MapFragment) mAdapter.getCurrentMF()).showTrip(path);
     }
 
-    public boolean isLocationPermissionEnabled( ) {
+    public boolean isLocationPermissionEnabled() {
         return locationPermissionEnabled;
     }
 }
