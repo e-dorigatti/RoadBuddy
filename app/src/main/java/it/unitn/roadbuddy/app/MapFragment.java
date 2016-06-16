@@ -141,6 +141,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     @Override
+    public void onDestroy() {
+        mPActivity.mAdapter.currentMF = null;
+        super.onDestroy();
+    }
+
+    @Override
     public void onMapReady( GoogleMap map ) {
 
         googleMap = map;

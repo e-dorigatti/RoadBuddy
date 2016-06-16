@@ -3,6 +3,7 @@ package it.unitn.roadbuddy.app;
 import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -18,17 +19,25 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.facebook.AccessToken;
+import com.facebook.AccessTokenTracker;
+import com.facebook.CallbackManager;
+import com.facebook.FacebookSdk;
+import com.facebook.appevents.AppEventsLogger;
+import com.facebook.login.LoginManager;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
+
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
 import java.sql.SQLException;
-
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity
         implements GoogleApiClient.ConnectionCallbacks,
@@ -46,10 +55,46 @@ public class MainActivity extends AppCompatActivity
     Handler backgroundTasksHandler;
 
     int currentUserId;
+    private AccessTokenTracker accessTokenTracker;
+    private AccessToken accessToken;
+    private CallbackManager callbackManager;
 
     @Override
     protected void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
+        FacebookSdk.sdkInitialize(getApplicationContext());  // Initialize the SDK before executing any other operations
+        callbackManager = CallbackManager.Factory.create();
+        AppEventsLogger.activateApp(this);
+        accessTokenTracker = new AccessTokenTracker() {
+            @Override
+            protected void onCurrentAccessTokenChanged(
+                    AccessToken oldAccessToken,
+                    AccessToken currentAccessToken) {
+                // Set the access token using
+                // currentAccessToken when it's loaded or set.
+                accessToken = currentAccessToken;
+                Log.v("Login","Vecchio token "+oldAccessToken);
+                Log.v("Login","Nuovo token "+currentAccessToken);
+            }
+        };
+        // If the access token is available already assign it.
+        accessToken = AccessToken.getCurrentAccessToken();
+        if (accessToken == null){
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setItems(R.array.choose_log_in, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // The 'which' argument contains the index position
+                            // of the selected item
+                            switch (which){
+                                case 0:
+                                    LoginManager.getInstance().logInWithReadPermissions(MainActivity.this, Arrays.asList("public_profile","email")); break;
+                            }
+                        }
+                    })
+                    .setTitle(R.string.dialog_sign_in);
+            // Create the AlertDialog object and return it
+            builder.show();
+        }
         setContentView( R.layout.activity_main );
 
         mPager = ( ViewPager ) findViewById( R.id.pager );
@@ -225,10 +270,6 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    public boolean isLocationPermissionEnabled( ) {
-        return locationPermissionEnabled;
-    }
-
     class AsyncInitializeDB extends CancellableAsyncTask<Void, Void, Boolean> {
 
         ProgressDialog waitDialog;
@@ -271,6 +312,20 @@ public class MainActivity extends AppCompatActivity
             else {
                 finish( );
             }
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        accessTokenTracker.stopTracking();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(callbackManager.onActivityResult(requestCode, resultCode, data)) {
+            return;
         }
     }
 }

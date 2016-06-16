@@ -1,5 +1,6 @@
 package it.unitn.roadbuddy.app;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -12,7 +13,21 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.GraphRequest;
+import com.facebook.GraphResponse;
+import com.facebook.login.LoginResult;
+import com.facebook.login.widget.LoginButton;
 import com.github.clans.fab.FloatingActionButton;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Arrays;
+
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.User;
@@ -32,6 +47,8 @@ public class SettingsFragment
 
     FloatingActionButton button_viaggi;
     FloatingActionButton button_map;
+
+    private CallbackManager callbackManager;
 
     @Override
     public void onCreatePreferences( Bundle savedInstanceState, String rootKey ) {
@@ -67,6 +84,50 @@ public class SettingsFragment
             }
         } );
         settingsFrame.addView( settings );
+        LoginButton loginButton = (LoginButton) mainLayout.findViewById(R.id.login_button);
+        loginButton.setFragment(this);
+        callbackManager = CallbackManager.Factory.create();
+        loginButton.setReadPermissions(Arrays.asList("public_profile","email"));
+        loginButton.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
+            @Override
+            public void onSuccess(LoginResult loginResult) {
+                // App code
+                GraphRequest graphRequest   =   GraphRequest.newMeRequest(loginResult.getAccessToken(),
+                        new GraphRequest.GraphJSONObjectCallback(){
+                            @Override
+                            public void onCompleted(JSONObject object, GraphResponse response){
+                                Log.d("JSON", ""+response.getJSONObject().toString());
+                                try{
+                                    String email       = object.getString("email");
+                                    String name        =   object.getString("name");
+                                    String first_name  =   object.optString("first_name");
+                                    String last_name   =   object.optString("last_name");
+
+                                    //LoginManager.getInstance().logOut();
+                                }
+                                catch (JSONException e)
+                                {
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+
+                Bundle parameters = new Bundle();
+                parameters.putString("fields", "id,name,first_name,last_name,email");
+                graphRequest.setParameters(parameters);
+                graphRequest.executeAsync();
+            }
+
+            @Override
+            public void onCancel() {
+                // App code
+            }
+
+            @Override
+            public void onError(FacebookException exception) {
+                // App code
+            }
+        });
         return mainLayout;
     }
 
@@ -114,6 +175,11 @@ public class SettingsFragment
             runningAsyncTask.cancel( true );
             runningAsyncTask = null;
         }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        callbackManager.onActivityResult(requestCode, resultCode, data);
     }
 
     /**
