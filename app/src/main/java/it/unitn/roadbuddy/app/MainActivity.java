@@ -1,7 +1,7 @@
 package it.unitn.roadbuddy.app;
 
 import android.Manifest;
-import android.app.ProgressDialog;
+import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -13,37 +13,53 @@ import android.os.HandlerThread;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.facebook.AccessToken;
 import com.facebook.AccessTokenTracker;
 import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
+import com.facebook.GraphRequest;
+import com.facebook.GraphResponse;
 import com.facebook.appevents.AppEventsLogger;
 import com.facebook.login.LoginManager;
+import com.facebook.login.LoginResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 
-import it.unitn.roadbuddy.app.backend.BackendException;
-import it.unitn.roadbuddy.app.backend.DAOFactory;
-import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.sql.SQLException;
 import java.util.Arrays;
+
+import it.unitn.roadbuddy.app.backend.BackendException;
+import it.unitn.roadbuddy.app.backend.DAOFactory;
+import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
 public class MainActivity extends AppCompatActivity
         implements GoogleApiClient.ConnectionCallbacks,
                    LocationListener {
 
+    public static final String KEY_PREF_USER_NAME = "pref_dev_user_name";
+    public static final String INTENT_JOIN_TRIP = "join-trip";
+    public static final String JOIN_TRIP_INVITER_KEY = "trip-inviter";
+
     public static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
+
     boolean locationPermissionEnabled = false;
 
     ViewPager mPager;
@@ -53,53 +69,61 @@ public class MainActivity extends AppCompatActivity
     GoogleApiClient googleApiClient;
     HandlerThread backgroundThread;
     Handler backgroundTasksHandler;
+    CheckInvitesRunnable inviteRunnable;
+    CallbackManager callbackManager;
+
+    /**
+     * Store the intent used to launch the app as well as the previous
+     * saved instance state. The map fragment will need most of them
+     * to decide which state to launch (e.g. joining a trip or resuming
+     * the previous activity)
+     */
+    Intent intent;
+    Bundle savedInstanceState;
 
     int currentUserId;
     private AccessTokenTracker accessTokenTracker;
-    private AccessToken accessToken;
-    private CallbackManager callbackManager;
+    private AccessToken FaceAccessToken = null;
 
     @Override
     protected void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
         FacebookSdk.sdkInitialize(getApplicationContext());  // Initialize the SDK before executing any other operations
+        setContentView( R.layout.activity_main );
         callbackManager = CallbackManager.Factory.create();
+        LoginManager.getInstance().registerCallback(callbackManager,
+                new FacebookCallback<LoginResult>() {
+                    @Override
+                    public void onSuccess(LoginResult loginResult) {
+                        setInitialPreferences(loginResult);
+                    }
+
+                    @Override
+                    public void onCancel() {
+                    }
+
+                    @Override
+                    public void onError(FacebookException exception) {
+                    }
+                });
         AppEventsLogger.activateApp(this);
         accessTokenTracker = new AccessTokenTracker() {
             @Override
             protected void onCurrentAccessTokenChanged(
                     AccessToken oldAccessToken,
                     AccessToken currentAccessToken) {
-                // Set the access token using
-                // currentAccessToken when it's loaded or set.
-                accessToken = currentAccessToken;
+                FaceAccessToken = currentAccessToken;
                 Log.v("Login","Vecchio token "+oldAccessToken);
                 Log.v("Login","Nuovo token "+currentAccessToken);
             }
         };
-        // If the access token is available already assign it.
-        accessToken = AccessToken.getCurrentAccessToken();
-        if (accessToken == null){
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setItems(R.array.choose_log_in, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            // The 'which' argument contains the index position
-                            // of the selected item
-                            switch (which){
-                                case 0:
-                                    LoginManager.getInstance().logInWithReadPermissions(MainActivity.this, Arrays.asList("public_profile","email")); break;
-                            }
-                        }
-                    })
-                    .setTitle(R.string.dialog_sign_in);
-            // Create the AlertDialog object and return it
-            builder.show();
-        }
-        setContentView( R.layout.activity_main );
-
+        FaceAccessToken = AccessToken.getCurrentAccessToken();
         mPager = ( ViewPager ) findViewById( R.id.pager );
         mAdapter = new PagerAdapter( getSupportFragmentManager( ) );
         mPager.setAdapter( mAdapter );
+
+        this.intent = getIntent( );
+        this.savedInstanceState = savedInstanceState;
 
         googleApiClient = new GoogleApiClient.Builder( this )
                 .addConnectionCallbacks( this )
@@ -109,9 +133,6 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     protected void onStart( ) {
-        // FIXME [ed] find a better place
-        taskManager.startRunningTask( new AsyncInitializeDB( ), true );
-
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( this );
         if ( pref.getBoolean( SettingsFragment.KEY_PREF_DEV_ENABLED, false ) ) {
             String userName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, "<unset>" );
@@ -122,7 +143,10 @@ public class MainActivity extends AppCompatActivity
                                            userName, currentUserId ), Toast.LENGTH_SHORT ).show( );
         }
         else {
-            // TODO handle *real* app users, with a login etc
+            if ( FaceAccessToken == null && currentUserId <= 1 ){
+                FireLogInDialogFragment dialog = new FireLogInDialogFragment();
+                dialog.show( getSupportFragmentManager(), "login" );
+            }
             currentUserId = 1;
         }
 
@@ -167,6 +191,11 @@ public class MainActivity extends AppCompatActivity
         backgroundThread = new HandlerThread( "background worker" );
         backgroundThread.start( );
         backgroundTasksHandler = new Handler( backgroundThread.getLooper( ) );
+
+        inviteRunnable = new CheckInvitesRunnable(
+                backgroundTasksHandler, getApplicationContext( ), currentUserId
+        );
+
         super.onStart( );
     }
 
@@ -204,33 +233,26 @@ public class MainActivity extends AppCompatActivity
     public void onRequestPermissionsResult( int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults ) {
         switch ( requestCode ) {
             case LOCATION_PERMISSION_REQUEST_CODE: {
-                // If request is cancelled, the result arrays are empty.
                 if ( grantResults.length > 0
                         && grantResults[ 0 ] == PackageManager.PERMISSION_GRANTED ) {
 
-                    // permission was granted, yay! Do the
-                    // contacts-related task you need to do.
                     locationPermissionEnabled = true;
+                    googleApiClient.connect( );
+
                     mAdapter = new PagerAdapter( getSupportFragmentManager( ) );
                     mPager.setAdapter( mAdapter );
-
                 }
                 else {
                     locationPermissionEnabled = false;
-                    // permission denied, boo! Disable the
-                    // functionality that depends on this permission.
                 }
                 break;
             }
+
             default:
                 super.onRequestPermissionsResult( requestCode, permissions, grantResults );
-
-                // other 'case' lines to check for other
-                // permissions this app might request
         }
 
     }
-
 
     @Override
     public void onConnected( Bundle connectionHint ) {
@@ -242,6 +264,7 @@ public class MainActivity extends AppCompatActivity
                 .setPriority( LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY )
                 .setInterval( 5 * 60 * 1000 )
                 .setFastestInterval( 15 * 1000 );
+
         if ( ActivityCompat.checkSelfPermission( this, Manifest.permission.ACCESS_FINE_LOCATION )
                 == PackageManager.PERMISSION_GRANTED ) {
             LocationServices.FusedLocationApi.requestLocationUpdates(
@@ -259,6 +282,8 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onLocationChanged( Location location ) {
+        // gets run in a background thread
+
         try {
             DAOFactory.getUserDAO( ).setCurrentLocation(
                     currentUserId, new LatLng( location.getLatitude( ),
@@ -267,51 +292,6 @@ public class MainActivity extends AppCompatActivity
         }
         catch ( BackendException exc ) {
             Log.e( getClass( ).getName( ), "while updating user position", exc );
-        }
-    }
-
-    class AsyncInitializeDB extends CancellableAsyncTask<Void, Void, Boolean> {
-
-        ProgressDialog waitDialog;
-
-        public AsyncInitializeDB( ) {
-            super( taskManager );
-        }
-
-        @Override
-        protected void onPreExecute( ) {
-            waitDialog = new ProgressDialog( MainActivity.this );
-            waitDialog.setProgressStyle( ProgressDialog.STYLE_SPINNER );
-            waitDialog.setMessage( getString( R.string.app_initial_loading ) );
-            waitDialog.setIndeterminate( true );
-            waitDialog.setCanceledOnTouchOutside( false );
-            waitDialog.show( );
-        }
-
-        @Override
-        protected Boolean doInBackground( Void... args ) {
-            if ( !PostgresUtils.Init( ) )
-                return false;
-
-            try {
-                PostgresUtils.InitSchemas( );
-            }
-            catch ( BackendException exc ) {
-                Log.e( getClass( ).getName( ), "while initializing database", exc );
-                return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        protected void onPostExecute( Boolean ok ) {
-            if ( ok ) {
-                waitDialog.hide( );
-            }
-            else {
-                finish( );
-            }
         }
     }
 
@@ -324,8 +304,71 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(callbackManager.onActivityResult(requestCode, resultCode, data)) {
-            return;
+        callbackManager.onActivityResult(requestCode, resultCode, data);
+    }
+    public void setInitialPreferences(LoginResult loginResult){
+        GraphRequest graphRequest   =   GraphRequest.newMeRequest(loginResult.getAccessToken(),
+                new GraphRequest.GraphJSONObjectCallback(){
+                    @Override
+                    public void onCompleted(JSONObject object, GraphResponse response){
+                        Log.d("JSON", ""+response.getJSONObject().toString());
+                        try{
+                            String email       = object.getString("email");
+                            String first_name  =   object.optString("first_name");
+                            String last_name   =   object.optString("last_name");
+                            SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( MainActivity.this );
+                            SharedPreferences.Editor editor = sharedPref.edit();
+                            editor.putString(KEY_PREF_USER_NAME,first_name+last_name);
+                            editor.apply();
+                        }
+                        catch (JSONException e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+        Bundle parameters = new Bundle();
+        parameters.putString("fields", "id,name,first_name,last_name,email");
+        graphRequest.setParameters(parameters);
+        graphRequest.executeAsync();
+    }
+
+    public void setInitialPreferences(String username){
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( MainActivity.this );
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(KEY_PREF_USER_NAME, username);
+        editor.apply();
+    }
+
+    public class FireLogInDialogFragment extends DialogFragment {
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            final View dialog_preference = getActivity().getLayoutInflater().inflate(R.layout.login_dialog, null);
+            builder.setView(dialog_preference);
+            builder.setPositiveButton("Custom username", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    EditText username = (EditText)dialog_preference.findViewById(R.id.username_pref);
+                    if (username != null && username.getText() != null ){
+                        setInitialPreferences(  username.getText().toString() );
+                    }
+                }
+            } )
+                .setNegativeButton("Facebook", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        LoginManager.getInstance().logInWithReadPermissions(MainActivity.this, Arrays.asList("public_profile","email"));
+                    }
+                } )
+                .setTitle(R.string.dialog_sign_in);
+            return builder.create();
+        }
+
+        @Override
+        public void onDismiss(DialogInterface dialog) {
+            super.onDismiss(dialog);
+            //Toast.makeText( MainActivity.this, "You wont be able to perform most of action", Toast.LENGTH_LONG).show( );
         }
     }
 }

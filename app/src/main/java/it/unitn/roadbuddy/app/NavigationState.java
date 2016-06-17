@@ -5,8 +5,11 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.InputType;
 import android.util.Log;
-import android.widget.Button;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.google.android.gms.maps.GoogleMap;
@@ -17,6 +20,9 @@ import it.unitn.roadbuddy.app.backend.models.Path;
 import it.unitn.roadbuddy.app.backend.models.Trip;
 import it.unitn.roadbuddy.app.backend.models.User;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class NavigationState implements NFAState {
 
     Trip currentTrip;
@@ -26,12 +32,28 @@ public class NavigationState implements NFAState {
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
     MapFragment fragment;
     NFA nfa;
-    EmptyRecyclerView mEmptyRecyclerView;
+    RecyclerView rvParticipants;
     RecyclerView.Adapter mAdapter;
     RecyclerView.LayoutManager mLayoutManager;
-    TextView emptyView;
 
-    Button addBuddy;
+    List<User> buddies = new ArrayList<>( );
+
+    /**
+     * used when we are invited to a trip
+     * <p/>
+     * this state can be "invoked" in two different ways:
+     * - by providing a non-null trip id, in which case the user was invited
+     * to join that trip by one of his buddies
+     * - by providing a null trip id, in which case the user has just created
+     * the trip
+     */
+    Integer invitationTrip;
+    String inviterName;
+
+    public NavigationState( Integer invitationTrip, String inviterName ) {
+        this.invitationTrip = invitationTrip;
+        this.inviterName = inviterName;
+    }
 
     @Override
     public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
@@ -42,15 +64,48 @@ public class NavigationState implements NFAState {
 
         fragment.clearMap( );
 
-        fragment.sliderLayout.setView( R.layout.navigation_layout );
-        addBuddy = ( Button ) fragment.getActivity( ).findViewById( R.id.addBuddy );
-        mEmptyRecyclerView = ( EmptyRecyclerView ) fragment.getActivity( ).findViewById( R.id.my_navigation_recycler_view );
-        //this.emptyView = (TextView) fragment.getActivity().findViewById(R.id.empty_view);
-        //mEmptyRecyclerView.setEmptyView(emptyView);
-        // use a linear layout manager
-        mLayoutManager = new LinearLayoutManager( fragment.getContext( ) );
-        mEmptyRecyclerView.setLayoutManager( mLayoutManager );
+        if ( invitationTrip == null )
+            newTrip( );
+        else handleInvite( );
+    }
 
+    // called when the user has been invited to join a trip
+    void handleInvite( ) {
+        AlertDialog.Builder builder = new AlertDialog.Builder( fragment.getActivity( ) );
+        builder.setTitle( R.string.navigation_join_confirm_title );
+
+        final TextView input = new TextView( fragment.getActivity( ) );
+        input.setText( String.format(
+                fragment.getString( R.string.navigation_join_confirm_text ),
+                inviterName
+        ) );
+
+        builder.setView( input );
+
+        builder.setPositiveButton(
+                R.string.yes,
+                new DialogInterface.OnClickListener( ) {
+                    @Override
+                    public void onClick( DialogInterface dialog, int which ) {
+                        taskManager.startRunningTask( new JoinTripAsync( ), true, invitationTrip );
+                    }
+                } );
+
+        builder.setNegativeButton(
+                R.string.no,
+                new DialogInterface.OnClickListener( ) {
+                    @Override
+                    public void onClick( DialogInterface dialog, int which ) {
+                        // the invite was already removed when the notification was sent
+                        fragment.getActivity( ).finish( );
+                    }
+                } );
+
+        builder.show( );
+    }
+
+    // called when the user is creating a new trip
+    void newTrip( ) {
         if ( fragment.selectedDrawable == null ||
                 !( fragment.selectedDrawable instanceof DrawablePath ) ) {
 
@@ -59,6 +114,7 @@ public class NavigationState implements NFAState {
 
             final TextView input = new TextView( fragment.getActivity( ) );
             input.setText( R.string.navigation_path_tip );
+            input.setTextAlignment( View.TEXT_ALIGNMENT_CENTER );
             builder.setView( input );
 
             builder.setPositiveButton(
@@ -97,11 +153,191 @@ public class NavigationState implements NFAState {
         }
     }
 
-    @Override
-    public void onStateExit( NFA nfa, MapFragment fragment ) {
-        this.fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+    void initUserInterface( ) {
+        View buttons = fragment.mainLayout.setView( R.layout.button_layout_navigation );
+        buttons.findViewById( R.id.btnInviteBuddy ).setOnClickListener( new View.OnClickListener( ) {
+            @Override
+            public void onClick( View view ) {
+                inviteBuddy( );
+            }
+        } );
+
+        buttons.findViewById( R.id.btnLeaveNavigation ).setOnClickListener( new View.OnClickListener( ) {
+            @Override
+            public void onClick( View view ) {
+                nfa.Transition( new RestState( ) );
+            }
+        } );
+
+        fragment.sliderLayout.setView( R.layout.navigation_layout );
+
+        rvParticipants = ( RecyclerView ) fragment.getActivity( ).findViewById( R.id.rvTripParticipants );
+        //this.emptyView = (TextView) fragment.getActivity().findViewById(R.id.empty_view);
+        //rvParticipants.setEmptyView(emptyView);
+        // use a linear layout manager
+        mLayoutManager = new LinearLayoutManager( fragment.getContext( ) );
+        rvParticipants.setLayoutManager( mLayoutManager );
     }
 
+    void inviteBuddy( ) {
+        AlertDialog.Builder builder = new AlertDialog.Builder( fragment.getActivity( ) );
+        builder.setTitle( R.string.navigation_invite );
+
+        final EditText input = new EditText( fragment.getActivity( ) );
+        input.setInputType( InputType.TYPE_CLASS_TEXT );
+        builder.setView( input );
+
+        builder.setPositiveButton(
+                R.string.navigation_do_invite,
+                new DialogInterface.OnClickListener( ) {
+                    @Override
+                    public void onClick( DialogInterface dialog, int which ) {
+                        String invited = input.getText( ).toString( );
+                        taskManager.startRunningTask( new SendInviteAsync( ), true, invited );
+                    }
+                } );
+
+        builder.setNegativeButton(
+                R.string.cancel,
+                new DialogInterface.OnClickListener( ) {
+                    @Override
+                    public void onClick( DialogInterface dialog, int which ) {
+                        dialog.cancel( );
+                    }
+                } );
+
+        builder.show( );
+    }
+
+    @Override
+    public void onStateExit( NFA nfa, MapFragment fragment ) {
+        fragment.sliderLayout.setView( null );
+        this.fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+
+        taskManager.stopRunningTasksOfType( RefreshBuddiesAsync.class );
+        taskManager.stopRunningTasksOfType( SendInviteAsync.class );
+        taskManager.stopRunningTasksOfType( CreateTripAsync.class );
+    }
+
+    class RefreshBuddiesAsync extends CancellableAsyncTask<Void, Void, List<User>> {
+
+        String exceptionMessage;
+
+        public RefreshBuddiesAsync( ) {
+            super( taskManager );
+        }
+
+        @Override
+        protected List<User> doInBackground( Void... voids ) {
+            try {
+                return DAOFactory.getUserDAO( ).getUsersOfTrip( currentTrip.getId( ) );
+            }
+            catch ( BackendException exc ) {
+                Log.e( getClass( ).getName( ), "while getting users of trip", exc );
+                exceptionMessage = exc.getMessage( );
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( List<User> res ) {
+            if ( res == null ) {
+                fragment.showToast( R.string.generic_backend_error );
+            }
+            else {
+                buddies = res;
+            }
+
+            super.onPostExecute( res );
+        }
+    }
+
+    class SendInviteAsync extends CancellableAsyncTask<String, Void, Boolean> {
+
+        String exceptionMessage;
+
+        public SendInviteAsync( ) {
+            super( taskManager );
+        }
+
+        @Override
+        protected Boolean doInBackground( String... userName ) {
+            try {
+                return DAOFactory.getInviteDAO( ).addInvite(
+                        fragment.currentUser.getId( ), userName[ 0 ], currentTrip.getId( )
+                );
+            }
+            catch ( BackendException exc ) {
+                Log.e( getClass( ).getName( ), "while sending invite", exc );
+                exceptionMessage = exc.getMessage( );
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( Boolean res ) {
+            int message;
+
+            if ( res == null ) {
+                message = R.string.generic_backend_error;
+            }
+            else if ( res ) {
+                message = R.string.navigation_invite_sent;
+            }
+            else {
+                message = R.string.navigation_invite_fail;
+            }
+
+            fragment.showToast( message );
+
+            super.onPostExecute( res );
+        }
+    }
+
+    class JoinTripAsync extends CancellableAsyncTask<Integer, Void, Trip> {
+        public JoinTripAsync( ) {
+            super( taskManager );
+        }
+
+        @Override
+        protected void onPreExecute( ) {
+            ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
+            pbar.setIndeterminate( true );
+            fragment.sliderLayout.setView( pbar );
+            pbar.setLayoutParams( new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT, 150
+            ) );
+        }
+
+        @Override
+        protected Trip doInBackground( Integer... tripId ) {
+            try {
+                DAOFactory.getUserDAO( ).joinTrip(
+                        fragment.currentUser.getId( ), tripId[ 0 ]
+                );
+
+                return DAOFactory.getTripDAO( ).getTrip( tripId[ 0 ] );
+            }
+            catch ( BackendException exc ) {
+                Log.e( getClass( ).getName( ), "while joining trip", exc );
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( Trip res ) {
+            if ( res != null ) {
+                currentTrip = res;
+                initUserInterface( );
+            }
+            else {
+                fragment.showToast( R.string.generic_backend_error );
+                fragment.getActivity( ).finish( );
+            }
+
+            super.onPostExecute( res );
+        }
+    }
 
     class CreateTripAsync extends CancellableAsyncTask<Void, Void, Trip> {
 
@@ -122,6 +358,9 @@ public class NavigationState implements NFAState {
             ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
             pbar.setIndeterminate( true );
             fragment.sliderLayout.setView( pbar );
+            pbar.setLayoutParams( new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT, 150
+            ) );
         }
 
         @Override
@@ -142,9 +381,10 @@ public class NavigationState implements NFAState {
                 fragment.showToast( R.string.navigation_trip_creation_error );
                 nfa.Transition( new RestState( ) );
             }
-            else currentTrip = res;
-
-            fragment.sliderLayout.setView( null );
+            else {
+                currentTrip = res;
+                initUserInterface( );
+            }
 
             super.onPostExecute( res );
         }

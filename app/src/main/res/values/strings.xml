@@ -2,9 +2,12 @@
     <string name="app_name">RoadBuddy</string>
     <string name="facebook_app_id">1108622529184496</string>
 
-    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="google_maps_key">AIzaSyDIbDr0ZKOgQomCZtKmLKUmL4W5pPFyRoU</string>
+
+    <string name="cancel">Cancel</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 
     <string name="generic_backend_error">There was an error while communicating with the backend..</string>
     <string name="new_poi_saved">Point saved!</string>
@@ -47,10 +50,21 @@
     <string name="navigation_path_tip_no">No thanks, I don\'t need it</string>
     <string name="navigation_trip_creation_error">There was an error while creating a new trip</string>
     <string name="navigation_path_tip_select">Please select a path</string>
+    <string name="navigation_invite">Invite a Buddy</string>
+    <string name="navigation_do_invite">Invite!</string>
+    <string name="navigation_invite_sent">Invite Sent!</string>
+    <string name="navigation_invite_fail">There is no user with that username..</string>
+    <string name="navigation_join_confirm_title">Join Trip?</string>
+    <string name="navigation_join_confirm_text">Do you want to join %s\'s trip?</string>
+
+    <string name="invite_notification_title">Invited to a trip!</string>
+    <string name="invite_notification_text">%s has invited you to join his trip</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_trips_detail">TripsDetailActivity</string>
     <string name="dialog_sign_in">Choose a log in</string>
     <string name="username">Username</string>
+    <string name="search_hint">Search Trips</string>
+    <string name="search_label">Search</string>
 </resources>

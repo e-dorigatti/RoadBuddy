@@ -61,7 +61,7 @@ public class RestState implements NFAState,
         btnStartRiding.setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View v ) {
-                nfa.Transition( new NavigationState( ) );
+                nfa.Transition( new NavigationState( null, null) );
             }
         } );
 
@@ -69,7 +69,7 @@ public class RestState implements NFAState,
     }
 
     void onGraphicItemSelected( String itemId ) {
-        Drawable selected = fragment.shownDrawables.get( itemId );
+        Drawable selected = fragment.shownDrawablesByMapId.get( itemId );
         if ( selected != null )
             fragment.setSelectedDrawable( selected );
     }

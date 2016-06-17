@@ -1,37 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    xmlns:android="http://schemas.android.com/apk/res/android">
-    <LinearLayout
-        android:layout_width="match_parent"
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:id="@+id/frameLayout">
+        android:orientation="vertical">
 
-        <EditText
-            android:id="@+id/text"
-            android:layout_height="wrap_content"
-            android:singleLine="true"
-            android:layout_width="0dp"
-            android:layout_weight="0.75" />
+    <android.support.v7.widget.RecyclerView
+            android:id="@+id/rvTripParticipants"
+            android:scrollbars="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
 
-        <Button
-            android:id="@+id/addBuddy"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="button" />
-    </LinearLayout>
-
-    <it.unitn.roadbuddy.app.EmptyRecyclerView
-        android:id="@+id/my_navigation_recycler_view"
-        android:scrollbars="vertical"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true" />
-
-
-</RelativeLayout>
+</LinearLayout>
 
 

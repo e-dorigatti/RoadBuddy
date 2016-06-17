@@ -9,6 +9,17 @@ import com.google.android.gms.maps.GoogleMap;
  * This interface bridges database objects with objects displayed on the map
  */
 public interface Drawable {
+
+    /**
+     * Returns the id of the encapsulated model
+     */
+    int getModelId( );
+
+    /**
+     * Returns the ID of the object drawn on the map
+     */
+    String getMapId();
+
     /**
      * Draws the object on the map.
      * This method will be called only once.

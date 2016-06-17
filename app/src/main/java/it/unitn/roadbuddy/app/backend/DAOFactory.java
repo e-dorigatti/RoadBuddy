@@ -1,9 +1,6 @@
 package it.unitn.roadbuddy.app.backend;
 
-import it.unitn.roadbuddy.app.backend.postgres.PostgresPathDAO;
-import it.unitn.roadbuddy.app.backend.postgres.PostgresPoiDAOFactory;
-import it.unitn.roadbuddy.app.backend.postgres.PostgresTripDAO;
-import it.unitn.roadbuddy.app.backend.postgres.PostgresUserDAO;
+import it.unitn.roadbuddy.app.backend.postgres.*;
 
 import java.sql.SQLException;
 
@@ -40,4 +37,12 @@ public class DAOFactory {
         }
     }
 
+    public static InviteDAO getInviteDAO( ) throws BackendException {
+        try {
+            return PostgresInviteDAO.getInstance( );
+        }
+        catch ( SQLException exc ) {
+            throw new BackendException( exc.getMessage( ), exc );
+        }
+    }
 }

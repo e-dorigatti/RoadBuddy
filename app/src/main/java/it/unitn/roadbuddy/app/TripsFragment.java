@@ -7,7 +7,9 @@ import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -15,12 +17,12 @@ import android.view.ViewGroup;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.maps.model.LatLng;
+
+import java.util.List;
+
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.Path;
-
-import java.util.ArrayList;
-import java.util.List;
 
 
 public class TripsFragment extends Fragment {
@@ -30,10 +32,11 @@ public class TripsFragment extends Fragment {
     PagerAdapter mPagerAdapter;
     CancellableAsyncTaskManager taskManager;
     EmptyRecyclerView mRecyclerView;
-    RecyclerView.Adapter mAdapter;
+    TripsAdapter mAdapter;
     RecyclerView.LayoutManager mLayoutManager;
-    List<Path> pathList = new ArrayList<>( );
     View emptyView;
+    View tripsView;
+    private SearchView searchView;
 
     FloatingActionButton button_map;
     FloatingActionButton button_impost;
@@ -47,18 +50,24 @@ public class TripsFragment extends Fragment {
     public void onCreate( Bundle savedInstanceState ) {
         this.mPActivity = (MainActivity) getActivity();
         super.onCreate( savedInstanceState );
+
+
     }
 
     @Override
     public View onCreateView( LayoutInflater inflater, ViewGroup container,
                               Bundle savedInstanceState ) {
         // Inflate the layout for this fragment
-        return inflater.inflate( R.layout.fragment_trips, container, false );
+        tripsView = inflater.inflate( R.layout.fragment_trips, container, false );
+        return tripsView;
+
     }
 
     @Override
     public void onViewCreated( View view, @Nullable Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
+
+
 
         button_map = (FloatingActionButton) getActivity().findViewById(R.id.button_trips_map);
         button_impost = (FloatingActionButton) getActivity().findViewById(R.id.button_trips_impost);
@@ -76,11 +85,26 @@ public class TripsFragment extends Fragment {
                 return false;
             }
         });
+
+        //prepare the SearchView
+        //searchView = (SearchView) searchView.findViewById(R.id.search_bar);
+        //SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+
+
+        // Associate searchable configuration with the SearchView
+      /*  SearchManager searchManager =
+                (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        SearchView searchView =
+                (SearchView) trips_view.findItem(R.id.search).getActionView();
+        searchView.setSearchableInfo(
+                searchManager.getSearchableInfo(getComponentName()));*/
+
         this.mPager = ( ViewPager ) getActivity( ).findViewById( R.id.pager );
         this.mRecyclerView = ( EmptyRecyclerView ) view.findViewById( R.id.recycler_view );
         this.emptyView = view.findViewById(R.id.empty_view);
         mRecyclerView.setEmptyView(emptyView);
         this.mPagerAdapter = ( PagerAdapter ) mPager.getAdapter( );
+
         // use a linear layout manager
         this.mLayoutManager = new LinearLayoutManager( getContext( ) );
         mRecyclerView.setLayoutManager( mLayoutManager );
@@ -90,11 +114,6 @@ public class TripsFragment extends Fragment {
 
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
 
-        //fake data
-        for ( int i = 0; i < 3; i++ ) {
-            Path path = new Path( i, i * 3, i * 4, i * 5, Integer.toString( i ) );
-            pathList.add( path );
-        }
     }
 
     @Override
@@ -148,7 +167,68 @@ public class TripsFragment extends Fragment {
         protected void onPostExecute( List<Path> res ) {
             mAdapter = new TripsAdapter( res );
             mRecyclerView.setAdapter( mAdapter );
+            mRecyclerView.addOnItemTouchListener(new RecyclerTouchListener(getContext(), mRecyclerView, new ClickListener() {
+                @Override
+                public void onClick(View view, int position) {
+                    Path path = mAdapter.getPath(position);
+
+                }
+
+                @Override
+                public void onLongClick(View view, int position) {
+
+                }
+            }));
             super.onPostExecute( res );
+        }
+    }
+
+    public interface ClickListener {
+        void onClick(View view, int position);
+
+        void onLongClick(View view, int position);
+    }
+
+    public static class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
+
+        private GestureDetector gestureDetector;
+        private TripsFragment.ClickListener clickListener;
+
+        public RecyclerTouchListener(Context context, final RecyclerView recyclerView, final TripsFragment.ClickListener clickListener) {
+            this.clickListener = clickListener;
+            gestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
+                @Override
+                public boolean onSingleTapUp(MotionEvent e) {
+                    return true;
+                }
+
+                @Override
+                public void onLongPress(MotionEvent e) {
+                    View child = recyclerView.findChildViewUnder(e.getX(), e.getY());
+                    if (child != null && clickListener != null) {
+                        clickListener.onLongClick(child, recyclerView.getChildPosition(child));
+                    }
+                }
+            });
+        }
+
+        @Override
+        public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
+
+            View child = rv.findChildViewUnder(e.getX(), e.getY());
+            if (child != null && clickListener != null && gestureDetector.onTouchEvent(e)) {
+                clickListener.onClick(child, rv.getChildPosition(child));
+            }
+            return false;
+        }
+
+        @Override
+        public void onTouchEvent(RecyclerView rv, MotionEvent e) {
+        }
+
+        @Override
+        public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+
         }
     }
 }

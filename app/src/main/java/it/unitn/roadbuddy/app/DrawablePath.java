@@ -30,6 +30,18 @@ public class DrawablePath implements Drawable {
     }
 
     @Override
+    public int getModelId( ) {
+        return path.getId( );
+    }
+
+    @Override
+    public String getMapId( ) {
+        if ( polyline != null )
+            return polyline.getId( );
+        else return null;
+    }
+
+    @Override
     public String DrawToMap( Context context, GoogleMap map ) {
         PolylineOptions opts = new PolylineOptions( )
                 .clickable( true );
