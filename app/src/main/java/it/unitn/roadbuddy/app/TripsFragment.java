@@ -40,12 +40,6 @@ public class TripsFragment extends Fragment {
     private SearchView searchView;
     public static final String INTENT_SELECTED_TRIP = "select-trip";
 
-
-
-
-    FloatingActionButton button_map;
-    FloatingActionButton button_impost;
-
     public TripsFragment( ) {
         // Required empty public constructor
 
@@ -70,26 +64,6 @@ public class TripsFragment extends Fragment {
     @Override
     public void onViewCreated( View view, @Nullable Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
-
-
-        //Setting navigation buttons
-        button_map = (FloatingActionButton) getActivity().findViewById(R.id.button_trips_map);
-        button_impost = (FloatingActionButton) getActivity().findViewById(R.id.button_trips_impost);
-
-
-        button_map.setOnTouchListener(new View.OnTouchListener() {
-            public boolean onTouch(View v, MotionEvent event) {
-                mPActivity.mPager.setCurrentItem(0);
-                return false;
-            }
-        });
-        button_impost.setOnTouchListener(new View.OnTouchListener() {
-            public boolean onTouch(View v, MotionEvent event) {
-                mPActivity.mPager.setCurrentItem(2);
-                return false;
-            }
-        });
-
         //prepare the SearchView
         //searchView = (SearchView) searchView.findViewById(R.id.search_bar);
         //SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);

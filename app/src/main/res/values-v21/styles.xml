@@ -1,7 +1,6 @@
 <resources>
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="android:windowTranslucentStatus">true</item>
         <!--   your app branding color for the app bar -->
         <item name="colorPrimary">#3F51B5</item>
         <!--   darker variant for the status bar and contextual app bars -->

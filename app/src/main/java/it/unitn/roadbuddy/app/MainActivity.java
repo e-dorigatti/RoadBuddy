@@ -1,6 +1,7 @@
 package it.unitn.roadbuddy.app;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -13,15 +14,19 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.facebook.AccessToken;
@@ -42,6 +47,7 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -51,6 +57,7 @@ import java.util.Arrays;
 
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
+import it.unitn.roadbuddy.app.backend.models.Path;
 import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
 public class MainActivity extends AppCompatActivity
@@ -111,7 +118,7 @@ public class MainActivity extends AppCompatActivity
                     public void onError(FacebookException exception) {
                     }
                 });
-        AppEventsLogger.activateApp(this);
+        AppEventsLogger.activateApp(getApplication());
         accessTokenTracker = new AccessTokenTracker() {
             @Override
             protected void onCurrentAccessTokenChanged(
@@ -123,9 +130,29 @@ public class MainActivity extends AppCompatActivity
             }
         };
         FaceAccessToken = AccessToken.getCurrentAccessToken();
+        TabLayout tabLayout = (TabLayout) findViewById(R.id.tab_layout);
+        assert tabLayout != null;
+        tabLayout.setTabGravity( TabLayout.GRAVITY_FILL );
         mPager = ( ViewPager ) findViewById( R.id.pager );
         mAdapter = new PagerAdapter( getSupportFragmentManager( ) );
         mPager.setAdapter( mAdapter );
+        mPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
+        tabLayout.setOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                mPager.setCurrentItem(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
 
         this.intent = getIntent();
         this.savedInstanceState = savedInstanceState;
@@ -258,6 +285,7 @@ public class MainActivity extends AppCompatActivity
                 Uri.parse("http://host/path"),
                 // TODO: Make sure this auto-generated app URL is correct.
                 Uri.parse("android-app://it.unitn.roadbuddy.app/http/host/path")
+
         );
         AppIndex.AppIndexApi.end(client, viewAction);
         // ATTENTION: This was auto-generated to implement the App Indexing API.
