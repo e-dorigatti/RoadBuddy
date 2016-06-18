@@ -25,6 +25,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
+import it.unitn.roadbuddy.app.backend.models.User;
 import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
 import java.sql.SQLException;
@@ -60,6 +61,11 @@ public class MainActivity extends AppCompatActivity
     Intent intent;
     Bundle savedInstanceState;
 
+    /**
+     * current user is retrieved from db so it might take a while but
+     * the user id is immediately available and someone might need it
+     */
+    User currentUser;
     int currentUserId;
 
     @Override
@@ -95,6 +101,8 @@ public class MainActivity extends AppCompatActivity
             // TODO handle *real* app users, with a login etc
             currentUserId = 1;
         }
+
+        taskManager.startRunningTask( new GetCurrentUserAsync( ), true, currentUserId );
 
         if ( ContextCompat.checkSelfPermission( this, Manifest.permission.ACCESS_FINE_LOCATION ) !=
                 PackageManager.PERMISSION_GRANTED ) {
@@ -143,6 +151,12 @@ public class MainActivity extends AppCompatActivity
         );
 
         super.onStart( );
+    }
+
+    @Override
+    protected void onPause( ) {
+        taskManager.stopAllRunningTasks( );
+        super.onPause( );
     }
 
     private void showMessageOKCancel( String message, DialogInterface.OnClickListener okListener ) {
@@ -243,5 +257,40 @@ public class MainActivity extends AppCompatActivity
 
     public boolean isLocationPermissionEnabled( ) {
         return locationPermissionEnabled;
+    }
+
+    class GetCurrentUserAsync extends CancellableAsyncTask<Integer, Integer, User> {
+
+        String exceptionMessage;
+
+        public GetCurrentUserAsync( ) {
+            super( taskManager );
+        }
+
+        @Override
+        protected User doInBackground( Integer... userID ) {
+            try {
+                return DAOFactory.getUserDAO( ).getUser( userID[ 0 ] );
+            }
+            catch ( BackendException exc ) {
+                exceptionMessage = exc.getMessage( );
+                Log.e( getClass( ).getName( ), "while retrieving current user", exc );
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( User user ) {
+            if ( user != null ) {
+                currentUser = user;
+            }
+            else {
+                Toast.makeText(
+                        getApplicationContext( ),
+                        R.string.generic_backend_error,
+                        Toast.LENGTH_LONG
+                ).show( );
+            }
+        }
     }
 }

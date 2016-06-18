@@ -6,7 +6,6 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
-
 import com.akexorcist.googledirection.DirectionCallback;
 import com.akexorcist.googledirection.GoogleDirection;
 import com.akexorcist.googledirection.constant.AvoidType;
@@ -72,7 +71,7 @@ public class AddPathState implements NFAState,
         map.setOnMapClickListener( this );
         map.clear( );
 
-        lyOkCancel = (LinearLayout) fragment.mainLayout.setView(
+        lyOkCancel = ( LinearLayout ) fragment.mainLayout.setView(
                 R.layout.button_layout_ap
         );
 
@@ -508,7 +507,7 @@ public class AddPathState implements NFAState,
         protected Boolean doInBackground( List<WaypointInfo>... waypoints ) {
             StringBuilder descriptionBuilder = new StringBuilder( );
 
-            Path path = new Path( -1, fragment.currentUser.getId( ), 0, 0, null );
+            Path path = new Path( -1, fragment.getCurrentUserId( ), 0, 0, null );
 
             List<List<LatLng>> legs = new ArrayList<>( );
             long distance = 0;

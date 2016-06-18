@@ -141,11 +141,11 @@ public class PostgresTripDAO extends PostgresDAOBase implements TripDAO {
                         "SELECT %1$s.%4$s AS %1$s_%4$s, %1$s.%5$s AS %1$s_%5$s, %1$s.%6$s AS %1$s_%6$s, " +
                                 "%1$s.%7$s AS %1$s_%7$s, %1$s.%8$s AS %1$s_%8$s, %2$s.%9$s AS %2$s_%9$s, " +
                                 "%2$s.%10$s AS %2$s_%10$s, %2$s.%11$s AS %2$s_%11$s, %2$s.%12$s AS %2$s_%12$s, " +
-                                "%2$s.%13$s AS %2$s_%13$s, %3$s.%14$s AS %3$s_%14$s " +
+                                "%2$s.%13$s AS %2$s_%13$s, %2$s.%14$s AS %2$s_%14$s, %3$s.%15$s AS %3$s_%15$s " +
 
-                                "FROM %18$s AS %3$s JOIN %16$s AS %1$s ON %1$s.%8$s = %3$s.%14$s " +
-                                "LEFT OUTER JOIN %17$s AS %2$s ON %2$s.%9$s = %3$s.%15$s " +
-                                "WHERE %3$s.%14$s = ?",
+                                "FROM %19$s AS %3$s JOIN %17$s AS %1$s ON %1$s.%8$s = %3$s.%15$s " +
+                                "LEFT OUTER JOIN %18$s AS %2$s ON %2$s.%9$s = %3$s.%16$s " +
+                                "WHERE %3$s.%15$s = ?",
 
                         // aliases (1-3)
                         usersAlias, pathsAlias, tripsAlias,
@@ -157,18 +157,19 @@ public class PostgresTripDAO extends PostgresDAOBase implements TripDAO {
                         PostgresUserDAO.COLUMN_NAME_LAST_POSITION_UPDATED,
                         PostgresUserDAO.COLUMN_NAME_TRIP,
 
-                        // path columns (9-13)
+                        // path columns (9-14)
                         PostgresPathDAO.COLUMN_NAME_ID,
                         PostgresPathDAO.COLUMN_NAME_OWNER,
+                        PostgresPathDAO.COLUMN_NAME_PATH,
                         PostgresPathDAO.COLUMN_NAME_DISTANCE,
                         PostgresPathDAO.COLUMN_NAME_DURATION,
                         PostgresPathDAO.COLUMN_NAME_DESCRIPTION,
 
-                        // trips column (14-15)
+                        // trips column (15-16)
                         PostgresTripDAO.COLUMN_NAME_ID,
                         PostgresTripDAO.COLUMN_NAME_PATH,
 
-                        // table names (16-18)
+                        // table names (17-19)
                         PostgresUserDAO.TABLE_NAME,
                         PostgresPathDAO.TABLE_NAME,
                         PostgresTripDAO.TABLE_NAME
@@ -191,15 +192,8 @@ public class PostgresTripDAO extends PostgresDAOBase implements TripDAO {
         while ( res.next( ) ) {
             if ( participants == null ) {
                 Object pathId = res.getObject( pathsAlias + PostgresPathDAO.COLUMN_NAME_ID );
-                if ( pathId != null ) {
-                    path = new Path(
-                            ( int ) pathId,
-                            res.getInt( pathsAlias + PostgresPathDAO.COLUMN_NAME_OWNER ),
-                            res.getLong( pathsAlias + PostgresPathDAO.COLUMN_NAME_DISTANCE ),
-                            res.getLong( pathsAlias + PostgresPathDAO.COLUMN_NAME_DURATION ),
-                            res.getString( pathsAlias + PostgresPathDAO.COLUMN_NAME_DESCRIPTION )
-                    );
-                }
+                if ( pathId != null )
+                    path = PostgresPathDAO.readPath( res, pathsAlias );
 
                 tripId = res.getInt( tripsAlias + PostgresTripDAO.COLUMN_NAME_ID );
                 participants = new ArrayList<>( );

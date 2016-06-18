@@ -266,7 +266,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
     }
 
     @Override
-    public boolean joinTrip( int userId, int tripId ) throws BackendException {
+    public boolean joinTrip( int userId, Integer tripId ) throws BackendException {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmt = conn.prepareStatement( String.format(
                     "UPDATE %s SET %s = ? WHERE %s = ?",

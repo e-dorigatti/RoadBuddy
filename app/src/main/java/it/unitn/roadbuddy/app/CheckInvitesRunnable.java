@@ -31,7 +31,7 @@ public class CheckInvitesRunnable implements Runnable {
         this.userId = userId;
         this.context = context;
 
-        handler.postDelayed( this, INTERVAL );
+        handler.post( this );
     }
 
     @Override

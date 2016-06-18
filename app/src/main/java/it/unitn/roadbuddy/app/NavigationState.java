@@ -1,11 +1,9 @@
 package it.unitn.roadbuddy.app;
 
 
-import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import android.os.Handler;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
@@ -13,7 +11,11 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
@@ -24,21 +26,19 @@ import it.unitn.roadbuddy.app.backend.models.User;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NavigationState implements NFAState {
-
+public class NavigationState implements NFAState,
+                                        NavigationInfoFragment.ParticipantInteractionListener,
+                                        GoogleMap.OnMarkerClickListener,
+                                        GoogleMap.OnMapClickListener {
     Trip currentTrip;
     DrawablePath navigationPathDrawable;
-
     GoogleMap googleMap;
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
     MapFragment fragment;
     NFA nfa;
-    RecyclerView rvParticipants;
-    RecyclerView.Adapter mAdapter;
-    RecyclerView.LayoutManager mLayoutManager;
-
     List<User> buddies = new ArrayList<>( );
-
+    List<DrawableUser> drawableUsers = new ArrayList<>( );
+    DrawableUser selectedUser;
     /**
      * used when we are invited to a trip
      * <p/>
@@ -50,6 +50,8 @@ public class NavigationState implements NFAState {
      */
     Integer invitationTrip;
     String inviterName;
+    RefreshBuddiesRunnable buddiesRefresh;
+    NavigationInfoFragment infoFragment;
 
     public NavigationState( Integer invitationTrip, String inviterName ) {
         this.invitationTrip = invitationTrip;
@@ -57,17 +59,60 @@ public class NavigationState implements NFAState {
     }
 
     @Override
+    public void onMapClick( LatLng latLng ) {
+        if ( selectedUser != null ) {
+            selectedUser.setSelected( fragment.getContext( ), googleMap, false );
+            selectedUser = null;
+        }
+        infoFragment.setSelectedUser( null );
+    }
+
+    @Override
+    public boolean onMarkerClick( Marker marker ) {
+        if ( selectedUser != null )
+            selectedUser.setSelected( fragment.getContext( ), googleMap, false );
+
+        for ( DrawableUser d : drawableUsers ) {
+            if ( !d.getMapId( ).equals( marker.getId( ) ) )
+                continue;
+
+            d.setSelected( fragment.getContext( ), googleMap, true );
+            selectedUser = d;
+            infoFragment.setSelectedUser( selectedUser.getUser( ) );
+            moveCameraTo( selectedUser.getUser( ).getLastPosition( ), 15 );
+            break;
+        }
+
+        return false;
+    }
+
+    @Override
+    public void onParticipantSelected( User participant ) {
+        moveCameraTo( participant.getLastPosition( ), 15 );
+    }
+
+    @Override
     public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
         this.fragment = fragment;
-        fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
         this.nfa = nfa;
         this.googleMap = fragment.googleMap;
 
+        fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
         fragment.clearMap( );
+
+        googleMap.setOnMarkerClickListener( this );
+        googleMap.setOnMapClickListener( this );
+        googleMap.setMyLocationEnabled( false );
 
         if ( invitationTrip == null )
             newTrip( );
         else handleInvite( );
+    }
+
+    void moveCameraTo( LatLng point, float zoom ) {
+        CameraUpdate anim = CameraUpdateFactory.newLatLngZoom( point, zoom );
+        fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
+        googleMap.animateCamera( anim );
     }
 
     // called when the user has been invited to join a trip
@@ -136,7 +181,7 @@ public class NavigationState implements NFAState {
                             dialog.cancel( );
                             navigationPathDrawable = null;
                             taskManager.startRunningTask(
-                                    new CreateTripAsync( null, fragment.currentUser ),
+                                    new CreateTripAsync( null, fragment.getCurrentUser( ) ),
                                     true
                             );
                         }
@@ -148,13 +193,14 @@ public class NavigationState implements NFAState {
             navigationPathDrawable = ( DrawablePath ) fragment.selectedDrawable;
             navigationPathDrawable.setSelected( fragment.getContext( ), googleMap, true );
             taskManager.startRunningTask(
-                    new CreateTripAsync( navigationPathDrawable.getPath( ), fragment.currentUser ),
+                    new CreateTripAsync( navigationPathDrawable.getPath( ), fragment.getCurrentUser( ) ),
                     true
             );
         }
     }
 
-    void initUserInterface( ) {
+    // called when the user is ready to start a trip (either joined or new one)
+    void startTrip( ) {
         View buttons = fragment.mainLayout.setView( R.layout.button_layout_navigation );
         buttons.findViewById( R.id.btnInviteBuddy ).setOnClickListener( new View.OnClickListener( ) {
             @Override
@@ -166,18 +212,23 @@ public class NavigationState implements NFAState {
         buttons.findViewById( R.id.btnLeaveNavigation ).setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View view ) {
-                nfa.Transition( new RestState( ) );
+                taskManager.startRunningTask( new AbandonTripAsync( ), true );
             }
         } );
 
-        fragment.sliderLayout.setView( R.layout.navigation_layout );
+        if ( navigationPathDrawable != null ) {
+            navigationPathDrawable.DrawToMap( fragment.getContext( ), googleMap );
+            navigationPathDrawable.setSelected( fragment.getContext( ), googleMap, true );
+        }
 
-        rvParticipants = ( RecyclerView ) fragment.getActivity( ).findViewById( R.id.rvTripParticipants );
-        //this.emptyView = (TextView) fragment.getActivity().findViewById(R.id.empty_view);
-        //rvParticipants.setEmptyView(emptyView);
-        // use a linear layout manager
-        mLayoutManager = new LinearLayoutManager( fragment.getContext( ) );
-        rvParticipants.setLayoutManager( mLayoutManager );
+        infoFragment = NavigationInfoFragment.newInstance(
+                fragment.getCurrentUserId( ),
+                navigationPathDrawable
+        );
+        infoFragment.setParticipantInteractionListener( this );
+        fragment.sliderLayout.setFragment( infoFragment );
+
+        buddiesRefresh = new RefreshBuddiesRunnable( fragment.mainActivity.backgroundTasksHandler );
     }
 
     void inviteBuddy( ) {
@@ -210,47 +261,38 @@ public class NavigationState implements NFAState {
         builder.show( );
     }
 
+    // update the info about buddies such as position and distance from user
+    void updateBuddies( List<User> buddies ) {
+        this.buddies = buddies;
+        infoFragment.setBuddies( buddies );
+
+        for ( Drawable d : drawableUsers ) {
+            d.RemoveFromMap( fragment.getContext( ) );
+        }
+        drawableUsers.clear( );
+        for ( User u : buddies ) {
+            DrawableUser drawable = new DrawableUser( u );
+            drawable.DrawToMap( fragment.getContext( ), googleMap );
+            drawableUsers.add( drawable );
+        }
+    }
+
     @Override
     public void onStateExit( NFA nfa, MapFragment fragment ) {
+        buddiesRefresh.Stop( );
         fragment.sliderLayout.setView( null );
         this.fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
 
-        taskManager.stopRunningTasksOfType( RefreshBuddiesAsync.class );
-        taskManager.stopRunningTasksOfType( SendInviteAsync.class );
-        taskManager.stopRunningTasksOfType( CreateTripAsync.class );
-    }
+        googleMap.setOnMarkerClickListener( this );
+        googleMap.setOnMapClickListener( this );
 
-    class RefreshBuddiesAsync extends CancellableAsyncTask<Void, Void, List<User>> {
+        if ( fragment.mainActivity.isLocationPermissionEnabled( ) )
+            googleMap.setMyLocationEnabled( true );
 
-        String exceptionMessage;
+        for ( DrawableUser d : drawableUsers )
+            d.RemoveFromMap( fragment.getContext( ) );
 
-        public RefreshBuddiesAsync( ) {
-            super( taskManager );
-        }
-
-        @Override
-        protected List<User> doInBackground( Void... voids ) {
-            try {
-                return DAOFactory.getUserDAO( ).getUsersOfTrip( currentTrip.getId( ) );
-            }
-            catch ( BackendException exc ) {
-                Log.e( getClass( ).getName( ), "while getting users of trip", exc );
-                exceptionMessage = exc.getMessage( );
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute( List<User> res ) {
-            if ( res == null ) {
-                fragment.showToast( R.string.generic_backend_error );
-            }
-            else {
-                buddies = res;
-            }
-
-            super.onPostExecute( res );
-        }
+        taskManager.stopAllRunningTasks( );
     }
 
     class SendInviteAsync extends CancellableAsyncTask<String, Void, Boolean> {
@@ -265,7 +307,7 @@ public class NavigationState implements NFAState {
         protected Boolean doInBackground( String... userName ) {
             try {
                 return DAOFactory.getInviteDAO( ).addInvite(
-                        fragment.currentUser.getId( ), userName[ 0 ], currentTrip.getId( )
+                        fragment.getCurrentUserId( ), userName[ 0 ], currentTrip.getId( )
                 );
             }
             catch ( BackendException exc ) {
@@ -314,7 +356,7 @@ public class NavigationState implements NFAState {
         protected Trip doInBackground( Integer... tripId ) {
             try {
                 DAOFactory.getUserDAO( ).joinTrip(
-                        fragment.currentUser.getId( ), tripId[ 0 ]
+                        fragment.getCurrentUserId( ), tripId[ 0 ]
                 );
 
                 return DAOFactory.getTripDAO( ).getTrip( tripId[ 0 ] );
@@ -329,7 +371,9 @@ public class NavigationState implements NFAState {
         protected void onPostExecute( Trip res ) {
             if ( res != null ) {
                 currentTrip = res;
-                initUserInterface( );
+                if ( currentTrip.getPath( ) != null )
+                    navigationPathDrawable = new DrawablePath( currentTrip.getPath( ) );
+                startTrip( );
             }
             else {
                 fragment.showToast( R.string.generic_backend_error );
@@ -337,6 +381,42 @@ public class NavigationState implements NFAState {
             }
 
             super.onPostExecute( res );
+        }
+    }
+
+    class AbandonTripAsync extends CancellableAsyncTask<Void, Void, Boolean> {
+        public AbandonTripAsync( ) {
+            super( taskManager );
+        }
+
+        @Override
+        protected void onPreExecute( ) {
+            ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
+            pbar.setIndeterminate( true );
+            fragment.sliderLayout.setView( pbar );
+            pbar.setLayoutParams( new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT, 150
+            ) );
+        }
+
+        @Override
+        protected Boolean doInBackground( Void... nothing ) {
+            try {
+                DAOFactory.getUserDAO( ).joinTrip(
+                        fragment.getCurrentUserId( ), null
+                );
+                return true;
+            }
+            catch ( BackendException exc ) {
+                Log.e( getClass( ).getName( ), "while joining trip", exc );
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( Boolean res ) {
+            super.onPostExecute( res );
+            nfa.Transition( new RestState( ) );
         }
     }
 
@@ -384,10 +464,53 @@ public class NavigationState implements NFAState {
             }
             else {
                 currentTrip = res;
-                initUserInterface( );
+                startTrip( );
             }
 
             super.onPostExecute( res );
+        }
+    }
+
+    class RefreshBuddiesRunnable implements Runnable {
+
+        public static final int REFRESH_INTERVAL = 15 * 1000;
+
+        Handler handler;
+
+        public RefreshBuddiesRunnable( Handler handler ) {
+            this.handler = handler;
+
+            handler.post( this );
+        }
+
+        @Override
+        public void run( ) {
+            try {
+                final List<User> participants = DAOFactory.getUserDAO( ).getUsersOfTrip(
+                        currentTrip.getId( )
+                );
+
+                /**
+                 * By forcing the update to happen on the UI thread we are sure
+                 * to avoid concurrency issues and don't need to add explicit
+                 * synchronization to the rest of the code.
+                 */
+                fragment.getActivity( ).runOnUiThread( new Runnable( ) {
+                    @Override
+                    public void run( ) {
+                        updateBuddies( participants );
+                    }
+                } );
+            }
+            catch ( BackendException exc ) {
+                Log.e( getClass( ).getName( ), "while getting users of trip", exc );
+            }
+
+            handler.postDelayed( this, REFRESH_INTERVAL );
+        }
+
+        public void Stop( ) {
+            handler.removeCallbacks( this );
         }
     }
 }

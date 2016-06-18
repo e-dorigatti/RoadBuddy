@@ -9,8 +9,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-
 import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.CameraPosition;
@@ -32,7 +30,7 @@ public class AddPOIState implements NFAState,
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     @Override
-    public void onStateEnter(final NFA nfa, final MapFragment fragment ) {
+    public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
         this.fragment = fragment;
         this.nfa = nfa;
 
@@ -42,12 +40,12 @@ public class AddPOIState implements NFAState,
         fragment.googleMap.setOnMapClickListener( this );
 
         fragment.showToast( R.string.long_tap_to_add );
-        LinearLayout buttonBar = (LinearLayout) fragment.mainLayout.setView(R.layout.button_layout_poi);
-        FloatingActionButton btnAnnulla = (FloatingActionButton) buttonBar.findViewById(R.id.annulla);
+        LinearLayout buttonBar = ( LinearLayout ) fragment.mainLayout.setView( R.layout.button_layout_poi );
+        FloatingActionButton btnAnnulla = ( FloatingActionButton ) buttonBar.findViewById( R.id.annulla );
         btnAnnulla.setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View v ) {
-                nfa.Transition( new RestState() );
+                nfa.Transition( new RestState( ) );
             }
         } );
 
@@ -62,7 +60,7 @@ public class AddPOIState implements NFAState,
         fragment.googleMap.setOnMarkerClickListener( null );
 
         taskManager.stopRunningTasksOfType( SavePOIAsync.class );
-        fragment.mainLayout.removeView();
+        fragment.mainLayout.removeView( );
     }
 
     @Override
@@ -80,7 +78,7 @@ public class AddPOIState implements NFAState,
 
                 String text = input.getText( ).toString( );
                 comment = new CommentPOI( 0, point.latitude, point.longitude, text,
-                                          fragment.currentUser.getId( ) );
+                                          fragment.getCurrentUserId( ) );
                 drawMarker( );
 
                 if ( !taskManager.isTaskRunning( SavePOIAsync.class ) ) {
@@ -97,8 +95,8 @@ public class AddPOIState implements NFAState,
             public void onClick( DialogInterface dialog, int which ) {
                 dialog.cancel( );
                 fragment.showToast( "No point added..." );
-                if(drawable!= null){
-                    drawable.RemoveFromMap(fragment.getActivity());
+                if ( drawable != null ) {
+                    drawable.RemoveFromMap( fragment.getActivity( ) );
                 }
             }
         } );

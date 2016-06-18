@@ -43,15 +43,12 @@ public class TripsFragment extends Fragment {
 
     public TripsFragment( ) {
         // Required empty public constructor
-
     }
 
     @Override
     public void onCreate( Bundle savedInstanceState ) {
         this.mPActivity = (MainActivity) getActivity();
         super.onCreate( savedInstanceState );
-
-
     }
 
     @Override

@@ -39,7 +39,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
         return instance;
     }
 
-    static Path appendMultiLineStringToPath( Path path, MultiLineString mls ) {
+    static List<List<LatLng>> multiLineStringToLegs( MultiLineString mls ) {
         List<List<LatLng>> legs = new ArrayList<>( );
         for ( LineString ls : mls.getLines( ) ) {
             List<LatLng> leg = new ArrayList<>( );
@@ -48,13 +48,11 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
             }
             legs.add( leg );
         }
-        path.setLegs( legs );
 
-        return path;
+        return legs;
     }
 
-    static MultiLineString pathToMultiLineString( Path path ) {
-        List<List<LatLng>> legs = path.getLegs( );
+    static MultiLineString legsToMultiLineString( List<List<LatLng>> legs ) {
         LineString[] strings = new LineString[ legs.size( ) ];
 
         for ( int i = 0; i < legs.size( ); i++ ) {
@@ -76,6 +74,22 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
         return new MultiLineString( strings );
     }
 
+    public static Path readPath( ResultSet res, String tableAlias ) throws SQLException {
+        int id = res.getInt( tableAlias + COLUMN_NAME_ID );
+        int owner = res.getInt( tableAlias + COLUMN_NAME_OWNER );
+        long distance = res.getLong( tableAlias + COLUMN_NAME_DISTANCE );
+        long duration = res.getLong( tableAlias + COLUMN_NAME_DURATION );
+        String description = res.getString( tableAlias + COLUMN_NAME_DESCRIPTION );
+
+        Path path = new Path( id, owner, distance, duration, description );
+
+        PGgeometry geom = ( PGgeometry ) res.getObject( tableAlias + COLUMN_NAME_PATH );
+        MultiLineString mls = ( MultiLineString ) geom.getGeometry( );
+        path.setLegs( multiLineStringToLegs( mls ) );
+
+        return path;
+    }
+
     @Override
     public void AddPath( Path path ) throws BackendException {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
@@ -88,7 +102,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
                     )
             );
 
-            MultiLineString mls = pathToMultiLineString( path );
+            MultiLineString mls = legsToMultiLineString( path.getLegs( ) );
             stmt.setObject( 1, new PGgeometry( mls ) );
             stmt.setInt( 2, path.getOwner( ) );
             stmt.setLong( 3, path.getDistance( ) );
@@ -121,17 +135,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
             List<Path> paths = new ArrayList<>( );
 
             while ( res.next( ) ) {
-                int id = res.getInt( COLUMN_NAME_ID );
-                int owner = res.getInt( COLUMN_NAME_OWNER );
-                long distance = res.getLong( COLUMN_NAME_DISTANCE );
-                long duration = res.getLong( COLUMN_NAME_DURATION );
-                String description = res.getString( COLUMN_NAME_DESCRIPTION );
-
-                PGgeometry geom = ( PGgeometry ) res.getObject( COLUMN_NAME_PATH );
-                MultiLineString mls = ( MultiLineString ) geom.getGeometry( );
-
-                Path path = new Path( id, owner, distance, duration, description );
-                appendMultiLineStringToPath( path, mls );
+                Path path = readPath( res, "" );
                 paths.add( path );
             }
 
@@ -161,17 +165,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
             List<Path> paths = new ArrayList<>( );
 
             while ( res.next( ) ) {
-                int id = res.getInt( COLUMN_NAME_ID );
-                int owner = res.getInt( COLUMN_NAME_OWNER );
-                long distance = res.getLong( COLUMN_NAME_DISTANCE );
-                long duration = res.getLong( COLUMN_NAME_DURATION );
-                String description = res.getString( COLUMN_NAME_DESCRIPTION );
-
-                PGgeometry geom = ( PGgeometry ) res.getObject( COLUMN_NAME_PATH );
-                MultiLineString mls = ( MultiLineString ) geom.getGeometry( );
-
-                Path path = new Path( id, owner, distance, duration, description );
-                appendMultiLineStringToPath( path, mls );
+                Path path = readPath( res, "" );
                 paths.add( path );
             }
 

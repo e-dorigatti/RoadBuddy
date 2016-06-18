@@ -20,7 +20,6 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.GoogleMap;
@@ -28,14 +27,13 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
-
-import java.util.*;
-
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.CommentPOI;
 import it.unitn.roadbuddy.app.backend.models.Path;
 import it.unitn.roadbuddy.app.backend.models.User;
+
+import java.util.*;
 
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
@@ -52,7 +50,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     GoogleMap googleMap;
     NFA nfa;
     Drawable selectedDrawable;
-    User currentUser;
 
     FloatingActionButton button_viaggi;
     FloatingActionButton button_impost;
@@ -65,14 +62,19 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         // Required empty public constructor
     }
 
+    public User getCurrentUser( ) {
+        return mainActivity.currentUser;
+    }
+
+    public int getCurrentUserId( ) {
+        return mainActivity.currentUserId;
+    }
+
     @Override
     public void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
         this.mainActivity = ( MainActivity ) getActivity( );
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
-        int user_id = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
-
-        taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
 
         if ( mainActivity.intent != null &&
                 mainActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
@@ -134,7 +136,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onPause( ) {
-        taskManager.stopRunningTasksOfType( RefreshMapAsync.class );
+        taskManager.stopAllRunningTasks( );
         if ( nfa != null )
             nfa.Pause( );
 
@@ -338,40 +340,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 floatingActionMenu.getMenuIconView( ).clearAnimation( );
 
             super.onPostExecute( success );
-        }
-    }
-
-    class GetCurrentUserAsync extends CancellableAsyncTask<Integer, Integer, User> {
-
-        String exceptionMessage;
-
-        public GetCurrentUserAsync( ) {
-            super( taskManager );
-        }
-
-        @Override
-        protected User doInBackground( Integer... userID ) {
-            try {
-                return DAOFactory.getUserDAO( ).getUser( userID[ 0 ] );
-            }
-            catch ( BackendException exc ) {
-                exceptionMessage = exc.getMessage( );
-                Log.e( getClass( ).getName( ), "while retrieving current user", exc );
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute( User user ) {
-            if ( user != null ) {
-                currentUser = user;
-            }
-            else if ( exceptionMessage != null ) {
-                showToast( exceptionMessage );
-            }
-            else {
-                showToast( R.string.generic_backend_error );
-            }
         }
     }
 }

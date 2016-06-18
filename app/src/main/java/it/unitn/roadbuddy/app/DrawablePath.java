@@ -2,6 +2,7 @@ package it.unitn.roadbuddy.app;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.support.v4.app.Fragment;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.*;
 import it.unitn.roadbuddy.app.backend.models.Path;
@@ -105,7 +106,7 @@ public class DrawablePath implements Drawable {
     }
 
     @Override
-    public SliderContentFragment getInfoFragment( ) {
+    public Fragment getInfoFragment( ) {
         return DrawablePathInfoFragment.newInstance( this );
     }
 }

@@ -19,5 +19,5 @@ public interface UserDAO {
 
     List<User> getUsersOfTrip( int trip ) throws BackendException;
 
-    boolean joinTrip( int userId, int tripId ) throws BackendException;
+    boolean joinTrip( int userId, Integer tripId ) throws BackendException;
 }
