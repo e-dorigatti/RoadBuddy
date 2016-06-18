@@ -1,6 +1,7 @@
 package it.unitn.roadbuddy.app;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -20,9 +21,12 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.facebook.AccessToken;
@@ -357,12 +361,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Log.v("MY_STATE_LOG", "main activity distrutto");
-        accessTokenTracker.stopTracking();
-    }
+
 
     public void showChoosenPath(Path path) {
         mPager.setCurrentItem(0);
@@ -415,6 +414,12 @@ public class MainActivity extends AppCompatActivity
     }
 
 
+    @Override
+    protected void onDestroy() {
+        accessTokenTracker.stopTracking();
+        Log.v("MY_STATE_LOG", "main activity distrutto");
+        super.onDestroy();
+    }
     public void setInitialPreferences(String username){
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( MainActivity.this );
         SharedPreferences.Editor editor = sharedPref.edit();
