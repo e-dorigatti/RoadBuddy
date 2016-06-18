@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
@@ -29,7 +30,11 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
@@ -51,6 +56,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     Map<Integer, Drawable> shownDrawablesByModel = new HashMap<>( );
 
     GoogleMap googleMap;
+    LocationManager locationManager;
     NFA nfa;
     Drawable selectedDrawable;
     User currentUser;
@@ -73,9 +79,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
         int user_id = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
 
+        Log.v("MY_STATE_LOG", "map fragment creato");
+
         taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
 
-        if ( mPActivity.intent != null &&
+        if ( mPActivity.intent != null && mPActivity.intent.getAction() != null &&
                 mPActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
 
             int tripId = Integer.parseInt( mPActivity.intent.getData( ).getFragment( ) );
@@ -85,12 +93,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             // set the intent to null to say it has been consumed
             mPActivity.intent = null;
         }
-        else if( mPActivity.intent != null &&
+        /*else if( mPActivity.intent != null &&
                 mPActivity.intent.getAction( ).equals( TripsFragment.INTENT_SELECTED_TRIP ) ){
 
                 temp_id = mPActivity.intent.getExtras( ).getInt(TripsFragment.INTENT_SELECTED_TRIP);
                 initialState = new RestState( );
-        }
+        }*/
         else initialState = new RestState( );
     }
 
@@ -147,6 +155,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onDestroy() {
         mPActivity.mAdapter.currentMF = null;
+        Log.v("MY_STATE_LOG", "map fragment distrutto");
         super.onDestroy();
     }
 
@@ -316,11 +325,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 selectedDrawable = drawable;
                 drawable.setSelected( context, googleMap, true );
             }
-            else if(drawable.equals(shownDrawablesByModel.get(temp_id))){
+           /* else if(drawable.equals(shownDrawablesByModel.get(temp_id))){
+
                 Drawable d = shownDrawablesByModel.get(temp_id);
                 setSelectedDrawable(d);
                 temp_id = null;
-            }
+            }*/
             else drawable.setSelected( context, googleMap, false );
         }
 
@@ -340,6 +350,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
             super.onPostExecute( success );
         }
+
     }
 
     class GetCurrentUserAsync extends CancellableAsyncTask<Integer, Integer, User> {
@@ -376,7 +387,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
     public void showTrip(Path path){
-        setSelectedDrawable(shownDrawablesByModel.get(path.getId()));
+        Drawable d = shownDrawablesByModel.get(path.getId());
+        setSelectedDrawable(d);
+       // setSelectedDrawable(shownDrawablesByModel.get(path.getId()));
     }
 }
 

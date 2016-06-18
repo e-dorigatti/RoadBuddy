@@ -30,9 +30,12 @@ public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHold
         Path pi = pathList.get( position );
         holder.vId.setText( "Path: " + Long.toString( pi.getId( ) ) );
         holder.vOwner.setText( "Owner: " + Long.toString( pi.getOwner( ) ) );
-        holder.vDistance.setText( "Distance: " + Long.toString( pi.getDistance( ) ) );
-        holder.vDuration.setText( "Expected duration: " + Long.toString( pi.getDuration( ) ) );
-
+        holder.vDistance.setText(String.format( "Total Distance: %s",
+                        Path.formatDistance( pi.getDistance( ) )
+                ) );
+        holder.vDuration.setText(String.format( "Expected Duration: %s",
+                        Path.formatDuration( pi.getDuration( ) )
+                ) );
     }
 
     @Override
