@@ -7,7 +7,7 @@
     <item>
         <bitmap
             android:gravity="center"
-            android:src="@drawable/road_buddy_splash"/>
+            android:src="@drawable/road_buddy_splash_square"/>
     </item>
 
 </layer-list>
