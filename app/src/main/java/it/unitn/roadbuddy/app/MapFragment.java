@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
@@ -13,7 +14,6 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -39,6 +39,7 @@ import java.util.*;
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     MainActivity mainActivity;
+    TripsFragment mTFactivity;
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
     com.sothree.slidinguppanel.SlidingUpPanelLayout slidingLayout;
@@ -48,8 +49,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     Map<Integer, Drawable> shownDrawablesByModel = new HashMap<>( );
 
     GoogleMap googleMap;
+    LocationManager locationManager;
     NFA nfa;
     Drawable selectedDrawable;
+    User currentUser;
 
     FloatingActionButton button_viaggi;
     FloatingActionButton button_impost;
@@ -57,6 +60,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     NFAState initialState;
+
+    //While selecting a Trip from recycler view we save a temporary path id to select it with
+    //setSelectedDrawable(showDrawablesByModel(temp_id)
+    Integer temp_id;
 
     public MapFragment( ) {
         // Required empty public constructor
@@ -76,7 +83,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         this.mainActivity = ( MainActivity ) getActivity( );
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
 
-        if ( mainActivity.intent != null &&
+        Log.v( "MY_STATE_LOG", "map fragment creato" );
+
+        taskManager.startRunningTask( new GetCurrentUserAsync( ), true, getCurrentUserId( ) );
+
+        if ( mainActivity.intent != null && mainActivity.intent.getAction( ) != null &&
                 mainActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
 
             int tripId = Integer.parseInt( mainActivity.intent.getData( ).getFragment( ) );
@@ -86,6 +97,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             // set the intent to null to say it has been consumed
             mainActivity.intent = null;
         }
+        /*else if( mainActivity.intent != null &&
+                mainActivity.intent.getAction( ).equals( TripsFragment.INTENT_SELECTED_TRIP ) ){
+
+                temp_id = mainActivity.intent.getExtras( ).getInt(TripsFragment.INTENT_SELECTED_TRIP);
+                initialState = new RestState( );
+        }*/
         else initialState = new RestState( );
     }
 
@@ -99,23 +116,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onViewCreated( View view, Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
-
-        button_viaggi = ( FloatingActionButton ) view.findViewById( R.id.button_map_viaggi );
-        button_impost = ( FloatingActionButton ) view.findViewById( R.id.button_map_impost );
-
-
-        button_viaggi.setOnTouchListener( new View.OnTouchListener( ) {
-            public boolean onTouch( View v, MotionEvent event ) {
-                mainActivity.mPager.setCurrentItem( 1 );
-                return false;
-            }
-        } );
-        button_impost.setOnTouchListener( new View.OnTouchListener( ) {
-            public boolean onTouch( View v, MotionEvent event ) {
-                mainActivity.mPager.setCurrentItem( 2 );
-                return false;
-            }
-        } );
 
         floatingActionMenu = ( FloatingActionMenu ) view.findViewById( R.id.fab );
         mainLayout = new ViewContainer(
@@ -154,6 +154,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onStart( ) {
         super.onStart( );
+    }
+
+    @Override
+    public void onDestroy( ) {
+        mainActivity.mAdapter.currentMF = null;
+        Log.v( "MY_STATE_LOG", "map fragment distrutto" );
+        super.onDestroy( );
     }
 
     @Override
@@ -239,6 +246,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
+    public void showTrip( Path path ) {
+        Drawable d = shownDrawablesByModel.get( path.getId( ) );
+        setSelectedDrawable( d );
+        // setSelectedDrawable(shownDrawablesByModel.get(path.getId()));
+    }
+
     class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Drawable, Boolean> {
 
         String exceptionMessage;
@@ -322,6 +335,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 selectedDrawable = drawable;
                 drawable.setSelected( context, googleMap, true );
             }
+           /* else if(drawable.equals(shownDrawablesByModel.get(temp_id))){
+
+                Drawable d = shownDrawablesByModel.get(temp_id);
+                setSelectedDrawable(d);
+                temp_id = null;
+            }*/
             else drawable.setSelected( context, googleMap, false );
         }
 
@@ -340,6 +359,41 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 floatingActionMenu.getMenuIconView( ).clearAnimation( );
 
             super.onPostExecute( success );
+        }
+
+    }
+
+    class GetCurrentUserAsync extends CancellableAsyncTask<Integer, Integer, User> {
+
+        String exceptionMessage;
+
+        public GetCurrentUserAsync( ) {
+            super( taskManager );
+        }
+
+        @Override
+        protected User doInBackground( Integer... userID ) {
+            try {
+                return DAOFactory.getUserDAO( ).getUser( userID[ 0 ] );
+            }
+            catch ( BackendException exc ) {
+                exceptionMessage = exc.getMessage( );
+                Log.e( getClass( ).getName( ), "while retrieving current user", exc );
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute( User user ) {
+            if ( user != null ) {
+                currentUser = user;
+            }
+            else if ( exceptionMessage != null ) {
+                showToast( exceptionMessage );
+            }
+            else {
+                showToast( R.string.generic_backend_error );
+            }
         }
     }
 }
@@ -418,4 +472,6 @@ class ViewContainer {
     public void hideParent( ) {
         //container.setVisibility( View.INVISIBLE );
     }
+
+
 }

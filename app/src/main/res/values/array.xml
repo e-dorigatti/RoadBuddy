@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="choose_log_in">
+        <item>Log in with facebook</item>
+        <item>Choose a custom username</item>
+    </string-array>
+</resources>

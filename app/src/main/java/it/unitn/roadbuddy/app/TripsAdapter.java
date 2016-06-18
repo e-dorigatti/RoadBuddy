@@ -5,9 +5,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import it.unitn.roadbuddy.app.backend.models.Path;
 
 import java.util.List;
+
+import it.unitn.roadbuddy.app.backend.models.Path;
 
 public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHolder> {
 
@@ -19,9 +20,7 @@ public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHold
 
     @Override
     public TripsAdapter.PathViewHolder onCreateViewHolder( ViewGroup parent, int viewType ) {
-        View itemView = LayoutInflater.
-                                              from( parent.getContext( ) ).
-                                              inflate( R.layout.trip_list_row, parent, false );
+        View itemView = LayoutInflater.from( parent.getContext( ) ).inflate( R.layout.trip_list_row, parent, false );
 
         return new PathViewHolder( itemView );
     }
@@ -31,9 +30,12 @@ public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHold
         Path pi = pathList.get( position );
         holder.vId.setText( "Path: " + Long.toString( pi.getId( ) ) );
         holder.vOwner.setText( "Owner: " + Long.toString( pi.getOwner( ) ) );
-        holder.vDistance.setText( "Distance: " + Long.toString( pi.getDistance( ) ) );
-        holder.vDuration.setText( "Expected duration: " + Long.toString( pi.getDuration( ) ) );
-
+        holder.vDistance.setText(String.format( "Total Distance: %s",
+                        Path.formatDistance( pi.getDistance( ) )
+                ) );
+        holder.vDuration.setText(String.format( "Expected Duration: %s",
+                        Path.formatDuration( pi.getDuration( ) )
+                ) );
     }
 
     @Override
@@ -54,5 +56,9 @@ public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHold
             vDuration = ( TextView ) itemView.findViewById( R.id.path_duration );
             vDistance = ( TextView ) itemView.findViewById( R.id.path_distance );
         }
+    }
+
+    public Path getPath(int position) {
+        return pathList.get(position);
     }
 }

@@ -7,18 +7,17 @@ import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.maps.model.LatLng;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import it.unitn.roadbuddy.app.backend.BackendException;
@@ -33,13 +32,12 @@ public class TripsFragment extends Fragment {
     PagerAdapter mPagerAdapter;
     CancellableAsyncTaskManager taskManager;
     EmptyRecyclerView mRecyclerView;
-    RecyclerView.Adapter mAdapter;
+    TripsAdapter mAdapter;
     RecyclerView.LayoutManager mLayoutManager;
-    List<Path> pathList = new ArrayList<>( );
     View emptyView;
-
-    FloatingActionButton button_map;
-    FloatingActionButton button_impost;
+    View tripsView;
+    private SearchView searchView;
+    public static final String INTENT_SELECTED_TRIP = "select-trip";
 
     public TripsFragment( ) {
         // Required empty public constructor
@@ -49,53 +47,44 @@ public class TripsFragment extends Fragment {
     public void onCreate( Bundle savedInstanceState ) {
         this.mPActivity = (MainActivity) getActivity();
         super.onCreate( savedInstanceState );
+
+
     }
 
     @Override
     public View onCreateView( LayoutInflater inflater, ViewGroup container,
                               Bundle savedInstanceState ) {
         // Inflate the layout for this fragment
-        return inflater.inflate( R.layout.fragment_trips, container, false );
+        tripsView = inflater.inflate( R.layout.fragment_trips, container, false );
+        return tripsView;
 
     }
 
     @Override
     public void onViewCreated( View view, @Nullable Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
+        Log.v("MY_STATE_LOG", "trips fragment creato");
+        //prepare the SearchView
+        //searchView = (SearchView) searchView.findViewById(R.id.search_bar);
+        //SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
 
-
-
-        button_map = (FloatingActionButton) getActivity().findViewById(R.id.button_trips_map);
-        button_impost = (FloatingActionButton) getActivity().findViewById(R.id.button_trips_impost);
-
-
-        button_map.setOnTouchListener(new View.OnTouchListener() {
-            public boolean onTouch(View v, MotionEvent event) {
-                mPActivity.mPager.setCurrentItem(0);
-                return false;
-            }
-        });
-        button_impost.setOnTouchListener(new View.OnTouchListener() {
-            public boolean onTouch(View v, MotionEvent event) {
-                mPActivity.mPager.setCurrentItem(2);
-                return false;
-            }
-        });
 
         // Associate searchable configuration with the SearchView
-       /* SearchManager searchManager =
+      /*  SearchManager searchManager =
                 (SearchManager) getSystemService(Context.SEARCH_SERVICE);
         SearchView searchView =
-                (SearchView) menu.findItem(R.id.search).getActionView();
+                (SearchView) trips_view.findItem(R.id.search).getActionView();
         searchView.setSearchableInfo(
                 searchManager.getSearchableInfo(getComponentName()));*/
 
 
+        //Setting the recycler view
         this.mPager = ( ViewPager ) getActivity( ).findViewById( R.id.pager );
         this.mRecyclerView = ( EmptyRecyclerView ) view.findViewById( R.id.recycler_view );
         this.emptyView = view.findViewById(R.id.empty_view);
         mRecyclerView.setEmptyView(emptyView);
         this.mPagerAdapter = ( PagerAdapter ) mPager.getAdapter( );
+
         // use a linear layout manager
         this.mLayoutManager = new LinearLayoutManager( getContext( ) );
         mRecyclerView.setLayoutManager( mLayoutManager );
@@ -111,6 +100,7 @@ public class TripsFragment extends Fragment {
     public void onPause( ) {
         super.onPause( );
         taskManager.stopRunningTasksOfType( getTrips.class );
+        updateList();
     }
 
     @Override
@@ -126,6 +116,19 @@ public class TripsFragment extends Fragment {
     public void updateList( ) {
         LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateList();
+        Log.v("MY_STATE_LOG", "contenuto ricaricato");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.v("MY_STATE_LOG", "trips fragment distrutto");
     }
 
     class getTrips extends CancellableAsyncTask<LatLng, Integer, List<Path>> {
@@ -156,14 +159,26 @@ public class TripsFragment extends Fragment {
 
         @Override
         protected void onPostExecute( List<Path> res ) {
+
+            //sending data to the recycler view
             mAdapter = new TripsAdapter( res );
             mRecyclerView.setAdapter( mAdapter );
+
             mRecyclerView.addOnItemTouchListener(new RecyclerTouchListener(getContext(), mRecyclerView, new ClickListener() {
                 @Override
                 public void onClick(View view, int position) {
-                    //Path path = pathList.get(position);
-                    mPActivity.mPager.setCurrentItem(0);
-                    Toast.makeText(getContext(),"Path:"  + " is selected!", Toast.LENGTH_SHORT).show();
+
+                    //sending data from the recycler view to the sliderLayout
+                    Path path = mAdapter.getPath(position);
+                    mPActivity.showChoosenPath(path);
+                    /*Intent intent = new Intent( getContext(), MainActivity.class);
+                    intent.setAction(INTENT_SELECTED_TRIP);
+                    Bundle savedInstanceState;
+                    //intent.putExtra(INTENT_SELECTED_TRIP, path);
+                    intent.putExtra(INTENT_SELECTED_TRIP, path.getId());
+                    startActivity(intent);*/
+
+
                 }
 
                 @Override
