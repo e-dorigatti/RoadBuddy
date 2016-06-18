@@ -1,7 +1,6 @@
 package it.unitn.roadbuddy.app;
 
 
-import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.support.v7.widget.LinearLayoutManager;
