@@ -18,8 +18,6 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.appindexing.Action;
@@ -82,8 +80,11 @@ public class MainActivity extends AppCompatActivity
         mAdapter = new PagerAdapter(getSupportFragmentManager());
         mPager.setAdapter(mAdapter);
 
-        this.intent = getIntent();
+
         this.savedInstanceState = savedInstanceState;
+        if (savedInstanceState == null) {
+            this.intent = getIntent();
+        }
 
         googleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
@@ -91,6 +92,7 @@ public class MainActivity extends AppCompatActivity
                 .build();
 
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+        Log.v("MY_STATE_LOG", "main activity creato");
     }
 
     @Override
@@ -282,19 +284,25 @@ public class MainActivity extends AppCompatActivity
 
     public void showChoosenPath(Path path) {
         mPager.setCurrentItem(0);
-        LinearLayout linearLayout = (LinearLayout) getLayoutInflater().inflate(R.layout.fragment_drawable_path_info_large, null);
+        /*LinearLayout linearLayout = (LinearLayout) getLayoutInflater().inflate(R.layout.fragment_drawable_path_info_large, null);
         TextView txtPathDescription = (TextView) linearLayout.findViewById(R.id.txtPathDescription);
         TextView txtTotalDistance = (TextView) linearLayout.findViewById(R.id.txtTotalDistance);
         TextView txtTotalDuration = (TextView) linearLayout.findViewById(R.id.txtTotalDuration);
         txtPathDescription.setText(path.getDescription());
         txtTotalDistance.setText("Distance: " + Long.toString(path.getDistance()));
-        txtTotalDuration.setText("Expected Duration: " + Long.toString(path.getDuration()));
+        txtTotalDuration.setText("Expected Duration: " + Long.toString(path.getDuration()));*/
         ((MapFragment) mAdapter.getCurrentMF()).slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
-        ((MapFragment) mAdapter.getCurrentMF()).sliderLayout.setView(linearLayout);
-        //((MapFragment) mAdapter.getCurrentMF()).showTrip(path);
+       // ((MapFragment) mAdapter.getCurrentMF()).sliderLayout.setView(linearLayout);
+        ((MapFragment) mAdapter.getCurrentMF()).showTrip(path);
     }
 
     public boolean isLocationPermissionEnabled() {
         return locationPermissionEnabled;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.v("MY_STATE_LOG", "main activity distrutto");
     }
 }

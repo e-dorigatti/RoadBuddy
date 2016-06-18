@@ -1,7 +1,6 @@
 package it.unitn.roadbuddy.app;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -70,7 +69,7 @@ public class TripsFragment extends Fragment {
     @Override
     public void onViewCreated( View view, @Nullable Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
-
+        Log.v("MY_STATE_LOG", "trips fragment creato");
 
         //Setting navigation buttons
         button_map = (FloatingActionButton) getActivity().findViewById(R.id.button_trips_map);
@@ -126,6 +125,7 @@ public class TripsFragment extends Fragment {
     public void onPause( ) {
         super.onPause( );
         taskManager.stopRunningTasksOfType( getTrips.class );
+        updateList();
     }
 
     @Override
@@ -141,6 +141,19 @@ public class TripsFragment extends Fragment {
     public void updateList( ) {
         LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateList();
+        Log.v("MY_STATE_LOG", "contenuto ricaricato");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.v("MY_STATE_LOG", "trips fragment distrutto");
     }
 
     class getTrips extends CancellableAsyncTask<LatLng, Integer, List<Path>> {
@@ -183,12 +196,12 @@ public class TripsFragment extends Fragment {
                     //sending data from the recycler view to the sliderLayout
                     Path path = mAdapter.getPath(position);
                     mPActivity.showChoosenPath(path);
-                    Intent intent = new Intent( getContext(), MainActivity.class);
+                    /*Intent intent = new Intent( getContext(), MainActivity.class);
                     intent.setAction(INTENT_SELECTED_TRIP);
                     Bundle savedInstanceState;
                     //intent.putExtra(INTENT_SELECTED_TRIP, path);
                     intent.putExtra(INTENT_SELECTED_TRIP, path.getId());
-                    startActivity(intent);
+                    startActivity(intent);*/
 
 
                 }
