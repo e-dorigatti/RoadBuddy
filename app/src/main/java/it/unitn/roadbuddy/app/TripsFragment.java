@@ -1,6 +1,7 @@
 package it.unitn.roadbuddy.app;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -37,6 +38,10 @@ public class TripsFragment extends Fragment {
     View emptyView;
     View tripsView;
     private SearchView searchView;
+    public static final String INTENT_SELECTED_TRIP = "select-trip";
+
+
+
 
     FloatingActionButton button_map;
     FloatingActionButton button_impost;
@@ -50,7 +55,6 @@ public class TripsFragment extends Fragment {
     public void onCreate( Bundle savedInstanceState ) {
         this.mPActivity = (MainActivity) getActivity();
         super.onCreate( savedInstanceState );
-
 
     }
 
@@ -68,7 +72,7 @@ public class TripsFragment extends Fragment {
         super.onViewCreated( view, savedInstanceState );
 
 
-
+        //Setting navigation buttons
         button_map = (FloatingActionButton) getActivity().findViewById(R.id.button_trips_map);
         button_impost = (FloatingActionButton) getActivity().findViewById(R.id.button_trips_impost);
 
@@ -99,6 +103,8 @@ public class TripsFragment extends Fragment {
         searchView.setSearchableInfo(
                 searchManager.getSearchableInfo(getComponentName()));*/
 
+
+        //Setting the recycler view
         this.mPager = ( ViewPager ) getActivity( ).findViewById( R.id.pager );
         this.mRecyclerView = ( EmptyRecyclerView ) view.findViewById( R.id.recycler_view );
         this.emptyView = view.findViewById(R.id.empty_view);
@@ -165,12 +171,25 @@ public class TripsFragment extends Fragment {
 
         @Override
         protected void onPostExecute( List<Path> res ) {
+
+            //sending data to the recycler view
             mAdapter = new TripsAdapter( res );
             mRecyclerView.setAdapter( mAdapter );
+
             mRecyclerView.addOnItemTouchListener(new RecyclerTouchListener(getContext(), mRecyclerView, new ClickListener() {
                 @Override
                 public void onClick(View view, int position) {
+
+                    //sending data from the recycler view to the sliderLayout
                     Path path = mAdapter.getPath(position);
+                    mPActivity.showChoosenPath(path);
+                    Intent intent = new Intent( getContext(), MainActivity.class);
+                    intent.setAction(INTENT_SELECTED_TRIP);
+                    Bundle savedInstanceState;
+                    //intent.putExtra(INTENT_SELECTED_TRIP, path);
+                    intent.putExtra(INTENT_SELECTED_TRIP, path.getId());
+                    startActivity(intent);
+
 
                 }
 
