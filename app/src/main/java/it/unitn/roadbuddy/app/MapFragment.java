@@ -87,7 +87,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
 
-        if ( mPActivity.intent != null &&
+        if ( mPActivity.intent != null && mPActivity.intent.getAction() != null &&
                 mPActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
 
             int tripId = Integer.parseInt( mPActivity.intent.getData( ).getFragment( ) );
