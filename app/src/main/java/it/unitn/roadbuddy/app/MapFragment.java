@@ -27,6 +27,7 @@ import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -34,6 +35,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import java.util.HashMap;
@@ -62,6 +64,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     Map<Integer, Drawable> shownDrawablesByModel = new HashMap<>();
 
     GoogleMap googleMap;
+    double latitude;
+    double longitude;
     LocationManager locationManager;
     Location location;
     Location myLocation;
@@ -135,6 +139,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
 
         //set map on my location on application start
+
        /* locationManager = (LocationManager) mPActivity.getSystemService(Context.LOCATION_SERVICE);
         Criteria criteria = new Criteria();
 
@@ -207,8 +212,42 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         nfa = new NFA( this, initialState );
 
         if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) == PackageManager.PERMISSION_GRANTED ) {
+            googleMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker").snippet("Snippet"));
+
+            //Enable user's location and the button to adjust map zoom on it
             googleMap.setMyLocationEnabled( true );
             googleMap.getUiSettings( ).setMyLocationButtonEnabled( true );
+
+            //Get Location Manager object for System Service LOCATION_SERVICE
+            LocationManager locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+
+            //Create a new Criteria to retrieve provider
+            Criteria criteria = new Criteria();
+
+            //Get the name of the best provider
+            String provider = locationManager.getBestProvider(criteria, true);
+
+            //Get current user location
+            myLocation = locationManager.getLastKnownLocation(provider);
+
+            //Set map type
+            googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+
+            //Get latitude
+            latitude = myLocation.getLatitude();
+
+            //Get longitude
+            longitude = myLocation.getLongitude();
+
+            //Create a LatLng object for the current user's location
+            LatLng latLng = new LatLng(latitude, longitude);
+
+            //Show current location ong GMap
+            googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+
+            //Zoom on the current user's location
+            googleMap.animateCamera(CameraUpdateFactory.zoomTo(8));
+            googleMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)).title("You are here!").snippet("Consider yourself located"));
         }
     }
 
