@@ -28,7 +28,7 @@ public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHold
     @Override
     public void onBindViewHolder( TripsAdapter.PathViewHolder holder, int position ) {
         Path pi = pathList.get( position );
-        holder.vId.setText( "Path: " + Long.toString( pi.getId( ) ) );
+        holder.vId.setText(  Long.toString(pi.getId())+ ") " + pi.getDescription() );
         holder.vOwner.setText( "Owner: " + Long.toString( pi.getOwner( ) ) );
         holder.vDistance.setText(String.format( "Total Distance: %s",
                         Path.formatDistance( pi.getDistance( ) )

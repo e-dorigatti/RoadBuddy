@@ -4,10 +4,13 @@ import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Criteria;
+import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.provider.SyncStateContract;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -24,9 +27,12 @@ import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
@@ -52,15 +58,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     com.sothree.slidinguppanel.SlidingUpPanelLayout slidingLayout;
     ViewContainer sliderLayout;
 
-    Map<String, Drawable> shownDrawablesByMapId = new HashMap<>( );
-    Map<Integer, Drawable> shownDrawablesByModel = new HashMap<>( );
+    Map<String, Drawable> shownDrawablesByMapId = new HashMap<>();
+    Map<Integer, Drawable> shownDrawablesByModel = new HashMap<>();
 
     GoogleMap googleMap;
     LocationManager locationManager;
+    Location location;
+    Location myLocation;
     NFA nfa;
     Drawable selectedDrawable;
     User currentUser;
-    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager();
 
     NFAState initialState;
 
@@ -68,27 +76,27 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     //setSelectedDrawable(showDrawablesByModel(temp_id)
     Integer temp_id;
 
-    public MapFragment( ) {
+    public MapFragment() {
         // Required empty public constructor
     }
 
     @Override
-    public void onCreate( Bundle savedInstanceState ) {
-        super.onCreate( savedInstanceState );
-        this.mPActivity = ( MainActivity ) getActivity( );
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
-        int user_id = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        this.mPActivity = (MainActivity) getActivity();
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        int user_id = pref.getInt(SettingsFragment.KEY_PREF_USER_ID, -1);
 
         Log.v("MY_STATE_LOG", "map fragment creato");
 
-        taskManager.startRunningTask( new GetCurrentUserAsync( ), true, user_id );
+        taskManager.startRunningTask(new GetCurrentUserAsync(), true, user_id);
 
-        if ( mPActivity.intent != null && mPActivity.intent.getAction() != null &&
-                mPActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
+        if (mPActivity.intent != null && mPActivity.intent.getAction() != null &&
+                mPActivity.intent.getAction().equals(MainActivity.INTENT_JOIN_TRIP)) {
 
-            int tripId = Integer.parseInt( mPActivity.intent.getData( ).getFragment( ) );
-            String inviter = mPActivity.intent.getExtras( ).getString( MainActivity.JOIN_TRIP_INVITER_KEY );
-            initialState = new NavigationState( tripId, inviter );
+            int tripId = Integer.parseInt(mPActivity.intent.getData().getFragment());
+            String inviter = mPActivity.intent.getExtras().getString(MainActivity.JOIN_TRIP_INVITER_KEY);
+            initialState = new NavigationState(tripId, inviter);
 
             // set the intent to null to say it has been consumed
             mPActivity.intent = null;
@@ -99,36 +107,69 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 temp_id = mPActivity.intent.getExtras( ).getInt(TripsFragment.INTENT_SELECTED_TRIP);
                 initialState = new RestState( );
         }*/
-        else initialState = new RestState( );
+        else initialState = new RestState();
     }
 
     @Override
-    public View onCreateView( LayoutInflater inflater, ViewGroup container,
-                              Bundle savedInstanceState ) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
 
-        return inflater.inflate( R.layout.fragment_map, container, false );
+        return inflater.inflate(R.layout.fragment_map, container, false);
     }
 
     @Override
-    public void onViewCreated( View view, Bundle savedInstanceState ) {
-        super.onViewCreated( view, savedInstanceState );
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-        floatingActionMenu = ( FloatingActionMenu ) view.findViewById( R.id.fab );
+        floatingActionMenu = (FloatingActionMenu) view.findViewById(R.id.fab);
         mainLayout = new ViewContainer(
-                getLayoutInflater( savedInstanceState ), getFragmentManager( ),
-                ( FrameLayout ) view.findViewById( R.id.button_container )
+                getLayoutInflater(savedInstanceState), getFragmentManager(),
+                (FrameLayout) view.findViewById(R.id.button_container)
         );
 
         sliderLayout = new ViewContainer(
-                getLayoutInflater( savedInstanceState ), getFragmentManager( ),
-                ( FrameLayout ) view.findViewById( R.id.sliderLayout )
+                getLayoutInflater(savedInstanceState), getFragmentManager(),
+                (FrameLayout) view.findViewById(R.id.sliderLayout)
         );
-        slidingLayout = ( com.sothree.slidinguppanel.SlidingUpPanelLayout ) view.findViewById( R.id.sliding_layout );
-        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+        slidingLayout = (com.sothree.slidinguppanel.SlidingUpPanelLayout) view.findViewById(R.id.sliding_layout);
+        slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+
+        //set map on my location on application start
+       /* locationManager = (LocationManager) mPActivity.getSystemService(Context.LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+
+        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            Location location = locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria, false));
+            if(location != null){
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                        new LatLng(location.getLatitude(),location.getLongitude()),13
+                ));
+                CameraPosition cameraPosition = new CameraPosition.Builder()
+                        .target(new LatLng(location.getLatitude(), location.getLongitude()))
+                        .zoom(17)       //Sets the zoom
+                        .bearing(90)    //Sets the orientation of the camera to east
+                        .tilt(40)       //Sets the tilt of the camera 30 degrees
+                        .build();
+                googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+            }
+
+            return;
+        }
+        */
+
+
 
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
     }
+
 
     @Override
     public void onPause( ) {
@@ -240,7 +281,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( selectedDrawable != null ) {
             addDrawable( selectedDrawable );
         }
+
     }
+
+
 
     class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Drawable, Boolean> {
 
