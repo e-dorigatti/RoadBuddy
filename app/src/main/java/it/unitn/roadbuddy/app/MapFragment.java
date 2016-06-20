@@ -138,39 +138,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         slidingLayout = (com.sothree.slidinguppanel.SlidingUpPanelLayout) view.findViewById(R.id.sliding_layout);
         slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
 
-        //set map on my location on application start
-
-       /* locationManager = (LocationManager) mPActivity.getSystemService(Context.LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-
-        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            Location location = locationManager.getLastKnownLocation(locationManager.getBestProvider(criteria, false));
-            if(location != null){
-                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                        new LatLng(location.getLatitude(),location.getLongitude()),13
-                ));
-                CameraPosition cameraPosition = new CameraPosition.Builder()
-                        .target(new LatLng(location.getLatitude(), location.getLongitude()))
-                        .zoom(17)       //Sets the zoom
-                        .bearing(90)    //Sets the orientation of the camera to east
-                        .tilt(40)       //Sets the tilt of the camera 30 degrees
-                        .build();
-                googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-            }
-
-            return;
-        }
-        */
-
-
-
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
     }
@@ -469,9 +436,24 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             }
         }
     }
+    public void setZoomOnTrip(Path path){
+        if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) == PackageManager.PERMISSION_GRANTED ) {
+
+            //Create a LatLng object for the current path's location
+            LatLng latLng = (LatLng)path.getLegs().get(0).get(0);
+
+            //Show current location ong GMap
+            googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+
+            //Zoom on the current path's location
+            googleMap.animateCamera(CameraUpdateFactory.zoomTo(10));
+        }
+
+    }
     public void showTrip(Path path){
         Drawable d = shownDrawablesByModel.get(path.getId());
         setSelectedDrawable(d);
+
        // setSelectedDrawable(shownDrawablesByModel.get(path.getId()));
     }
 }
