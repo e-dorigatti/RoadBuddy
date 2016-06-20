@@ -5,7 +5,6 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import it.unitn.roadbuddy.app.backend.models.Path;
@@ -33,17 +32,19 @@ public class DrawablePathInfoFragment extends Fragment {
         TextView txtDistance = ( TextView ) mainLayout.findViewById( R.id.txtTotalDistance );
         TextView txtDescription = ( TextView ) mainLayout.findViewById( R.id.txtPathDescription );
 
-        txtDistance.setText(
-                String.format( getString( R.string.path_edit_total_distance ),
-                               Path.formatDistance( drawablePath.getPath( ).getDistance( ) )
-                ) );
+        if ( drawablePath != null ) {
+            txtDistance.setText(
+                    String.format( getString( R.string.path_edit_total_distance ),
+                                   Path.formatDistance( drawablePath.getPath( ).getDistance( ) )
+                    ) );
 
-        txtDuration.setText(
-                String.format( getString( R.string.path_edit_total_duration ),
-                               Path.formatDuration( drawablePath.getPath( ).getDuration( ) )
-                ) );
+            txtDuration.setText(
+                    String.format( getString( R.string.path_edit_total_duration ),
+                                   Path.formatDuration( drawablePath.getPath( ).getDuration( ) )
+                    ) );
 
-        txtDescription.setText( drawablePath.getPath( ).getDescription( ) );
+            txtDescription.setText( drawablePath.getPath( ).getDescription( ) );
+        }
 
         return mainLayout;
     }

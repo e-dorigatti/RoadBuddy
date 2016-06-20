@@ -10,7 +10,6 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
-import android.provider.SyncStateContract;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -23,17 +22,13 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
@@ -47,39 +42,23 @@ import java.util.*;
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     MainActivity mainActivity;
-    TripsFragment mTFactivity;
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
     com.sothree.slidinguppanel.SlidingUpPanelLayout slidingLayout;
     ViewContainer sliderLayout;
 
-    Map<String, Drawable> shownDrawablesByMapId = new HashMap<>();
-    Map<Integer, Drawable> shownDrawablesByModel = new HashMap<>();
+    Map<String, Drawable> shownDrawablesByMapId = new HashMap<>( );
+    Map<Integer, Drawable> shownDrawablesByModel = new HashMap<>( );
 
     GoogleMap googleMap;
-    double latitude;
-    double longitude;
-    LocationManager locationManager;
-    Location location;
-    LatLng latLng;
-    Location myLocation;
     NFA nfa;
     Drawable selectedDrawable;
-    User currentUser;
-
-    FloatingActionButton button_viaggi;
-    FloatingActionButton button_impost;
 
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     NFAState initialState;
 
-    //While selecting a Trip from recycler view we save a temporary path id to select it with
-    //setSelectedDrawable(showDrawablesByModel(temp_id)
-    Integer temp_id;
-
-    public MapFragment() {
-        // Required empty public constructor
+    public MapFragment( ) {
     }
 
     public User getCurrentUser( ) {
@@ -91,58 +70,50 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        this.mainActivity = (MainActivity) getActivity();
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        int user_id = pref.getInt(SettingsFragment.KEY_PREF_USER_ID, -1);
+    public void onCreate( Bundle savedInstanceState ) {
+        super.onCreate( savedInstanceState );
+        this.mainActivity = ( MainActivity ) getActivity( );
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
+        int user_id = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
 
         Log.v( "MY_STATE_LOG", "map fragment creato" );
 
-        taskManager.startRunningTask(new GetCurrentUserAsync(), true, user_id);
+        if ( mainActivity.intent != null && mainActivity.intent.getAction( ) != null &&
+                mainActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
 
-        if (mainActivity.intent != null && mainActivity.intent.getAction() != null &&
-                mainActivity.intent.getAction().equals(MainActivity.INTENT_JOIN_TRIP)) {
-
-            int tripId = Integer.parseInt(mainActivity.intent.getData().getFragment());
-            String inviter = mainActivity.intent.getExtras().getString(MainActivity.JOIN_TRIP_INVITER_KEY);
-            initialState = new NavigationState(tripId, inviter);
+            int tripId = Integer.parseInt( mainActivity.intent.getData( ).getFragment( ) );
+            String inviter = mainActivity.intent.getExtras( ).getString( MainActivity.JOIN_TRIP_INVITER_KEY );
+            initialState = new NavigationState( tripId, inviter );
 
             // set the intent to null to say it has been consumed
             mainActivity.intent = null;
         }
-        /*else if( mainActivity.intent != null &&
-                mainActivity.intent.getAction( ).equals( TripsFragment.INTENT_SELECTED_TRIP ) ){
-
-                temp_id = mainActivity.intent.getExtras( ).getInt(TripsFragment.INTENT_SELECTED_TRIP);
-                initialState = new RestState( );
-        }*/
-        else initialState = new RestState();
+        else initialState = new RestState( );
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView( LayoutInflater inflater, ViewGroup container,
+                              Bundle savedInstanceState ) {
 
-        return inflater.inflate(R.layout.fragment_map, container, false);
+        return inflater.inflate( R.layout.fragment_map, container, false );
     }
 
     @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
-        super.onViewCreated( view, savedInstanceState);
+    public void onViewCreated( View view, Bundle savedInstanceState ) {
+        super.onViewCreated( view, savedInstanceState );
 
-        floatingActionMenu = (FloatingActionMenu) view.findViewById(R.id.fab);
+        floatingActionMenu = ( FloatingActionMenu ) view.findViewById( R.id.fab );
         mainLayout = new ViewContainer(
-                getLayoutInflater(savedInstanceState), getFragmentManager(),
-                (FrameLayout) view.findViewById(R.id.button_container)
+                getLayoutInflater( savedInstanceState ), getFragmentManager( ),
+                ( FrameLayout ) view.findViewById( R.id.button_container )
         );
 
         sliderLayout = new ViewContainer(
-                getLayoutInflater(savedInstanceState), getFragmentManager(),
-                (FrameLayout) view.findViewById(R.id.sliderLayout)
+                getLayoutInflater( savedInstanceState ), getFragmentManager( ),
+                ( FrameLayout ) view.findViewById( R.id.sliderLayout )
         );
-        slidingLayout = (com.sothree.slidinguppanel.SlidingUpPanelLayout) view.findViewById(R.id.sliding_layout);
-        slidingLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
+        slidingLayout = ( com.sothree.slidinguppanel.SlidingUpPanelLayout ) view.findViewById( R.id.sliding_layout );
+        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
 
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
@@ -182,48 +153,37 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onMapReady( GoogleMap map ) {
 
         googleMap = map;
+        googleMap.setMapType( GoogleMap.MAP_TYPE_NORMAL );
         nfa = new NFA( this, initialState );
-        latitude = 46.00;
-        longitude = 21.00;
 
-        if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) == PackageManager.PERMISSION_GRANTED ) {
-            googleMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker").snippet("Snippet"));
+        if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) ==
+                PackageManager.PERMISSION_GRANTED ) {
 
             //Enable user's location and the button to adjust map zoom on it
             googleMap.setMyLocationEnabled( true );
             googleMap.getUiSettings( ).setMyLocationButtonEnabled( true );
 
-            //Get Location Manager object for System Service LOCATION_SERVICE
-            LocationManager locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+            LocationManager locationManager = ( LocationManager ) getActivity( )
+                    .getSystemService( Context.LOCATION_SERVICE );
 
             //Create a new Criteria to retrieve provider
-            Criteria criteria = new Criteria();
-
-            //Get the name of the best provider
-            String provider = locationManager.getBestProvider(criteria, true);
+            Criteria criteria = new Criteria( );
+            String provider = locationManager.getBestProvider( criteria, true );
 
             //Get current user location
-            myLocation = locationManager.getLastKnownLocation(provider);
+            Location myLocation = locationManager.getLastKnownLocation( provider );
 
-            //Set map type
-            googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+            double latitude = 46.00;
+            double longitude = 21.00;
 
-            if(myLocation != null) {
-                //Get latitude
-                latitude = myLocation.getLatitude();
-                //Get longitude
-                longitude = myLocation.getLongitude();
+            if ( myLocation != null ) {
+                latitude = myLocation.getLatitude( );
+                longitude = myLocation.getLongitude( );
             }
 
-            //Create a LatLng object for the current user's location
-            latLng = new LatLng(latitude, longitude);
-
-            //Show current location ong GMap
-            googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-
-            //Zoom on the current user's location
-            googleMap.animateCamera(CameraUpdateFactory.zoomTo(8));
-            googleMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)).title("You are here!").snippet("Consider yourself located"));
+            //Show current location on GMap
+            googleMap.moveCamera( CameraUpdateFactory.newLatLng( new LatLng( latitude, longitude ) ) );
+            googleMap.animateCamera( CameraUpdateFactory.zoomTo( 8 ) );
         }
     }
 
@@ -299,6 +259,25 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     }
 
+    public void setZoomOnTrip( Path path ) {
+        if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION )
+                == PackageManager.PERMISSION_GRANTED ) {
+
+            LatLng pathStart = path.getLegs( ).get( 0 ).get( 0 );
+            googleMap.moveCamera( CameraUpdateFactory.newLatLng( pathStart ) );
+            googleMap.animateCamera( CameraUpdateFactory.zoomTo( 10 ) );
+        }
+
+    }
+
+    public void showTrip( Path path ) {
+        setZoomOnTrip( path );
+        Drawable d = new DrawablePath( path );
+
+        addDrawable( d );
+        setSelectedDrawable( d );
+    }
+
     class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Drawable, Boolean> {
 
         String exceptionMessage;
@@ -368,7 +347,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
             Drawable drawable = values[ 0 ];
 
-            // FIXME [ed] shownDrawablesByModel is always empty!!!
             Drawable oldDrawable = shownDrawablesByModel.get( drawable.getModelId( ) );
             if ( oldDrawable != null )
                 removeDrawable( oldDrawable );
@@ -382,12 +360,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 selectedDrawable = drawable;
                 drawable.setSelected( context, googleMap, true );
             }
-           /* else if(drawable.equals(shownDrawablesByModel.get(temp_id))){
-
-                Drawable d = shownDrawablesByModel.get(temp_id);
-                setSelectedDrawable(d);
-                temp_id = null;
-            }*/
             else drawable.setSelected( context, googleMap, false );
         }
 
@@ -408,65 +380,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             super.onPostExecute( success );
         }
 
-    }
-
-    class GetCurrentUserAsync extends CancellableAsyncTask<Integer, Integer, User> {
-
-        String exceptionMessage;
-
-        public GetCurrentUserAsync( ) {
-            super( taskManager );
-        }
-
-        @Override
-        protected User doInBackground( Integer... userID ) {
-            try {
-                return DAOFactory.getUserDAO( ).getUser( userID[ 0 ] );
-            }
-            catch ( BackendException exc ) {
-                exceptionMessage = exc.getMessage( );
-                Log.e( getClass( ).getName( ), "while retrieving current user", exc );
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute( User user ) {
-            if ( user != null ) {
-                currentUser = user;
-            }
-            else if ( exceptionMessage != null ) {
-                showToast( exceptionMessage );
-            }
-            else {
-                showToast( R.string.generic_backend_error );
-            }
-        }
-    }
-    public void setZoomOnTrip(Path path){
-        if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) == PackageManager.PERMISSION_GRANTED ) {
-
-            //Create a LatLng object for the current path's location
-            LatLng latLng = (LatLng)path.getLegs().get(0).get(0);
-
-            //Show current location ong GMap
-            googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-
-            //Zoom on the current path's location
-            googleMap.animateCamera(CameraUpdateFactory.zoomTo(10));
-        }
-
-    }
-    public void showTrip(Path path){
-        setZoomOnTrip(path);
-      //  Drawable d = shownDrawablesByModel.get(path.getId());
-        Drawable d = new DrawablePath(path);
-
-        if(d != null) {
-            this.addDrawable(d);
-            this.setSelectedDrawable(d);
-        }
-       // setSelectedDrawable(shownDrawablesByModel.get(path.getId()));
     }
 }
 

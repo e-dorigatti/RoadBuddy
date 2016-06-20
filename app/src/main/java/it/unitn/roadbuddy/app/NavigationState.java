@@ -88,7 +88,8 @@ public class NavigationState implements NFAState,
 
     @Override
     public void onParticipantSelected( User participant ) {
-        moveCameraTo( participant.getLastPosition( ), 15 );
+        if ( participant != null && participant.getLastPosition( ) != null )
+            moveCameraTo( participant.getLastPosition( ), 15 );
     }
 
     @Override

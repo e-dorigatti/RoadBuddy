@@ -136,10 +136,11 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
                 txt.setText( String.format( fmt, user.getUserName( ) ) );
             }
             else {
+                Double dist = getDistanceFromCurrentUser( );
                 String fmt = getString( R.string.navigation_info_buddy );
                 txt.setText( String.format(
                         fmt, user.getUserName( ),
-                        Path.formatDistance( getDistanceFromCurrentUser( ).intValue( ) )
+                        dist != null ? Path.formatDistance( dist.intValue( ) ) : "???"
                 ) );
             }
 
@@ -190,8 +191,16 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
             AdaptedUser u1 = ( AdaptedUser ) l1;
             AdaptedUser u2 = ( AdaptedUser ) l2;
 
-            return -Double.compare( u1.getDistanceFromCurrentUser( ),
-                                    u2.getDistanceFromCurrentUser( ) );
+            Double d1 = u1.getDistanceFromCurrentUser( );
+            Double d2 = u2.getDistanceFromCurrentUser( );
+
+            // show MIA riders first
+            if ( d1 == null )
+                return 1;
+            else if ( d2 == null )
+                return -1;
+            else
+                return -Double.compare( d1, d2 );
 
         }
     }

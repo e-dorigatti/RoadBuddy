@@ -192,14 +192,13 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
         return String.format(
                 "CREATE TABLE %s(%s SERIAL PRIMARY KEY, " +
                         "%s GEOMETRY(MULTILINESTRING), " +
-                        "%s INTEGER REFERENCES %s(%s) NOT NULL, " +
+                        "%s INTEGER NOT NULL, " +
                         "%s INTEGER NOT NULL, " +
                         "%s INTEGER NOT NULL, " +
                         "%s TEXT)",
                 getSchemaName( ), COLUMN_NAME_ID, COLUMN_NAME_PATH,
-                COLUMN_NAME_OWNER, TABLE_NAME, COLUMN_NAME_ID,
-                COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION,
-                COLUMN_NAME_DESCRIPTION
+                COLUMN_NAME_OWNER, COLUMN_NAME_DISTANCE,
+                COLUMN_NAME_DURATION, COLUMN_NAME_DESCRIPTION
         );
     }
 }

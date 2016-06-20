@@ -434,7 +434,6 @@ public class AddPathState implements NFAState,
                 WaypointInfo waypoint = path.get( path.size( ) - 1 );
 
                 waypoint.locationName = res;
-                stopMarkerAnimation( );
 
                 // The first waypoint is not listed in the details fragment
                 if ( updateInfoFragment ) {

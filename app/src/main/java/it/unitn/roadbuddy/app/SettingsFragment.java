@@ -6,19 +6,15 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.preference.PreferenceFragmentCompat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
+import com.facebook.CallbackManager;
 import com.facebook.login.widget.LoginButton;
 
 import java.util.Arrays;
-
-import it.unitn.roadbuddy.app.backend.BackendException;
-import it.unitn.roadbuddy.app.backend.DAOFactory;
-import it.unitn.roadbuddy.app.backend.models.User;
 
 public class SettingsFragment
         extends PreferenceFragmentCompat
@@ -31,6 +27,7 @@ public class SettingsFragment
     MainActivity mPActivity;
     AsyncTask runningAsyncTask;
     String currentUserName;
+    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     @Override
     public void onCreatePreferences( Bundle savedInstanceState, String rootKey ) {
@@ -45,21 +42,43 @@ public class SettingsFragment
         View settings = super.onCreateView( inflater, container, savedInstanceState );
         if ( settings == null )
             return null;
+
         View mainLayout = inflater.inflate( R.layout.fragment_settings, container, false );
         FrameLayout settingsFrame = ( FrameLayout ) mainLayout.findViewById( R.id.settings );
         settingsFrame.addView( settings );
-        LoginButton loginButton = (LoginButton) mainLayout.findViewById(R.id.login_button);
-        loginButton.setFragment(this);
-        loginButton.setReadPermissions(Arrays.asList("public_profile","email"));
+
+        LoginButton loginButton = ( LoginButton ) mainLayout.findViewById( R.id.login_button );
+        loginButton.setFragment( this );
+        loginButton.setReadPermissions( Arrays.asList( "public_profile", "email" ) );
+
+        mainLayout.findViewById( R.id.btnLogout ).setOnClickListener( new View.OnClickListener( ) {
+            @Override
+            public void onClick( View view ) {
+                logout( );
+            }
+        } );
+
         return mainLayout;
+    }
+
+    void logout( ) {
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
+        SharedPreferences.Editor editor = sharedPref.edit( );
+        editor.remove( SettingsFragment.KEY_PREF_USER_NAME );
+        editor.remove( SettingsFragment.KEY_PREF_USER_ID );
+        editor.apply( );
+
+        getActivity( ).recreate( );
     }
 
     @Override
     public void onResume( ) {
         super.onResume( );
-        getPreferenceScreen( ).getSharedPreferences( )
-                              .registerOnSharedPreferenceChangeListener( this );
 
+        if ( getPreferenceScreen( ) != null ) {
+            getPreferenceScreen( ).getSharedPreferences( )
+                                  .registerOnSharedPreferenceChangeListener( this );
+        }
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getContext( ) );
         currentUserName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, null );
     }
@@ -67,6 +86,7 @@ public class SettingsFragment
     @Override
     public void onPause( ) {
         super.onPause( );
+        taskManager.stopAllRunningTasks( );
         getPreferenceScreen( ).getSharedPreferences( )
                               .unregisterOnSharedPreferenceChangeListener( this );
 
@@ -80,9 +100,13 @@ public class SettingsFragment
         if ( key.equals( KEY_PREF_USER_NAME ) ) {
             if ( runningAsyncTask == null ) {
                 String newUserName = sharedPreferences.getString( key, null );
-                Utils.Assert( newUserName != null, true );
-                runningAsyncTask = new ChangeAppUserAsync( );
-                runningAsyncTask.executeOnExecutor( AsyncTask.THREAD_POOL_EXECUTOR, newUserName );
+
+                if ( newUserName != null ) {
+                    taskManager.startRunningTask(
+                            new ChangeAppUserAsync( taskManager, getActivity( ), newUserName, true ),
+                            true
+                    );
+                }
             }
             else {
                 Toast.makeText(
@@ -100,64 +124,8 @@ public class SettingsFragment
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        mPActivity.callbackManager.onActivityResult(requestCode, resultCode, data);
-    }
-
-    /**
-     * **************************************************
-     * THIS IS ONLY MEANT TO BE USED DURING DEVELOPMENT *
-     * ***********************************************+**
-     */
-    class ChangeAppUserAsync extends AsyncTask<Object, Integer, Integer> {
-
-        String exceptionMessage;
-
-        @Override
-        protected Integer doInBackground( Object... newUserName ) {
-            try {
-                String userName = ( String ) newUserName[ 0 ];
-                User user;
-
-                user = DAOFactory.getUserDAO( ).getUser( userName );
-                if ( user == null ) {
-                    user = DAOFactory.getUserDAO( ).createUser(
-                            new User( -1, userName, null, null, null )
-                    );
-                }
-
-                return user.getId( );
-            }
-            catch ( BackendException exc ) {
-                Log.e( getClass( ).getName( ), "while changing current user", exc );
-                exceptionMessage = exc.getMessage( );
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute( Integer userID ) {
-            SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getContext( ) );
-            SharedPreferences.Editor editor = pref.edit( );
-
-            if ( userID != null ) {
-                editor.putInt( KEY_PREF_USER_ID, userID );
-                editor.apply( );
-
-                getActivity( ).recreate( );
-            }
-            else {
-
-                editor.putString( KEY_PREF_USER_NAME, currentUserName );
-                editor.apply( );
-
-                if ( exceptionMessage != null ) {
-                    Toast.makeText( getActivity( ), exceptionMessage, Toast.LENGTH_LONG ).show( );
-                }
-                else {
-                    Toast.makeText( getActivity( ), R.string.generic_backend_error, Toast.LENGTH_LONG ).show( );
-                }
-            }
-        }
+    public void onActivityResult( int requestCode, int resultCode, Intent data ) {
+        CallbackManager manager = CallbackManager.Factory.create( );
+        manager.onActivityResult( requestCode, resultCode, data );
     }
 }
