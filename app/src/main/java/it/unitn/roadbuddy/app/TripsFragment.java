@@ -1,8 +1,14 @@
 package it.unitn.roadbuddy.app;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.LinearLayoutManager;
@@ -36,6 +42,9 @@ public class TripsFragment extends Fragment {
     RecyclerView.LayoutManager mLayoutManager;
     View emptyView;
     View tripsView;
+    double latitude;
+    double longitude;
+    Location myLocation;
     private SearchView searchView;
     public static final String INTENT_SELECTED_TRIP = "select-trip";
 
@@ -90,7 +99,26 @@ public class TripsFragment extends Fragment {
         mRecyclerView.setLayoutManager( mLayoutManager );
 
         this.taskManager = new CancellableAsyncTaskManager( );
-        LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
+        if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) == PackageManager.PERMISSION_GRANTED ) {
+            //Get Location Manager object for System Service LOCATION_SERVICE
+            LocationManager locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+
+            //Create a new Criteria to retrieve provider
+            Criteria criteria = new Criteria();
+
+            //Get the name of the best provider
+            String provider = locationManager.getBestProvider(criteria, true);
+
+            //Get current user location
+            myLocation = locationManager.getLastKnownLocation(provider);
+            //Get latitude
+            latitude = myLocation.getLatitude();
+
+            //Get longitude
+            longitude = myLocation.getLongitude();
+        }
+
+        LatLng myPos = new LatLng( latitude, longitude );
 
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
 
@@ -114,7 +142,7 @@ public class TripsFragment extends Fragment {
     }
 
     public void updateList( ) {
-        LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
+        LatLng myPos = new LatLng( latitude, longitude );
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
     }
 

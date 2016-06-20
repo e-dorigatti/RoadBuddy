@@ -361,7 +361,7 @@ public class MainActivity extends AppCompatActivity
 
     public void showChoosenPath(Path path) {
         mPager.setCurrentItem(0);
-        ((MapFragment) mAdapter.getCurrentMF()).setZoomOnTrip(path);
+       // ((MapFragment) mAdapter.getCurrentMF()).setZoomOnTrip(path);
         /*LinearLayout linearLayout = (LinearLayout) getLayoutInflater().inflate(R.layout.fragment_drawable_path_info_large, null);
         TextView txtPathDescription = (TextView) linearLayout.findViewById(R.id.txtPathDescription);
         TextView txtTotalDistance = (TextView) linearLayout.findViewById(R.id.txtTotalDistance);

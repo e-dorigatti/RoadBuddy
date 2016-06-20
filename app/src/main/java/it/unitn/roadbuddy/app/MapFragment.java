@@ -451,9 +451,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     }
     public void showTrip(Path path){
-        Drawable d = shownDrawablesByModel.get(path.getId());
-        setSelectedDrawable(d);
+        setZoomOnTrip(path);
+      //  Drawable d = shownDrawablesByModel.get(path.getId());
+        Drawable d = new DrawablePath(path);
 
+        if(d != null) {
+            this.addDrawable(d);
+            this.setSelectedDrawable(d);
+        }
        // setSelectedDrawable(shownDrawablesByModel.get(path.getId()));
     }
 }
