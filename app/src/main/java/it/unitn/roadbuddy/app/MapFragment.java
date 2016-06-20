@@ -68,6 +68,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     double longitude;
     LocationManager locationManager;
     Location location;
+    LatLng latLng;
     Location myLocation;
     NFA nfa;
     Drawable selectedDrawable;
@@ -177,6 +178,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         googleMap = map;
         nfa = new NFA( this, initialState );
+        latitude = 46.00;
+        longitude = 21.00;
 
         if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) == PackageManager.PERMISSION_GRANTED ) {
             googleMap.addMarker(new MarkerOptions().position(new LatLng(0, 0)).title("Marker").snippet("Snippet"));
@@ -200,14 +203,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             //Set map type
             googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
-            //Get latitude
-            latitude = myLocation.getLatitude();
-
-            //Get longitude
-            longitude = myLocation.getLongitude();
+            if(myLocation != null) {
+                //Get latitude
+                latitude = myLocation.getLatitude();
+                //Get longitude
+                longitude = myLocation.getLongitude();
+            }
 
             //Create a LatLng object for the current user's location
-            LatLng latLng = new LatLng(latitude, longitude);
+            latLng = new LatLng(latitude, longitude);
 
             //Show current location ong GMap
             googleMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));

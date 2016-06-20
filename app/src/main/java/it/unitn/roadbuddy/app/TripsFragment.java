@@ -44,6 +44,7 @@ public class TripsFragment extends Fragment {
     View tripsView;
     double latitude;
     double longitude;
+    LatLng latLng;
     Location myLocation;
     private SearchView searchView;
     public static final String INTENT_SELECTED_TRIP = "select-trip";
@@ -73,19 +74,6 @@ public class TripsFragment extends Fragment {
     public void onViewCreated( View view, @Nullable Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
         Log.v("MY_STATE_LOG", "trips fragment creato");
-        //prepare the SearchView
-        //searchView = (SearchView) searchView.findViewById(R.id.search_bar);
-        //SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-
-
-        // Associate searchable configuration with the SearchView
-      /*  SearchManager searchManager =
-                (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-        SearchView searchView =
-                (SearchView) trips_view.findItem(R.id.search).getActionView();
-        searchView.setSearchableInfo(
-                searchManager.getSearchableInfo(getComponentName()));*/
-
 
         //Setting the recycler view
         this.mPager = ( ViewPager ) getActivity( ).findViewById( R.id.pager );
@@ -97,6 +85,9 @@ public class TripsFragment extends Fragment {
         // use a linear layout manager
         this.mLayoutManager = new LinearLayoutManager( getContext( ) );
         mRecyclerView.setLayoutManager( mLayoutManager );
+
+        latitude = 46.00;
+        longitude = 11.00;
 
         this.taskManager = new CancellableAsyncTaskManager( );
         if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) == PackageManager.PERMISSION_GRANTED ) {
@@ -111,16 +102,21 @@ public class TripsFragment extends Fragment {
 
             //Get current user location
             myLocation = locationManager.getLastKnownLocation(provider);
-            //Get latitude
-            latitude = myLocation.getLatitude();
 
-            //Get longitude
-            longitude = myLocation.getLongitude();
+            if(myLocation != null) {
+                //Get latitude
+                latitude = myLocation.getLatitude();
+                //Get longitude
+                longitude = myLocation.getLongitude();
+            }
+
         }
+        //Create a LatLng object for the current user's location
+        latLng = new LatLng(latitude, longitude);
 
-        LatLng myPos = new LatLng( latitude, longitude );
 
-        taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
+
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, latLng);
 
     }
 
@@ -142,7 +138,15 @@ public class TripsFragment extends Fragment {
     }
 
     public void updateList( ) {
-        LatLng myPos = new LatLng( latitude, longitude );
+        LatLng myPos;
+        if(myLocation != null) {
+            //Get latitude
+            latitude = myLocation.getLatitude();
+            //Get longitude
+            longitude = myLocation.getLongitude();
+        }
+        //Create a LatLng object for the current user's location
+        myPos = new LatLng(latitude, longitude);
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
     }
 
