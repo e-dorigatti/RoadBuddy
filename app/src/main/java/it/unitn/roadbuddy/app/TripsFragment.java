@@ -1,8 +1,14 @@
 package it.unitn.roadbuddy.app;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.LinearLayoutManager;
@@ -36,6 +42,10 @@ public class TripsFragment extends Fragment {
     RecyclerView.LayoutManager mLayoutManager;
     View emptyView;
     View tripsView;
+    double latitude;
+    double longitude;
+    LatLng latLng;
+    Location myLocation;
     private SearchView searchView;
     public static final String INTENT_SELECTED_TRIP = "select-trip";
 
@@ -64,19 +74,6 @@ public class TripsFragment extends Fragment {
     public void onViewCreated( View view, @Nullable Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
         Log.v("MY_STATE_LOG", "trips fragment creato");
-        //prepare the SearchView
-        //searchView = (SearchView) searchView.findViewById(R.id.search_bar);
-        //SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-
-
-        // Associate searchable configuration with the SearchView
-      /*  SearchManager searchManager =
-                (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-        SearchView searchView =
-                (SearchView) trips_view.findItem(R.id.search).getActionView();
-        searchView.setSearchableInfo(
-                searchManager.getSearchableInfo(getComponentName()));*/
-
 
         //Setting the recycler view
         this.mPager = ( ViewPager ) getActivity( ).findViewById( R.id.pager );
@@ -89,10 +86,37 @@ public class TripsFragment extends Fragment {
         this.mLayoutManager = new LinearLayoutManager( getContext( ) );
         mRecyclerView.setLayoutManager( mLayoutManager );
 
-        this.taskManager = new CancellableAsyncTaskManager( );
-        LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
+        latitude = 46.00;
+        longitude = 11.00;
 
-        taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
+        this.taskManager = new CancellableAsyncTaskManager( );
+        if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) == PackageManager.PERMISSION_GRANTED ) {
+            //Get Location Manager object for System Service LOCATION_SERVICE
+            LocationManager locationManager = (LocationManager) getActivity().getSystemService(Context.LOCATION_SERVICE);
+
+            //Create a new Criteria to retrieve provider
+            Criteria criteria = new Criteria();
+
+            //Get the name of the best provider
+            String provider = locationManager.getBestProvider(criteria, true);
+
+            //Get current user location
+            myLocation = locationManager.getLastKnownLocation(provider);
+
+            if(myLocation != null) {
+                //Get latitude
+                latitude = myLocation.getLatitude();
+                //Get longitude
+                longitude = myLocation.getLongitude();
+            }
+
+        }
+        //Create a LatLng object for the current user's location
+        latLng = new LatLng(latitude, longitude);
+
+
+
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, latLng);
 
     }
 
@@ -114,7 +138,15 @@ public class TripsFragment extends Fragment {
     }
 
     public void updateList( ) {
-        LatLng myPos = new LatLng( 46.0829800, 11.1155410 );
+        LatLng myPos;
+        if(myLocation != null) {
+            //Get latitude
+            latitude = myLocation.getLatitude();
+            //Get longitude
+            longitude = myLocation.getLongitude();
+        }
+        //Create a LatLng object for the current user's location
+        myPos = new LatLng(latitude, longitude);
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
     }
 

@@ -362,14 +362,11 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    @Override
-    public void onDestroy( ) {
-        super.onDestroy( );
-        accessTokenTracker.stopTracking( );
-    }
 
-    public void showChoosenPath( Path path ) {
-        mPager.setCurrentItem( 0 );
+
+    public void showChoosenPath(Path path) {
+        mPager.setCurrentItem(0);
+       // ((MapFragment) mAdapter.getCurrentMF()).setZoomOnTrip(path);
         /*LinearLayout linearLayout = (LinearLayout) getLayoutInflater().inflate(R.layout.fragment_drawable_path_info_large, null);
         TextView txtPathDescription = (TextView) linearLayout.findViewById(R.id.txtPathDescription);
         TextView txtTotalDistance = (TextView) linearLayout.findViewById(R.id.txtTotalDistance);
@@ -420,6 +417,14 @@ public class MainActivity extends AppCompatActivity
         graphRequest.executeAsync( );
     }
 
+
+    @Override
+    protected void onDestroy() {
+        accessTokenTracker.stopTracking();
+        Log.v("MY_STATE_LOG", "main activity distrutto");
+        super.onDestroy();
+    }
+    
     public void setInitialPreferences( String username ) {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( MainActivity.this );
         SharedPreferences.Editor editor = sharedPref.edit( );
