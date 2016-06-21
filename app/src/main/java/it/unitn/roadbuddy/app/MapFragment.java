@@ -42,8 +42,8 @@ import java.util.*;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
-    final static String DRAWABLES_LIST_KEY = "drawables-by-map-id",
-            DRAWABLE_KEY_FORMAT = "drawable-%s",
+    final static String DRAWABLES_LIST_KEY = "drawables-by-model-id",
+            DRAWABLE_KEY_FORMAT = "drawable-%d",
             SELECTED_DRAWABLE_KEY = "selected-drawable",
             CAMERA_LOCATION_KEY = "camera-location";
 
@@ -137,17 +137,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( nfa != null )
             nfa.onSaveInstanceState( outState );
 
-        ArrayList<String> drawables = new ArrayList<>( );
-        for ( Map.Entry<String, Drawable> entry : shownDrawablesByMapId.entrySet( ) ) {
+        ArrayList<Integer> drawables = new ArrayList<>( );
+        for ( Map.Entry<Integer, Drawable> entry : shownDrawablesByModel.entrySet( ) ) {
             drawables.add( entry.getKey( ) );
 
             String key = String.format( DRAWABLE_KEY_FORMAT, entry.getKey( ) );
             outState.putSerializable( key, entry.getValue( ) );
         }
 
-        outState.putStringArrayList( DRAWABLES_LIST_KEY, drawables );
+        outState.putIntegerArrayList( DRAWABLES_LIST_KEY, drawables );
         if ( selectedDrawable != null )
-            outState.putString( SELECTED_DRAWABLE_KEY, selectedDrawable.getMapId( ) );
+            outState.putInt( SELECTED_DRAWABLE_KEY, selectedDrawable.getModelId( ) );
 
         outState.putParcelable( CAMERA_LOCATION_KEY, googleMap.getCameraPosition( ) );
     }
@@ -182,16 +182,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         CameraPosition savedCameraPosition = null;
         if ( savedInstanceState != null ) {
-            ArrayList<String> drawables = savedInstanceState.getStringArrayList( DRAWABLES_LIST_KEY );
-            for ( String drawable_id : drawables ) {
-                String key = String.format( DRAWABLE_KEY_FORMAT, drawable_id );
+            map.clear( );
+
+            ArrayList<Integer> drawables = savedInstanceState.getIntegerArrayList( DRAWABLES_LIST_KEY );
+            for ( int model_id : drawables ) {
+                String key = String.format( DRAWABLE_KEY_FORMAT, model_id );
                 Drawable d = ( Drawable ) savedInstanceState.getSerializable( key );
                 addDrawable( d );
             }
 
-            String selectedDrawableId = savedInstanceState.getString( SELECTED_DRAWABLE_KEY );
-            if ( selectedDrawableId != null ) {
-                selectedDrawable = shownDrawablesByMapId.get( selectedDrawableId );
+            int selectedDrawableId = savedInstanceState.getInt( SELECTED_DRAWABLE_KEY, -1 );
+            if ( selectedDrawableId >= 0 ) {
+                selectedDrawable = shownDrawablesByModel.get( selectedDrawableId );
                 setSelectedDrawable( selectedDrawable );
             }
 

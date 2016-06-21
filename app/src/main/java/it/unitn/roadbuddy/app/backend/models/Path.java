@@ -2,14 +2,15 @@ package it.unitn.roadbuddy.app.backend.models;
 
 
 import com.google.android.gms.maps.model.LatLng;
+import it.unitn.roadbuddy.app.SerializablePoint;
 
+import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Path {
+public class Path implements Serializable {
 
-    protected List<List<LatLng>> legs = new ArrayList<>( );
     protected int owner;
     private int id;
 
@@ -17,6 +18,11 @@ public class Path {
     private long distance;
 
     private String description;
+
+    // LatLng is not serializable, but we need to serialize paths
+    // so store a copy of them in a format suitable for serialization
+    private transient List<List<LatLng>> legs = new ArrayList<>( );
+    private List<List<SerializablePoint>> serializableLegs;
 
     public Path( int id, int owner, long distance, long duration, String description ) {
         this.id = id;
@@ -58,11 +64,32 @@ public class Path {
     }
 
     public List<List<LatLng>> getLegs( ) {
+        if ( legs == null ) {
+            // first access after de-serialization: restore the legs
+            legs = new ArrayList<>( );
+            for ( List<SerializablePoint> serializableLeg : serializableLegs ) {
+                List<LatLng> leg = new ArrayList<>( );
+                for ( SerializablePoint point : serializableLeg )
+                    leg.add( point.toLatLng( ) );
+                legs.add( leg );
+            }
+
+            serializableLegs = null;  // free up some memory
+        }
+
         return new ArrayList<>( legs );
     }
 
     public void setLegs( List<List<LatLng>> legs ) {
         this.legs = legs;
+
+        serializableLegs = new ArrayList<>( );
+        for ( List<LatLng> leg : legs ) {
+            List<SerializablePoint> serializableLeg = new ArrayList<>( );
+            for ( LatLng point : leg )
+                serializableLeg.add( new SerializablePoint( point ) );
+            serializableLegs.add( serializableLeg );
+        }
     }
 
     @Override
