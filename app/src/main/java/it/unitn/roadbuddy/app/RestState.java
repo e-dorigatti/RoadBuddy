@@ -1,6 +1,7 @@
 package it.unitn.roadbuddy.app;
 
 
+import android.os.Bundle;
 import android.view.View;
 import android.widget.RelativeLayout;
 import com.github.clans.fab.FloatingActionButton;
@@ -28,7 +29,7 @@ public class RestState implements NFAState,
     FloatingActionButton btnStartRiding;
 
     @Override
-    public void onStateEnter( final NFA nfa, MapFragment fragment ) {
+    public void onStateEnter( final NFA nfa, MapFragment fragment, Bundle savedInstanceState ) {
         this.fragment = fragment;
 
         fragment.googleMap.setOnMapClickListener( this );
@@ -45,7 +46,7 @@ public class RestState implements NFAState,
         btnAddPath.setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View v ) {
-                nfa.Transition( new AddPathState( ) );
+                nfa.Transition( new AddPathState( ), null );
             }
         } );
 
@@ -53,7 +54,7 @@ public class RestState implements NFAState,
         btnAddPoi.setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View v ) {
-                nfa.Transition( new AddPOIState( ) );
+                nfa.Transition( new AddPOIState( ), null );
             }
         } );
 
@@ -61,17 +62,11 @@ public class RestState implements NFAState,
         btnStartRiding.setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View v ) {
-                nfa.Transition( new NavigationState( null, null) );
+                nfa.Transition( new NavigationState( null, null ), null );
             }
         } );
 
         fragment.RefreshMapContent( );
-    }
-
-    void onGraphicItemSelected( String itemId ) {
-        Drawable selected = fragment.shownDrawablesByMapId.get( itemId );
-        if ( selected != null )
-            fragment.setSelectedDrawable( selected );
     }
 
     @Override
@@ -84,6 +79,22 @@ public class RestState implements NFAState,
 
         fragment.mainLayout.removeView( );
         fragment.taskManager.stopRunningTasksOfType( MapFragment.RefreshMapAsync.class );
+    }
+
+    @Override
+    public void onRestoreInstanceState( Bundle savedInstanceState ) {
+
+    }
+
+    @Override
+    public void onSaveInstanceState( Bundle savedInstanceState ) {
+
+    }
+
+    void onGraphicItemSelected( String itemId ) {
+        Drawable selected = fragment.shownDrawablesByMapId.get( itemId );
+        if ( selected != null )
+            fragment.setSelectedDrawable( selected );
     }
 
     @Override

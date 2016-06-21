@@ -4,6 +4,7 @@ package it.unitn.roadbuddy.app;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
@@ -30,7 +31,7 @@ public class AddPOIState implements NFAState,
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     @Override
-    public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
+    public void onStateEnter( final NFA nfa, final MapFragment fragment, Bundle savedInstanceState ) {
         this.fragment = fragment;
         this.nfa = nfa;
 
@@ -45,11 +46,9 @@ public class AddPOIState implements NFAState,
         btnAnnulla.setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View v ) {
-                nfa.Transition( new RestState( ) );
+                nfa.Transition( new RestState( ), null );
             }
         } );
-
-
     }
 
     @Override
@@ -61,6 +60,16 @@ public class AddPOIState implements NFAState,
 
         taskManager.stopRunningTasksOfType( SavePOIAsync.class );
         fragment.mainLayout.removeView( );
+    }
+
+    @Override
+    public void onRestoreInstanceState( Bundle savedInstanceState ) {
+
+    }
+
+    @Override
+    public void onSaveInstanceState( Bundle savedInstanceState ) {
+
     }
 
     @Override
@@ -161,7 +170,7 @@ public class AddPOIState implements NFAState,
                 fragment.showToast( R.string.new_poi_saved );
                 drawable.RemoveFromMap( context );
                 fragment.RefreshMapContent( );
-                nfa.Transition( new RestState( ) );
+                nfa.Transition( new RestState( ), null );
             }
             else {
                 if ( exceptionMessage != null ) {

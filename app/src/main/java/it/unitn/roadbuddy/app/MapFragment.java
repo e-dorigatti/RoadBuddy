@@ -58,6 +58,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     NFAState initialState;
 
+    Bundle savedInstanceState;
+
     public MapFragment( ) {
     }
 
@@ -78,17 +80,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         Log.v( "MY_STATE_LOG", "map fragment creato" );
 
-        if ( mainActivity.intent != null && mainActivity.intent.getAction( ) != null &&
-                mainActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
+        if ( savedInstanceState == null ) {
+            if ( mainActivity.intent != null && mainActivity.intent.getAction( ) != null &&
+                    mainActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
 
-            int tripId = Integer.parseInt( mainActivity.intent.getData( ).getFragment( ) );
-            String inviter = mainActivity.intent.getExtras( ).getString( MainActivity.JOIN_TRIP_INVITER_KEY );
-            initialState = new NavigationState( tripId, inviter );
+                int tripId = Integer.parseInt( mainActivity.intent.getData( ).getFragment( ) );
+                String inviter = mainActivity.intent.getExtras( ).getString( MainActivity.JOIN_TRIP_INVITER_KEY );
+                initialState = new NavigationState( tripId, inviter );
 
-            // set the intent to null to say it has been consumed
-            mainActivity.intent = null;
+                // set the intent to null to say it has been consumed
+                mainActivity.intent = null;
+            }
+            else initialState = new RestState( );
         }
-        else initialState = new RestState( );
+        else this.savedInstanceState = savedInstanceState;
     }
 
     @Override
@@ -102,6 +107,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated( View view, Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
 
+        this.savedInstanceState = savedInstanceState;
         floatingActionMenu = ( FloatingActionMenu ) view.findViewById( R.id.fab );
         mainLayout = new ViewContainer(
                 getLayoutInflater( savedInstanceState ), getFragmentManager( ),
@@ -119,26 +125,25 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         mapFragment.getMapAsync( this );
     }
 
-
     @Override
-    public void onPause( ) {
-        taskManager.stopAllRunningTasks( );
-        if ( nfa != null )
-            nfa.Pause( );
-
-        super.onPause( );
+    public void onSaveInstanceState( Bundle outState ) {
+        super.onSaveInstanceState( outState );
+        nfa.onSaveInstanceState( outState );
     }
 
     @Override
-    public void onResume( ) {
-        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+    public void onStop( ) {
+        taskManager.stopAllRunningTasks( );
         if ( nfa != null )
-            nfa.Resume( );
-        super.onResume( );
+            nfa.Pause( );
+        super.onStop( );
     }
 
     @Override
     public void onStart( ) {
+        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+        if ( nfa != null )
+            nfa.Resume( savedInstanceState );
         super.onStart( );
     }
 
@@ -154,7 +159,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         googleMap = map;
         googleMap.setMapType( GoogleMap.MAP_TYPE_NORMAL );
-        nfa = new NFA( this, initialState );
+        nfa = new NFA( this, initialState, savedInstanceState );
+        savedInstanceState = null;
 
         if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) ==
                 PackageManager.PERMISSION_GRANTED ) {
