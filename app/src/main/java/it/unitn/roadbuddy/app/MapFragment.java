@@ -128,7 +128,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onSaveInstanceState( Bundle outState ) {
         super.onSaveInstanceState( outState );
-        nfa.onSaveInstanceState( outState );
+        if ( nfa != null )
+            nfa.onSaveInstanceState( outState );
     }
 
     @Override

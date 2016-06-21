@@ -24,6 +24,12 @@ public class AddPOIState implements NFAState,
                                     GoogleMap.OnMapLongClickListener,
                                     GoogleMap.OnMarkerClickListener,
                                     GoogleMap.OnCameraChangeListener {
+
+    private static final String SELECTED_POINT_KEY = "selected-point",
+            COMMENT_KEY = "comment";
+
+    LatLng selectedPoint;
+
     NFA nfa;
     MapFragment fragment;
     CommentPOI comment;
@@ -40,7 +46,6 @@ public class AddPOIState implements NFAState,
         fragment.googleMap.setOnMarkerClickListener( this );
         fragment.googleMap.setOnMapClickListener( this );
 
-        fragment.showToast( R.string.long_tap_to_add );
         LinearLayout buttonBar = ( LinearLayout ) fragment.mainLayout.setView( R.layout.button_layout_poi );
         FloatingActionButton btnAnnulla = ( FloatingActionButton ) buttonBar.findViewById( R.id.annulla );
         btnAnnulla.setOnClickListener( new View.OnClickListener( ) {
@@ -49,6 +54,12 @@ public class AddPOIState implements NFAState,
                 nfa.Transition( new RestState( ), null );
             }
         } );
+
+        if ( selectedPoint != null )
+            onMapLongClick( selectedPoint );
+        else if ( comment != null )
+            saveComment( );
+        else fragment.showToast( R.string.long_tap_to_add );
     }
 
     @Override
@@ -64,12 +75,23 @@ public class AddPOIState implements NFAState,
 
     @Override
     public void onRestoreInstanceState( Bundle savedInstanceState ) {
+        comment = ( CommentPOI ) savedInstanceState.getSerializable( COMMENT_KEY );
 
+        SerializablePoint point = ( SerializablePoint )
+                savedInstanceState.getSerializable( SELECTED_POINT_KEY );
+
+        if ( point != null )
+            selectedPoint = point.toLatLng( );
     }
 
     @Override
     public void onSaveInstanceState( Bundle savedInstanceState ) {
+        if ( selectedPoint != null )
+            savedInstanceState.putSerializable( SELECTED_POINT_KEY,
+                                                new SerializablePoint( selectedPoint ) );
 
+        if ( comment != null )
+            savedInstanceState.putSerializable( COMMENT_KEY, comment );
     }
 
     @Override
@@ -84,18 +106,12 @@ public class AddPOIState implements NFAState,
         builder.setPositiveButton( "Add", new DialogInterface.OnClickListener( ) {
             @Override
             public void onClick( DialogInterface dialog, int which ) {
-
+                selectedPoint = null;
                 String text = input.getText( ).toString( );
                 comment = new CommentPOI( 0, point.latitude, point.longitude, text,
                                           fragment.getCurrentUserId( ) );
-                drawMarker( );
 
-                if ( !taskManager.isTaskRunning( SavePOIAsync.class ) ) {
-                    taskManager.startRunningTask( new SavePOIAsync(
-                            nfa, fragment.getActivity( ).getApplicationContext( )
-                    ), true, comment );
-                }
-                else fragment.showToast( R.string.wait_for_async_op_completion );
+                saveComment( );
             }
         } );
 
@@ -104,12 +120,17 @@ public class AddPOIState implements NFAState,
             public void onClick( DialogInterface dialog, int which ) {
                 dialog.cancel( );
                 fragment.showToast( "No point added..." );
+
+                selectedPoint = null;
+                comment = null;
+
                 if ( drawable != null ) {
                     drawable.RemoveFromMap( fragment.getActivity( ) );
                 }
             }
         } );
 
+        selectedPoint = point;
         builder.show( );
     }
 
@@ -121,6 +142,16 @@ public class AddPOIState implements NFAState,
     @Override
     public void onMapClick( LatLng point ) {
         //fragment.toggleMenuBar( );
+    }
+
+    void saveComment( ) {
+        if ( !taskManager.isTaskRunning( SavePOIAsync.class ) ) {
+            drawMarker( );
+            taskManager.startRunningTask( new SavePOIAsync(
+                    nfa, fragment.getActivity( ).getApplicationContext( )
+            ), true, comment );
+        }
+        else fragment.showToast( R.string.wait_for_async_op_completion );
     }
 
     void drawMarker( ) {
