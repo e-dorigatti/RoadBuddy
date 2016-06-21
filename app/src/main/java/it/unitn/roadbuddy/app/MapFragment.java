@@ -27,6 +27,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
@@ -40,6 +41,11 @@ import java.util.*;
 
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
+
+    final static String DRAWABLES_LIST_KEY = "drawables-by-map-id",
+            DRAWABLE_KEY_FORMAT = "drawable-%s",
+            SELECTED_DRAWABLE_KEY = "selected-drawable",
+            CAMERA_LOCATION_KEY = "camera-location";
 
     MainActivity mainActivity;
     FloatingActionMenu floatingActionMenu;
@@ -130,6 +136,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         super.onSaveInstanceState( outState );
         if ( nfa != null )
             nfa.onSaveInstanceState( outState );
+
+        ArrayList<String> drawables = new ArrayList<>( );
+        for ( Map.Entry<String, Drawable> entry : shownDrawablesByMapId.entrySet( ) ) {
+            drawables.add( entry.getKey( ) );
+
+            String key = String.format( DRAWABLE_KEY_FORMAT, entry.getKey( ) );
+            outState.putSerializable( key, entry.getValue( ) );
+        }
+
+        outState.putStringArrayList( DRAWABLES_LIST_KEY, drawables );
+        if ( selectedDrawable != null )
+            outState.putString( SELECTED_DRAWABLE_KEY, selectedDrawable.getMapId( ) );
+
+        outState.putParcelable( CAMERA_LOCATION_KEY, googleMap.getCameraPosition( ) );
     }
 
     @Override
@@ -157,11 +177,26 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady( GoogleMap map ) {
-
         googleMap = map;
         googleMap.setMapType( GoogleMap.MAP_TYPE_NORMAL );
-        nfa = new NFA( this, initialState, savedInstanceState );
-        savedInstanceState = null;
+
+        CameraPosition savedCameraPosition = null;
+        if ( savedInstanceState != null ) {
+            ArrayList<String> drawables = savedInstanceState.getStringArrayList( DRAWABLES_LIST_KEY );
+            for ( String drawable_id : drawables ) {
+                String key = String.format( DRAWABLE_KEY_FORMAT, drawable_id );
+                Drawable d = ( Drawable ) savedInstanceState.getSerializable( key );
+                addDrawable( d );
+            }
+
+            String selectedDrawableId = savedInstanceState.getString( SELECTED_DRAWABLE_KEY );
+            if ( selectedDrawableId != null ) {
+                selectedDrawable = shownDrawablesByMapId.get( selectedDrawableId );
+                setSelectedDrawable( selectedDrawable );
+            }
+
+            savedCameraPosition = savedInstanceState.getParcelable( CAMERA_LOCATION_KEY );
+        }
 
         if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) ==
                 PackageManager.PERMISSION_GRANTED ) {
@@ -170,28 +205,29 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             googleMap.setMyLocationEnabled( true );
             googleMap.getUiSettings( ).setMyLocationButtonEnabled( true );
 
-            LocationManager locationManager = ( LocationManager ) getActivity( )
-                    .getSystemService( Context.LOCATION_SERVICE );
-
-            //Create a new Criteria to retrieve provider
-            Criteria criteria = new Criteria( );
-            String provider = locationManager.getBestProvider( criteria, true );
-
-            //Get current user location
-            Location myLocation = locationManager.getLastKnownLocation( provider );
-
-            double latitude = 46.00;
-            double longitude = 21.00;
-
-            if ( myLocation != null ) {
-                latitude = myLocation.getLatitude( );
-                longitude = myLocation.getLongitude( );
+            if ( savedCameraPosition != null ) {
+                googleMap.moveCamera( CameraUpdateFactory.newCameraPosition( savedCameraPosition ) );
             }
+            else {
+                LocationManager locationManager = ( LocationManager ) getActivity( )
+                        .getSystemService( Context.LOCATION_SERVICE );
 
-            //Show current location on GMap
-            googleMap.moveCamera( CameraUpdateFactory.newLatLng( new LatLng( latitude, longitude ) ) );
-            googleMap.animateCamera( CameraUpdateFactory.zoomTo( 8 ) );
+                Criteria criteria = new Criteria( );
+                String provider = locationManager.getBestProvider( criteria, true );
+
+                Location myLocation = locationManager.getLastKnownLocation( provider );
+                if ( myLocation != null ) {
+                    LatLng myPos = new LatLng( myLocation.getLatitude( ),
+                                               myLocation.getLongitude( ) );
+
+                    googleMap.moveCamera( CameraUpdateFactory.newLatLng( myPos ) );
+                    googleMap.animateCamera( CameraUpdateFactory.zoomTo( 8 ) );
+                }
+            }
         }
+
+        nfa = new NFA( this, initialState, savedInstanceState );
+        savedInstanceState = null;
     }
 
     // draws a drawable and adds it to the index
