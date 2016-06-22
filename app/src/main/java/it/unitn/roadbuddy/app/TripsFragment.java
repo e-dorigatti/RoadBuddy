@@ -3,6 +3,8 @@ package it.unitn.roadbuddy.app;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
@@ -20,8 +22,8 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
-import com.github.clans.fab.FloatingActionButton;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.List;
@@ -39,13 +41,21 @@ public class TripsFragment extends Fragment {
     CancellableAsyncTaskManager taskManager;
     EmptyRecyclerView mRecyclerView;
     TripsAdapter mAdapter;
+
     RecyclerView.LayoutManager mLayoutManager;
     View emptyView;
     View tripsView;
+
     double latitude;
     double longitude;
     LatLng latLng;
     Location myLocation;
+
+    // The following are used for the shake detection
+    private SensorManager mSensorManager;
+    private Sensor mAccelerometer;
+    private ShakeDetector mShakeDetector;
+
     private SearchView searchView;
     public static final String INTENT_SELECTED_TRIP = "select-trip";
 
@@ -58,6 +68,23 @@ public class TripsFragment extends Fragment {
         this.mPActivity = (MainActivity) getActivity();
         super.onCreate( savedInstanceState );
 
+        // ShakeDetector initialization
+        mSensorManager = (SensorManager) getActivity().getSystemService(Context.SENSOR_SERVICE);
+        mAccelerometer = mSensorManager
+                .getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mShakeDetector = new ShakeDetector();
+        mShakeDetector.setOnShakeListener(new ShakeDetector.OnShakeListener() {
+
+            @Override
+            public void onShake(int count) {
+				/*
+				 * The following method, "handleShakeEvent(count):" is a stub //
+				 * method you would use to setup whatever you want done once the
+				 * device has been shook.
+				 */
+                handleShakeEvent();
+            }
+        });
 
     }
 
@@ -122,6 +149,8 @@ public class TripsFragment extends Fragment {
 
     @Override
     public void onPause( ) {
+        // Add the following line to unregister the Sensor Manager onPause
+        mSensorManager.unregisterListener(mShakeDetector);
         super.onPause( );
         taskManager.stopRunningTasksOfType( getTrips.class );
         updateList();
@@ -149,11 +178,17 @@ public class TripsFragment extends Fragment {
         myPos = new LatLng(latitude, longitude);
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
     }
-
+    public void handleShakeEvent(){
+        Log.v("SHAKE", "Device shaked");
+        Toast.makeText( getActivity( ).getApplicationContext( ), "Trip list updated..", Toast.LENGTH_LONG ).show( );
+        updateList();
+    }
     @Override
     public void onResume() {
         super.onResume();
         updateList();
+        // Add the following line to register the Session Manager Listener onResume
+        mSensorManager.registerListener(mShakeDetector, mAccelerometer,	SensorManager.SENSOR_DELAY_UI);
         Log.v("MY_STATE_LOG", "contenuto ricaricato");
     }
 

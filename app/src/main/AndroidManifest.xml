@@ -13,6 +13,9 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="22" />
 
+    <uses-feature android:name="android.hardware.sensor.accelerometer"
+        android:required="true" />
+
     <application
         android:name="android.support.multidex.MultiDexApplication"
         android:allowBackup="true"

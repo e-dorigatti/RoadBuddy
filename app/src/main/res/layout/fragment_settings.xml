@@ -6,21 +6,31 @@
               tools:context="it.unitn.roadbuddy.app.SettingsFragment" android:orientation="vertical">
 
     <FrameLayout
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/settings">
+            android:textAlignment="center"
+            android:id="@+id/settings"
+            android:layout_marginBottom="5dp"
+            android:layout_gravity="center"
+            >
     </FrameLayout>
 
     <com.facebook.login.widget.LoginButton
             android:id="@+id/login_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/settings"/>
+            android:layout_below="@+id/settings"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp"
+            android:layout_gravity="center"/>
 
     <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Logout"
-            android:id="@+id/btnLogout"/>
+            android:id="@+id/btnLogout"
+            android:layout_marginBottom="5dp"
+            android:layout_gravity="center"
+            />
 
 </LinearLayout>
