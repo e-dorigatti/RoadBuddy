@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Parcelable;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
@@ -31,6 +32,35 @@ public class NavigationState implements NFAState,
                                         NavigationInfoFragment.ParticipantInteractionListener,
                                         GoogleMap.OnMarkerClickListener,
                                         GoogleMap.OnMapClickListener {
+
+    public static final String
+            CURRENT_TRIP_KEY = "current-trip",
+            DRAWABLE_PATH_KEY = "drawable-path",
+            BUDDIES_KEY = "buddies",
+            SELECTED_USER_KEY = "selected-user",
+            INVITATION_TRIP_KEY = "invitation-trip",
+            INVITER_NAME_KEY = "inviter-name",
+            UI_STATE_KEY = "interface-state",
+            INVITED_BUDDY_KEY = "invited-buddy";
+
+    public static final int
+            STATE_INITIAL = 0,
+            STATE_JOIN_DIALOG = 1,
+            STATE_PATH_DIALOG = 2,
+            STATE_JOINING_TRIP = 3,
+            STATE_CREATING_TRIP = 4,
+            STATE_NAVIGATION = 5,
+            STATE_INVITE_DIALOG = 6,
+            STATE_INVITING_BUDDY = 7,
+            STATE_LEAVING = 8;
+
+    /**
+     * 0 -> 1 -> 3 -> 5 when joining
+     * 0 -> 2 -> 4 -> 5 when creating
+     * 5 -> 6 -> 7 -> 5 when inviting
+     */
+    int currentInterfaceState = STATE_INITIAL;
+
     Trip currentTrip;
     DrawablePath navigationPathDrawable;
     GoogleMap googleMap;
@@ -54,13 +84,19 @@ public class NavigationState implements NFAState,
     RefreshBuddiesRunnable buddiesRefresh;
     NavigationInfoFragment infoFragment;
 
+    String invitedBuddyName;
+
     public NavigationState( Integer invitationTrip, String inviterName ) {
         this.invitationTrip = invitationTrip;
         this.inviterName = inviterName;
     }
 
+    public NavigationState( ) {
+
+    }
+
     @Override
-    public void onStateEnter( final NFA nfa, final MapFragment fragment, Bundle savedInstanceStat ) {
+    public void onStateEnter( final NFA nfa, final MapFragment fragment, Bundle savedInstanceState ) {
         this.fragment = fragment;
         this.nfa = nfa;
         this.googleMap = fragment.googleMap;
@@ -70,39 +106,106 @@ public class NavigationState implements NFAState,
 
         googleMap.setOnMarkerClickListener( this );
         googleMap.setOnMapClickListener( this );
-        googleMap.setMyLocationEnabled( false );
 
-        if ( invitationTrip == null )
-            newTrip( );
-        else handleInvite( );
+        switch ( currentInterfaceState ) {
+            case STATE_INITIAL:
+                if ( invitationTrip == null )
+                    newTrip( );
+                else handleInvite( );
+                break;
+
+            case STATE_PATH_DIALOG:
+                newTrip( );
+                break;
+
+            case STATE_CREATING_TRIP:
+                Path path = null;
+                if ( navigationPathDrawable != null ) {
+                    path = navigationPathDrawable.getPath( );
+                    navigationPathDrawable = new DrawablePath( path );
+                    fragment.addDrawable( navigationPathDrawable );
+                    fragment.setSelectedDrawable( navigationPathDrawable );
+                }
+
+                taskManager.startRunningTask(
+                        new CreateTripAsync( path, fragment.getCurrentUser( ) ),
+                        true
+                );
+                break;
+
+            case STATE_JOIN_DIALOG:
+                handleInvite( );
+                break;
+
+            case STATE_JOINING_TRIP:
+                taskManager.startRunningTask(
+                        new CreateTripAsync( navigationPathDrawable.getPath( ), fragment.getCurrentUser( ) ),
+                        true
+                );
+
+                break;
+
+            case STATE_INVITE_DIALOG:
+                inviteBuddy( );
+                break;
+
+            case STATE_INVITING_BUDDY:
+                taskManager.startRunningTask( new SendInviteAsync( ), true, invitedBuddyName );
+                break;
+
+            case STATE_NAVIGATION:
+                startTrip( );
+                break;
+
+            case STATE_LEAVING:
+                taskManager.startRunningTask( new AbandonTripAsync( ), true );
+                break;
+        }
     }
 
     @Override
     public void onStateExit( NFA nfa, MapFragment fragment ) {
-        buddiesRefresh.Stop( );
-        fragment.sliderLayout.setView( null );
-        this.fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+        if ( buddiesRefresh != null ) {
+            buddiesRefresh.Stop( );
+        }
 
         googleMap.setOnMarkerClickListener( this );
         googleMap.setOnMapClickListener( this );
 
-        if ( fragment.mainActivity.isLocationPermissionEnabled( ) )
-            googleMap.setMyLocationEnabled( true );
-
-        for ( DrawableUser d : drawableUsers )
-            d.RemoveFromMap( fragment.getContext( ) );
+        if ( drawableUsers != null ) {
+            for ( DrawableUser d : drawableUsers )
+                d.RemoveFromMap( fragment.getContext( ) );
+        }
 
         taskManager.stopAllRunningTasks( );
     }
 
     @Override
     public void onRestoreInstanceState( Bundle savedInstanceState ) {
-
+        if ( savedInstanceState != null ) {
+            currentTrip = savedInstanceState.getParcelable( CURRENT_TRIP_KEY );
+            navigationPathDrawable = ( DrawablePath ) savedInstanceState.getSerializable( DRAWABLE_PATH_KEY );
+            buddies = savedInstanceState.getParcelableArrayList( BUDDIES_KEY );
+            selectedUser = ( DrawableUser ) savedInstanceState.getSerializable( SELECTED_USER_KEY );
+            invitationTrip = ( Integer ) savedInstanceState.getSerializable( INVITATION_TRIP_KEY );
+            currentInterfaceState = savedInstanceState.getInt( UI_STATE_KEY );
+            inviterName = savedInstanceState.getString( INVITER_NAME_KEY );
+            invitedBuddyName = savedInstanceState.getString( INVITED_BUDDY_KEY );
+        }
     }
 
     @Override
     public void onSaveInstanceState( Bundle savedInstanceState ) {
-
+        savedInstanceState.putParcelable( CURRENT_TRIP_KEY, currentTrip );
+        savedInstanceState.putSerializable( DRAWABLE_PATH_KEY, navigationPathDrawable );
+        savedInstanceState.putParcelableArrayList(
+                BUDDIES_KEY, new ArrayList<Parcelable>( buddies )
+        );
+        savedInstanceState.putSerializable( SELECTED_USER_KEY, selectedUser );
+        savedInstanceState.putSerializable( INVITATION_TRIP_KEY, invitationTrip );
+        savedInstanceState.putInt( UI_STATE_KEY, currentInterfaceState );
+        savedInstanceState.putString( INVITER_NAME_KEY, inviterName );
+        savedInstanceState.putString( INVITED_BUDDY_KEY, invitedBuddyName );
     }
 
     @Override
@@ -112,6 +215,34 @@ public class NavigationState implements NFAState,
             selectedUser = null;
         }
         infoFragment.setSelectedUser( null );
+
+        /**
+         * this happens when a trip is selected from the trips fragment
+         * so hide it and restore the previous state
+         */
+        if ( fragment.selectedDrawable != navigationPathDrawable ) {
+            fragment.removeDrawable( fragment.selectedDrawable );
+            fragment.setSelectedDrawable( navigationPathDrawable );
+
+            fragment.sliderLayout.setFragment( infoFragment );
+
+            /**
+             * For some unknown reason settings the sliding layout to collapsed
+             * right now does not work and it stays hidden, so hide it after
+             * a while
+             */
+            fragment.mainActivity.backgroundTasksHandler.postDelayed( new Runnable( ) {
+                @Override
+                public void run( ) {
+                    fragment.mainActivity.runOnUiThread( new Runnable( ) {
+                        @Override
+                        public void run( ) {
+                            fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
+                        }
+                    } );
+                }
+            }, 500 );
+        }
     }
 
     @Override
@@ -147,6 +278,8 @@ public class NavigationState implements NFAState,
 
     // called when the user has been invited to join a trip
     void handleInvite( ) {
+        currentInterfaceState = STATE_JOIN_DIALOG;
+
         AlertDialog.Builder builder = new AlertDialog.Builder( fragment.getActivity( ) );
         builder.setTitle( R.string.navigation_join_confirm_title );
 
@@ -180,8 +313,10 @@ public class NavigationState implements NFAState,
         builder.show( );
     }
 
-    // called when the user is creating a new trip
+    // called at the beginning if the user is creating a new trip
     void newTrip( ) {
+        currentInterfaceState = STATE_PATH_DIALOG;
+
         if ( fragment.selectedDrawable == null ||
                 !( fragment.selectedDrawable instanceof DrawablePath ) ) {
 
@@ -259,9 +394,13 @@ public class NavigationState implements NFAState,
         fragment.sliderLayout.setFragment( infoFragment );
 
         buddiesRefresh = new RefreshBuddiesRunnable( fragment.mainActivity.backgroundTasksHandler );
+
+        currentInterfaceState = STATE_NAVIGATION;
     }
 
     void inviteBuddy( ) {
+        currentInterfaceState = STATE_INVITE_DIALOG;
+
         AlertDialog.Builder builder = new AlertDialog.Builder( fragment.getActivity( ) );
         builder.setTitle( R.string.navigation_invite );
 
@@ -274,8 +413,8 @@ public class NavigationState implements NFAState,
                 new DialogInterface.OnClickListener( ) {
                     @Override
                     public void onClick( DialogInterface dialog, int which ) {
-                        String invited = input.getText( ).toString( );
-                        taskManager.startRunningTask( new SendInviteAsync( ), true, invited );
+                        invitedBuddyName = input.getText( ).toString( );
+                        taskManager.startRunningTask( new SendInviteAsync( ), true, invitedBuddyName );
                     }
                 } );
 
@@ -301,9 +440,11 @@ public class NavigationState implements NFAState,
         }
         drawableUsers.clear( );
         for ( User u : buddies ) {
-            DrawableUser drawable = new DrawableUser( u );
-            drawable.DrawToMap( fragment.getContext( ), googleMap );
-            drawableUsers.add( drawable );
+            if ( u.getId( ) != fragment.getCurrentUserId( ) ) {
+                DrawableUser drawable = new DrawableUser( u );
+                drawable.DrawToMap( fragment.getContext( ), googleMap );
+                drawableUsers.add( drawable );
+            }
         }
     }
 
@@ -313,6 +454,12 @@ public class NavigationState implements NFAState,
 
         public SendInviteAsync( ) {
             super( taskManager );
+        }
+
+        @Override
+        protected void onPreExecute( ) {
+            super.onPreExecute( );
+            currentInterfaceState = STATE_INVITING_BUDDY;
         }
 
         @Override
@@ -344,6 +491,8 @@ public class NavigationState implements NFAState,
             }
 
             fragment.showToast( message );
+            currentInterfaceState = STATE_NAVIGATION;
+            invitedBuddyName = null;
 
             super.onPostExecute( res );
         }
@@ -362,6 +511,8 @@ public class NavigationState implements NFAState,
             pbar.setLayoutParams( new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT, 150
             ) );
+
+            currentInterfaceState = STATE_JOINING_TRIP;
         }
 
         @Override
@@ -409,6 +560,8 @@ public class NavigationState implements NFAState,
             pbar.setLayoutParams( new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT, 150
             ) );
+
+            currentInterfaceState = STATE_LEAVING;
         }
 
         @Override
@@ -448,6 +601,8 @@ public class NavigationState implements NFAState,
 
         @Override
         protected void onPreExecute( ) {
+            currentInterfaceState = STATE_CREATING_TRIP;
+
             ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
             pbar.setIndeterminate( true );
             fragment.sliderLayout.setView( pbar );

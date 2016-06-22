@@ -42,8 +42,11 @@ public class MainActivity extends AppCompatActivity
         implements GoogleApiClient.ConnectionCallbacks,
                    LocationListener {
 
-    public static final String INTENT_JOIN_TRIP = "join-trip";
-    public static final String JOIN_TRIP_INVITER_KEY = "trip-inviter";
+    public static final String
+            INTENT_JOIN_TRIP = "join-trip",
+            JOIN_TRIP_INVITER_KEY = "trip-inviter",
+            CURRENT_USER_KEY = "current-user",
+            CURRENT_USER_ID_KEY = "current-user-id";
 
     public static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
 
@@ -111,6 +114,10 @@ public class MainActivity extends AppCompatActivity
         this.savedInstanceState = savedInstanceState;
         if ( savedInstanceState == null ) {
             this.intent = getIntent( );
+        }
+        else {
+            currentUser = ( User ) savedInstanceState.getParcelable( CURRENT_USER_KEY );
+            currentUserId = ( Integer ) savedInstanceState.getSerializable( CURRENT_USER_ID_KEY );
         }
 
         googleApiClient = new GoogleApiClient.Builder( this )
@@ -199,6 +206,13 @@ public class MainActivity extends AppCompatActivity
                 Uri.parse( "android-app://it.unitn.roadbuddy.app/http/host/path" )
         );
         AppIndex.AppIndexApi.start( client, viewAction );
+    }
+
+    @Override
+    protected void onSaveInstanceState( Bundle outState ) {
+        super.onSaveInstanceState( outState );
+        outState.putParcelable( CURRENT_USER_KEY, currentUser );
+        outState.putSerializable( CURRENT_USER_ID_KEY, currentUserId );
     }
 
     private void showMessageOKCancel( String message, DialogInterface.OnClickListener okListener ) {

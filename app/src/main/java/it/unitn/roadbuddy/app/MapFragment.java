@@ -243,6 +243,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     // removes a drawable from the map and from the index
     void removeDrawable( Drawable drawable ) {
+        if ( drawable == selectedDrawable )
+            setSelectedDrawable( null );
+
         drawable.RemoveFromMap( getContext( ) );
 
         shownDrawablesByModel.remove( drawable.getModelId( ) );

@@ -64,7 +64,7 @@ public class Path implements Serializable {
     }
 
     public List<List<LatLng>> getLegs( ) {
-        if ( legs == null ) {
+        if ( legs == null && serializableLegs != null ) {
             // first access after de-serialization: restore the legs
             legs = new ArrayList<>( );
             for ( List<SerializablePoint> serializableLeg : serializableLegs ) {
@@ -83,12 +83,14 @@ public class Path implements Serializable {
     public void setLegs( List<List<LatLng>> legs ) {
         this.legs = legs;
 
-        serializableLegs = new ArrayList<>( );
-        for ( List<LatLng> leg : legs ) {
-            List<SerializablePoint> serializableLeg = new ArrayList<>( );
-            for ( LatLng point : leg )
-                serializableLeg.add( new SerializablePoint( point ) );
-            serializableLegs.add( serializableLeg );
+        if ( legs != null ) {
+            serializableLegs = new ArrayList<>( );
+            for ( List<LatLng> leg : legs ) {
+                List<SerializablePoint> serializableLeg = new ArrayList<>( );
+                for ( LatLng point : leg )
+                    serializableLeg.add( new SerializablePoint( point ) );
+                serializableLegs.add( serializableLeg );
+            }
         }
     }
 

@@ -273,7 +273,7 @@ public class PostgresUserDAO extends PostgresDAOBase implements UserDAO {
                     TABLE_NAME, COLUMN_NAME_TRIP, COLUMN_NAME_ID
             ) );
 
-            stmt.setInt( 1, tripId );
+            stmt.setObject( 1, tripId );
             stmt.setInt( 2, userId );
 
             return stmt.executeUpdate( ) == 1;

@@ -51,10 +51,11 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
         View view = super.onCreateView( inflater, container, savedInstanceState );
 
         lstBuddies = ( ListView ) view.findViewById( R.id.lstBuddies );
-        adapter = new DynamicViewArrayAdapter( getContext( ), adaptedBuddies );
-        lstBuddies.setAdapter( adapter );
-
-        lstBuddies.setOnItemClickListener( this );
+        if ( lstBuddies != null ) {
+            adapter = new DynamicViewArrayAdapter( getContext( ), adaptedBuddies );
+            lstBuddies.setAdapter( adapter );
+            lstBuddies.setOnItemClickListener( this );
+        }
 
         if ( tripPath != null ) {
             FragmentTransaction transaction = getFragmentManager( ).beginTransaction( );
