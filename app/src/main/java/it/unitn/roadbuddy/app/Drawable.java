@@ -6,11 +6,13 @@ import android.support.v4.app.Fragment;
 import android.view.View;
 import com.google.android.gms.maps.GoogleMap;
 
+import java.io.Serializable;
+
 
 /**
  * This interface bridges database objects with objects displayed on the map
  */
-public interface Drawable {
+public interface Drawable extends Serializable {
 
     /**
      * Returns the id of the encapsulated model

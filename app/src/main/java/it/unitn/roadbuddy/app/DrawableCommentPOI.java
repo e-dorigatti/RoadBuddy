@@ -8,7 +8,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import it.unitn.roadbuddy.app.backend.models.CommentPOI;
 
 public class DrawableCommentPOI implements Drawable {
-    protected Marker marker;
+    protected transient Marker marker;
     protected CommentPOI poi;
 
     public DrawableCommentPOI( CommentPOI poi ) {

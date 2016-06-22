@@ -3,6 +3,7 @@ package it.unitn.roadbuddy.app;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.os.Bundle;
 import android.os.Handler;
 import android.text.InputType;
 import android.util.Log;
@@ -59,6 +60,52 @@ public class NavigationState implements NFAState,
     }
 
     @Override
+    public void onStateEnter( final NFA nfa, final MapFragment fragment, Bundle savedInstanceStat ) {
+        this.fragment = fragment;
+        this.nfa = nfa;
+        this.googleMap = fragment.googleMap;
+
+        fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
+        fragment.clearMap( );
+
+        googleMap.setOnMarkerClickListener( this );
+        googleMap.setOnMapClickListener( this );
+        googleMap.setMyLocationEnabled( false );
+
+        if ( invitationTrip == null )
+            newTrip( );
+        else handleInvite( );
+    }
+
+    @Override
+    public void onStateExit( NFA nfa, MapFragment fragment ) {
+        buddiesRefresh.Stop( );
+        fragment.sliderLayout.setView( null );
+        this.fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+
+        googleMap.setOnMarkerClickListener( this );
+        googleMap.setOnMapClickListener( this );
+
+        if ( fragment.mainActivity.isLocationPermissionEnabled( ) )
+            googleMap.setMyLocationEnabled( true );
+
+        for ( DrawableUser d : drawableUsers )
+            d.RemoveFromMap( fragment.getContext( ) );
+
+        taskManager.stopAllRunningTasks( );
+    }
+
+    @Override
+    public void onRestoreInstanceState( Bundle savedInstanceState ) {
+
+    }
+
+    @Override
+    public void onSaveInstanceState( Bundle savedInstanceState ) {
+
+    }
+
+    @Override
     public void onMapClick( LatLng latLng ) {
         if ( selectedUser != null ) {
             selectedUser.setSelected( fragment.getContext( ), googleMap, false );
@@ -90,24 +137,6 @@ public class NavigationState implements NFAState,
     public void onParticipantSelected( User participant ) {
         if ( participant != null && participant.getLastPosition( ) != null )
             moveCameraTo( participant.getLastPosition( ), 15 );
-    }
-
-    @Override
-    public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
-        this.fragment = fragment;
-        this.nfa = nfa;
-        this.googleMap = fragment.googleMap;
-
-        fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
-        fragment.clearMap( );
-
-        googleMap.setOnMarkerClickListener( this );
-        googleMap.setOnMapClickListener( this );
-        googleMap.setMyLocationEnabled( false );
-
-        if ( invitationTrip == null )
-            newTrip( );
-        else handleInvite( );
     }
 
     void moveCameraTo( LatLng point, float zoom ) {
@@ -170,7 +199,7 @@ public class NavigationState implements NFAState,
                         @Override
                         public void onClick( DialogInterface dialog, int which ) {
                             fragment.showToast( R.string.navigation_path_tip_select );
-                            nfa.Transition( new RestState( ) );
+                            nfa.Transition( new RestState( ), null );
                         }
                     } );
 
@@ -276,24 +305,6 @@ public class NavigationState implements NFAState,
             drawable.DrawToMap( fragment.getContext( ), googleMap );
             drawableUsers.add( drawable );
         }
-    }
-
-    @Override
-    public void onStateExit( NFA nfa, MapFragment fragment ) {
-        buddiesRefresh.Stop( );
-        fragment.sliderLayout.setView( null );
-        this.fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
-
-        googleMap.setOnMarkerClickListener( this );
-        googleMap.setOnMapClickListener( this );
-
-        if ( fragment.mainActivity.isLocationPermissionEnabled( ) )
-            googleMap.setMyLocationEnabled( true );
-
-        for ( DrawableUser d : drawableUsers )
-            d.RemoveFromMap( fragment.getContext( ) );
-
-        taskManager.stopAllRunningTasks( );
     }
 
     class SendInviteAsync extends CancellableAsyncTask<String, Void, Boolean> {
@@ -417,7 +428,7 @@ public class NavigationState implements NFAState,
         @Override
         protected void onPostExecute( Boolean res ) {
             super.onPostExecute( res );
-            nfa.Transition( new RestState( ) );
+            nfa.Transition( new RestState( ), null );
         }
     }
 
@@ -461,7 +472,7 @@ public class NavigationState implements NFAState,
         protected void onPostExecute( Trip res ) {
             if ( res == null ) {
                 fragment.showToast( R.string.navigation_trip_creation_error );
-                nfa.Transition( new RestState( ) );
+                nfa.Transition( new RestState( ), null );
             }
             else {
                 currentTrip = res;

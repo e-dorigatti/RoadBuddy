@@ -2,6 +2,7 @@ package it.unitn.roadbuddy.app;
 
 
 import android.graphics.Color;
+import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
@@ -61,7 +62,7 @@ public class AddPathState implements NFAState,
     EditedPathInfoFragment infoFragment;
 
     @Override
-    public void onStateEnter( final NFA nfa, final MapFragment fragment ) {
+    public void onStateEnter( final NFA nfa, final MapFragment fragment, Bundle savedInstanceStat ) {
         this.fragment = fragment;
         this.map = fragment.googleMap;
 
@@ -89,7 +90,7 @@ public class AddPathState implements NFAState,
                         }
                         else {
                             fragment.showToast( R.string.new_path_cancel );
-                            nfa.Transition( new RestState( ) );
+                            nfa.Transition( new RestState( ), null );
                         }
                     }
                 } );
@@ -107,7 +108,7 @@ public class AddPathState implements NFAState,
                     @Override
                     public void onClick( View v ) {
                         fragment.showToast( "No point added..." );
-                        nfa.Transition( new RestState( ) );
+                        nfa.Transition( new RestState( ), null );
                     }
                 } );
 
@@ -133,6 +134,16 @@ public class AddPathState implements NFAState,
 
         taskManager.stopRunningTasksOfType( SavePathAsync.class );
         clearPath( );
+    }
+
+    @Override
+    public void onRestoreInstanceState( Bundle savedInstanceState ) {
+
+    }
+
+    @Override
+    public void onSaveInstanceState( Bundle savedInstanceState ) {
+
     }
 
     MarkerOptions createMarker( LatLng point, int i ) {
@@ -549,7 +560,7 @@ public class AddPathState implements NFAState,
         protected void onPostExecute( Boolean success ) {
             if ( success ) {
                 fragment.showToast( R.string.new_path_saved );
-                nfa.Transition( new RestState( ) );
+                nfa.Transition( new RestState( ), null );
 
             }
             else {

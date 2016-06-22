@@ -12,9 +12,9 @@ import java.util.List;
 
 public class DrawablePath implements Drawable {
     protected Path path;
-    protected Polyline polyline;
+    protected transient Polyline polyline;
 
-    protected List<Marker> waypoints;
+    protected transient List<Marker> waypoints;
 
     public DrawablePath( Path path ) {
         this.path = path;

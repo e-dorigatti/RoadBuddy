@@ -28,6 +28,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
@@ -47,6 +48,11 @@ import it.unitn.roadbuddy.app.backend.models.User;
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
 
+    final static String DRAWABLES_LIST_KEY = "drawables-by-model-id",
+            DRAWABLE_KEY_FORMAT = "drawable-%d",
+            SELECTED_DRAWABLE_KEY = "selected-drawable",
+            CAMERA_LOCATION_KEY = "camera-location";
+
     MainActivity mainActivity;
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
@@ -63,6 +69,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
 
     NFAState initialState;
+
+    Bundle savedInstanceState;
 
     public MapFragment( ) {
     }
@@ -84,17 +92,20 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         Log.v( "MY_STATE_LOG", "map fragment creato" );
 
-        if ( mainActivity.intent != null && mainActivity.intent.getAction( ) != null &&
-                mainActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
+        if ( savedInstanceState == null ) {
+            if ( mainActivity.intent != null && mainActivity.intent.getAction( ) != null &&
+                    mainActivity.intent.getAction( ).equals( MainActivity.INTENT_JOIN_TRIP ) ) {
 
-            int tripId = Integer.parseInt( mainActivity.intent.getData( ).getFragment( ) );
-            String inviter = mainActivity.intent.getExtras( ).getString( MainActivity.JOIN_TRIP_INVITER_KEY );
-            initialState = new NavigationState( tripId, inviter );
+                int tripId = Integer.parseInt( mainActivity.intent.getData( ).getFragment( ) );
+                String inviter = mainActivity.intent.getExtras( ).getString( MainActivity.JOIN_TRIP_INVITER_KEY );
+                initialState = new NavigationState( tripId, inviter );
 
-            // set the intent to null to say it has been consumed
-            mainActivity.intent = null;
+                // set the intent to null to say it has been consumed
+                mainActivity.intent = null;
+            }
+            else initialState = new RestState( );
         }
-        else initialState = new RestState( );
+        else this.savedInstanceState = savedInstanceState;
     }
 
     @Override
@@ -107,6 +118,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void onViewCreated( View view, Bundle savedInstanceState ) {
         super.onViewCreated( view, savedInstanceState );
 
+        this.savedInstanceState = savedInstanceState;
         floatingActionMenu = ( FloatingActionMenu ) view.findViewById( R.id.fab );
         mainLayout = new ViewContainer(
                 getLayoutInflater( savedInstanceState ), getFragmentManager( ),
@@ -124,26 +136,40 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         mapFragment.getMapAsync( this );
     }
 
-
     @Override
-    public void onPause( ) {
-        taskManager.stopAllRunningTasks( );
+    public void onSaveInstanceState( Bundle outState ) {
+        super.onSaveInstanceState( outState );
         if ( nfa != null )
-            nfa.Pause( );
+            nfa.onSaveInstanceState( outState );
 
-        super.onPause( );
+        ArrayList<Integer> drawables = new ArrayList<>( );
+        for ( Map.Entry<Integer, Drawable> entry : shownDrawablesByModel.entrySet( ) ) {
+            drawables.add( entry.getKey( ) );
+
+            String key = String.format( DRAWABLE_KEY_FORMAT, entry.getKey( ) );
+            outState.putSerializable( key, entry.getValue( ) );
+        }
+
+        outState.putIntegerArrayList( DRAWABLES_LIST_KEY, drawables );
+        if ( selectedDrawable != null )
+            outState.putInt( SELECTED_DRAWABLE_KEY, selectedDrawable.getModelId( ) );
+
+        outState.putParcelable( CAMERA_LOCATION_KEY, googleMap.getCameraPosition( ) );
     }
 
     @Override
-    public void onResume( ) {
-        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+    public void onStop( ) {
+        taskManager.stopAllRunningTasks( );
         if ( nfa != null )
-            nfa.Resume( );
-        super.onResume( );
+            nfa.Pause( );
+        super.onStop( );
     }
 
     @Override
     public void onStart( ) {
+        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+        if ( nfa != null )
+            nfa.Resume( savedInstanceState );
         super.onStart( );
     }
 
@@ -156,10 +182,28 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady( GoogleMap map ) {
-
         googleMap = map;
         googleMap.setMapType( GoogleMap.MAP_TYPE_NORMAL );
-        nfa = new NFA( this, initialState );
+
+        CameraPosition savedCameraPosition = null;
+        if ( savedInstanceState != null ) {
+            map.clear( );
+
+            ArrayList<Integer> drawables = savedInstanceState.getIntegerArrayList( DRAWABLES_LIST_KEY );
+            for ( int model_id : drawables ) {
+                String key = String.format( DRAWABLE_KEY_FORMAT, model_id );
+                Drawable d = ( Drawable ) savedInstanceState.getSerializable( key );
+                addDrawable( d );
+            }
+
+            int selectedDrawableId = savedInstanceState.getInt( SELECTED_DRAWABLE_KEY, -1 );
+            if ( selectedDrawableId >= 0 ) {
+                selectedDrawable = shownDrawablesByModel.get( selectedDrawableId );
+                setSelectedDrawable( selectedDrawable );
+            }
+
+            savedCameraPosition = savedInstanceState.getParcelable( CAMERA_LOCATION_KEY );
+        }
 
         if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) ==
                 PackageManager.PERMISSION_GRANTED ) {
@@ -168,28 +212,29 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             googleMap.setMyLocationEnabled( true );
             googleMap.getUiSettings( ).setMyLocationButtonEnabled( true );
 
-            LocationManager locationManager = ( LocationManager ) getActivity( )
-                    .getSystemService( Context.LOCATION_SERVICE );
-
-            //Create a new Criteria to retrieve provider
-            Criteria criteria = new Criteria( );
-            String provider = locationManager.getBestProvider( criteria, true );
-
-            //Get current user location
-            Location myLocation = locationManager.getLastKnownLocation( provider );
-
-            double latitude = 46.00;
-            double longitude = 21.00;
-
-            if ( myLocation != null ) {
-                latitude = myLocation.getLatitude( );
-                longitude = myLocation.getLongitude( );
+            if ( savedCameraPosition != null ) {
+                googleMap.moveCamera( CameraUpdateFactory.newCameraPosition( savedCameraPosition ) );
             }
+            else {
+                LocationManager locationManager = ( LocationManager ) getActivity( )
+                        .getSystemService( Context.LOCATION_SERVICE );
 
-            //Show current location on GMap
-            googleMap.moveCamera( CameraUpdateFactory.newLatLng( new LatLng( latitude, longitude ) ) );
-            googleMap.animateCamera( CameraUpdateFactory.zoomTo( 8 ) );
+                Criteria criteria = new Criteria( );
+                String provider = locationManager.getBestProvider( criteria, true );
+
+                Location myLocation = locationManager.getLastKnownLocation( provider );
+                if ( myLocation != null ) {
+                    LatLng myPos = new LatLng( myLocation.getLatitude( ),
+                                               myLocation.getLongitude( ) );
+
+                    googleMap.moveCamera( CameraUpdateFactory.newLatLng( myPos ) );
+                    googleMap.animateCamera( CameraUpdateFactory.zoomTo( 8 ) );
+                }
+            }
         }
+
+        nfa = new NFA( this, initialState, savedInstanceState );
+        savedInstanceState = null;
     }
 
     // draws a drawable and adds it to the index

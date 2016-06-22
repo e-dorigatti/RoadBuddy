@@ -1,7 +1,9 @@
 package it.unitn.roadbuddy.app.backend.models;
 
 
-public abstract class PointOfInterest {
+import java.io.Serializable;
+
+public abstract class PointOfInterest implements Serializable {
     protected double latitude;
     protected double longitude;
     protected POIType type;
