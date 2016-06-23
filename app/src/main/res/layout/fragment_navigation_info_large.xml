@@ -12,14 +12,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/indigo_500">
+
         <ListView
             android:layout_width="300dp"
             android:layout_height="wrap_content"
-            android:id="@+id/lstBuddies"
-             />
+            android:id="@+id/lstBuddies" />
 
     </FrameLayout>
-
 
     <FrameLayout
         android:layout_width="fill_parent"

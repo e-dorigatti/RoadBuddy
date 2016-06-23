@@ -1,6 +1,8 @@
 package it.unitn.roadbuddy.app;
 
 import android.content.Context;
+import android.os.Parcel;
+import android.os.Parcelable;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -8,11 +10,37 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import it.unitn.roadbuddy.app.backend.models.CommentPOI;
 
 public class DrawableCommentPOI implements Drawable {
-    protected transient Marker marker;
+    public static final Parcelable.Creator<DrawableCommentPOI> CREATOR
+            = new Parcelable.Creator<DrawableCommentPOI>( ) {
+
+        public DrawableCommentPOI createFromParcel( Parcel in ) {
+            return new DrawableCommentPOI( in );
+        }
+
+        public DrawableCommentPOI[] newArray( int size ) {
+            return new DrawableCommentPOI[ size ];
+        }
+    };
+
+    protected Marker marker;
     protected CommentPOI poi;
 
     public DrawableCommentPOI( CommentPOI poi ) {
         this.poi = poi;
+    }
+
+    public DrawableCommentPOI( Parcel parcel ) {
+        this.poi = ( CommentPOI ) parcel.readSerializable( );
+    }
+
+    @Override
+    public void writeToParcel( Parcel parcel, int i ) {
+        parcel.writeSerializable( poi );
+    }
+
+    @Override
+    public int describeContents( ) {
+        return 0;
     }
 
     public String DrawToMap( Context context, GoogleMap map ) {

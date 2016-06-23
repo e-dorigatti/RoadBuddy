@@ -336,15 +336,7 @@ public class MainActivity extends AppCompatActivity
 
     public void showChoosenPath( Path path ) {
         mPager.setCurrentItem( 0 );
-        // ((MapFragment) mAdapter.getMapFragment()).setZoomOnTrip(path);
-        /*LinearLayout linearLayout = (LinearLayout) getLayoutInflater().inflate(R.layout.fragment_drawable_path_info_large, null);
-        TextView txtPathDescription = (TextView) linearLayout.findViewById(R.id.txtPathDescription);        TextView txtTotalDistance = (TextView) linearLayout.findViewById(R.id.txtTotalDistance);
-        TextView txtTotalDuration = (TextView) linearLayout.findViewById(R.id.txtTotalDuration);
-        txtPathDescription.setText(path.getDescription());
-        txtTotalDistance.setText("Distance: " + Long.toString(path.getDistance()));
-        txtTotalDuration.setText("Expected Duration: " + Long.toString(path.getDuration()));*/
-
-        MapFragment fragment = ( MapFragment ) mAdapter.getMapFragment( );
+        MapFragment fragment = mAdapter.getMapFragment( );
 
         if ( fragment != null ) {
             fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );

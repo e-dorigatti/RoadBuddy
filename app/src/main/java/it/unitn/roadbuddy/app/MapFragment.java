@@ -8,6 +8,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
@@ -130,17 +131,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( nfa != null )
             nfa.onSaveInstanceState( outState );
 
-        ArrayList<Integer> drawables = new ArrayList<>( );
-        for ( Map.Entry<Integer, Drawable> entry : shownDrawablesByModel.entrySet( ) ) {
-            drawables.add( entry.getKey( ) );
+        ArrayList<Parcelable> drawables = new ArrayList<>( );
+        for ( Drawable d : shownDrawablesByModel.values( ) )
+            drawables.add( d );
+        outState.putParcelableArrayList( DRAWABLES_LIST_KEY, drawables );
 
-            String key = String.format( DRAWABLE_KEY_FORMAT, entry.getKey( ) );
-            outState.putSerializable( key, entry.getValue( ) );
-        }
-
-        outState.putIntegerArrayList( DRAWABLES_LIST_KEY, drawables );
-        if ( selectedDrawable != null )
+        if ( selectedDrawable != null ) {
             outState.putInt( SELECTED_DRAWABLE_KEY, selectedDrawable.getModelId( ) );
+        }
 
         outState.putParcelable( CAMERA_LOCATION_KEY, googleMap.getCameraPosition( ) );
     }
@@ -177,10 +175,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( savedInstanceState != null ) {
             map.clear( );
 
-            ArrayList<Integer> drawables = savedInstanceState.getIntegerArrayList( DRAWABLES_LIST_KEY );
-            for ( int model_id : drawables ) {
-                String key = String.format( DRAWABLE_KEY_FORMAT, model_id );
-                Drawable d = ( Drawable ) savedInstanceState.getSerializable( key );
+            ArrayList<Drawable> drawables = savedInstanceState.getParcelableArrayList( DRAWABLES_LIST_KEY );
+            for ( Drawable d : drawables ) {
+                /**
+                 * for some reason polylines in drawable paths are preserved
+                 * even when marked as transient and not written in the parcel
+                 * causing funny bugs as we've just cleared the map, but the
+                 * polyline still thinks she's visible
+                 */
+
+                d.RemoveFromMap( getContext( ) );
                 addDrawable( d );
             }
 
@@ -249,6 +253,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     // draws a drawable and adds it to the index
     void addDrawable( Drawable drawable ) {
+        if ( shownDrawablesByModel.get( drawable.getModelId( ) ) != null )
+            return;
+
         String mapId = drawable.DrawToMap( getContext( ), googleMap );
         int modelId = drawable.getModelId( );
 
@@ -258,6 +265,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     // removes a drawable from the map and from the index
     void removeDrawable( Drawable drawable ) {
+        if ( drawable == null )
+            return;
+
         if ( drawable == selectedDrawable )
             setSelectedDrawable( null );
 
@@ -310,9 +320,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         shownDrawablesByModel.clear( );
 
         if ( selectedDrawable != null ) {
-            addDrawable( selectedDrawable );
+            shownDrawablesByMapId.put( selectedDrawable.getMapId( ), selectedDrawable );
+            shownDrawablesByModel.put( selectedDrawable.getModelId( ), selectedDrawable );
         }
-
     }
 
     public void setZoomOnTrip( Path path ) {
