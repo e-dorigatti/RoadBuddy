@@ -424,9 +424,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     removeDrawable( shownDrawablesByModel.get( drawable ) );
                 }
             }
-            else {
-                showToast( R.string.generic_backend_error );
-            }
 
             if ( floatingActionMenu != null )
                 floatingActionMenu.getMenuIconView( ).clearAnimation( );

@@ -4,6 +4,8 @@ package it.unitn.roadbuddy.app;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -35,6 +37,10 @@ public class AddPathState implements NFAState,
                                      GoogleMap.OnMarkerClickListener,
                                      GoogleMap.OnCameraChangeListener {
 
+    public static final String
+            PATH_SIZE_KEY = "path-size",
+            PATH_WAYPOINT_FORMAT_KEY = "path-%d";
+
     /**
      * This is used to keep track of the number of pending requests.
      * <p/>
@@ -49,7 +55,7 @@ public class AddPathState implements NFAState,
     int pendingRequests = 0;
 
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
-    List<WaypointInfo> path = new ArrayList<>( );
+    ArrayList<LegInfo> path = new ArrayList<>( );
 
     GoogleMap map;
     MapFragment fragment;
@@ -62,7 +68,7 @@ public class AddPathState implements NFAState,
     EditedPathInfoFragment infoFragment;
 
     @Override
-    public void onStateEnter( final NFA nfa, final MapFragment fragment, Bundle savedInstanceStat ) {
+    public void onStateEnter( final NFA nfa, final MapFragment fragment, Bundle savedInstanceState ) {
         this.fragment = fragment;
         this.map = fragment.googleMap;
 
@@ -118,7 +124,30 @@ public class AddPathState implements NFAState,
                 SlidingUpPanelLayout.PanelState.COLLAPSED
         );
 
-        fragment.showToast( R.string.long_tap_to_add );
+        if ( savedInstanceState != null ) {
+            int n = savedInstanceState.getInt( PATH_SIZE_KEY );
+            path.clear( );
+            for ( int i = 0; i < n; i++ ) {
+                String key = String.format( PATH_WAYPOINT_FORMAT_KEY, i );
+                LegInfo waypoint = savedInstanceState.getParcelable( key );
+                path.add( waypoint );
+                waypoint.marker = map.addMarker( createMarker( waypoint.point, i + 1 ) );
+
+                if ( i > 0 ) {
+                    PolylineOptions opts = DirectionConverter.createPolyline(
+                            fragment.getActivity( ).getApplicationContext( ),
+                            waypoint.legTo, 5, Color.BLUE
+                    );
+
+                    waypoint.polylineTo = map.addPolyline( opts );
+                    infoFragment.appendWaypoint(
+                            waypoint.point, waypoint.getDistanceTo( ),
+                            waypoint.getDurationTo( ), waypoint.locationName
+                    );
+                }
+            }
+        }
+        else fragment.showToast( R.string.long_tap_to_add );
     }
 
     @Override
@@ -143,7 +172,16 @@ public class AddPathState implements NFAState,
 
     @Override
     public void onSaveInstanceState( Bundle savedInstanceState ) {
+        if ( pendingRequests > 0 ) {
+            taskManager.stopAllRunningTasks( );
+            path.remove( path.size( ) - 1 );
+        }
 
+        savedInstanceState.putInt( PATH_SIZE_KEY, path.size( ) );
+        for ( int i = 0; i < path.size( ); i++ ) {
+            String key = String.format( PATH_WAYPOINT_FORMAT_KEY, i );
+            savedInstanceState.putParcelable( key, path.get( i ) );
+        }
     }
 
     MarkerOptions createMarker( LatLng point, int i ) {
@@ -152,7 +190,7 @@ public class AddPathState implements NFAState,
                 .title( Integer.toString( i ) );
     }
 
-    void addNewWaypoint( WaypointInfo from, WaypointInfo to, DirectionCallback callback ) {
+    void addNewWaypoint( LegInfo from, LegInfo to, DirectionCallback callback ) {
         // placeholder waypoint, will be filled with the right information
         infoFragment.appendWaypoint(
                 to.point, 0, 0, fragment.getString( R.string.path_edit_geocoding_pending )
@@ -190,7 +228,7 @@ public class AddPathState implements NFAState,
             }
         }
 
-        WaypointInfo waypoint = path.get( position );
+        LegInfo waypoint = path.get( position );
         selectedMarker = null;
 
         if ( path.size( ) == 1 ) {
@@ -198,7 +236,7 @@ public class AddPathState implements NFAState,
             path.remove( waypoint );
         }
         else if ( position == 0 ) {
-            WaypointInfo next = path.get( position + 1 );
+            LegInfo next = path.get( position + 1 );
             next.polylineTo.remove( );
             waypoint.marker.remove( );
             path.remove( waypoint );
@@ -211,8 +249,8 @@ public class AddPathState implements NFAState,
             infoFragment.deleteWaypoint( waypoint.point );
         }
         else if ( position > 0 && position < path.size( ) ) {
-            WaypointInfo previous = path.get( position - 1 );
-            WaypointInfo next = path.get( position + 1 );
+            LegInfo previous = path.get( position - 1 );
+            LegInfo next = path.get( position + 1 );
             addNewWaypoint( previous, next,
                             new DeleteWaypointDirectionReceived( waypoint, next ) );
             startMarkerAnimation( waypoint.marker );
@@ -220,7 +258,7 @@ public class AddPathState implements NFAState,
     }
 
     void clearPath( ) {
-        for ( WaypointInfo waypoint : path ) {
+        for ( LegInfo waypoint : path ) {
             waypoint.marker.remove( );
             if ( waypoint.polylineTo != null )
                 waypoint.polylineTo.remove( );
@@ -243,14 +281,17 @@ public class AddPathState implements NFAState,
         }
     }
 
-    WaypointInfo updateWaypoint( WaypointInfo waypoint, Direction direction ) {
+    LegInfo updateWaypoint( LegInfo waypoint, Direction direction ) {
         Utils.Assert( direction.isOK( ), true );
 
-        waypoint.legTo = direction.getRouteList( ).get( 0 ).getLegList( ).get( 0 );
-        ArrayList<LatLng> points = waypoint.legTo.getDirectionPoint( );
+        Leg leg = direction.getRouteList( ).get( 0 ).getLegList( ).get( 0 );
+        waypoint.legTo = leg.getDirectionPoint( );
+        waypoint.setDurationTo( Long.parseLong( leg.getDuration( ).getValue( ) ) );
+        waypoint.setDistanceTo( Long.parseLong( leg.getDistance( ).getValue( ) ) );
+
         PolylineOptions opts = DirectionConverter.createPolyline(
                 fragment.getActivity( ).getApplicationContext( ),
-                points, 5, Color.BLUE
+                waypoint.legTo, 5, Color.BLUE
         );
         waypoint.polylineTo = map.addPolyline( opts );
 
@@ -265,13 +306,15 @@ public class AddPathState implements NFAState,
         }
 
         Marker marker = map.addMarker( createMarker( point, path.size( ) + 1 ) );
-        WaypointInfo waypoint = new WaypointInfo( path.size( ), point, null, marker, null, null );
+        LegInfo waypoint = new LegInfo(
+                path.size( ), point, null, marker, null, null, 0, 0
+        );
         path.add( waypoint );
 
         startMarkerAnimation( waypoint.marker );
 
         if ( path.size( ) > 1 ) {
-            WaypointInfo from = path.get( path.size( ) - 2 );
+            LegInfo from = path.get( path.size( ) - 2 );
             addNewWaypoint( from, waypoint, new InsertWaypointDirectionReceived( ) );
         }
         else {
@@ -305,7 +348,7 @@ public class AddPathState implements NFAState,
 
         @Override
         public void onDirectionSuccess( Direction direction, String boh ) {
-            WaypointInfo waypoint = path.get( path.size( ) - 1 );
+            LegInfo waypoint = path.get( path.size( ) - 1 );
 
             if ( direction.isOK( ) ) {
                 updateWaypoint( waypoint, direction );
@@ -342,7 +385,7 @@ public class AddPathState implements NFAState,
         }
 
         void fail( ) {
-            WaypointInfo waypoint = path.get( path.size( ) - 1 );
+            LegInfo waypoint = path.get( path.size( ) - 1 );
 
             infoFragment.popWaypoint( );
             waypoint.marker.remove( );
@@ -353,11 +396,11 @@ public class AddPathState implements NFAState,
 
     class DeleteWaypointDirectionReceived implements DirectionCallback {
 
-        WaypointInfo next;
-        WaypointInfo toDelete;
+        LegInfo next;
+        LegInfo toDelete;
 
-        public DeleteWaypointDirectionReceived( WaypointInfo toDelete,
-                                                WaypointInfo next ) {
+        public DeleteWaypointDirectionReceived( LegInfo toDelete,
+                                                LegInfo next ) {
             this.next = next;
             this.toDelete = toDelete;
             pendingRequests += 1;
@@ -405,7 +448,7 @@ public class AddPathState implements NFAState,
         }
     }
 
-    class RetrieveWaypointDescriptionAsync extends CancellableAsyncTask<WaypointInfo, Integer, String> {
+    class RetrieveWaypointDescriptionAsync extends CancellableAsyncTask<LegInfo, Integer, String> {
 
         String exceptionMessage;
         boolean updateInfoFragment;
@@ -417,7 +460,7 @@ public class AddPathState implements NFAState,
         }
 
         @Override
-        protected String doInBackground( WaypointInfo... dest ) {
+        protected String doInBackground( LegInfo... dest ) {
             GeocodingApiRequest req = new GeocodingApiRequest(
                     new GeoApiContext( ).setApiKey( BuildConfig.APIKEY )
             );
@@ -442,7 +485,7 @@ public class AddPathState implements NFAState,
                 fragment.showToast( R.string.path_edit_geocoding_error );
             }
             else {
-                WaypointInfo waypoint = path.get( path.size( ) - 1 );
+                LegInfo waypoint = path.get( path.size( ) - 1 );
 
                 waypoint.locationName = res;
 
@@ -503,7 +546,7 @@ public class AddPathState implements NFAState,
         }
     }
 
-    class SavePathAsync extends CancellableAsyncTask<List<WaypointInfo>, Integer, Boolean> {
+    class SavePathAsync extends CancellableAsyncTask<List<LegInfo>, Integer, Boolean> {
 
         NFA nfa;
         String errorMessage;
@@ -514,7 +557,7 @@ public class AddPathState implements NFAState,
         }
 
         @Override
-        protected Boolean doInBackground( List<WaypointInfo>... waypoints ) {
+        protected Boolean doInBackground( List<LegInfo>... waypoints ) {
             StringBuilder descriptionBuilder = new StringBuilder( );
 
             Path path = new Path( -1, fragment.getCurrentUserId( ), 0, 0, null );
@@ -525,9 +568,9 @@ public class AddPathState implements NFAState,
 
             int waypointCount = waypoints[ 0 ].size( );
             for ( int i = 0; i < waypointCount; i++ ) {
-                WaypointInfo waypoint = waypoints[ 0 ].get( i );
+                LegInfo waypoint = waypoints[ 0 ].get( i );
                 if ( i > 0 ) {
-                    legs.add( waypoint.legTo.getDirectionPoint( ) );
+                    legs.add( waypoint.legTo );
 
                     distance += waypoint.getDistanceTo( );
                     duration += waypoint.getDurationTo( );
@@ -619,36 +662,86 @@ class MarkerBounceAnimation implements Runnable {
     }
 }
 
-class WaypointInfo {
+class LegInfo implements Parcelable {
+    public static final Parcelable.Creator<LegInfo> CREATOR
+            = new Parcelable.Creator<LegInfo>( ) {
+
+        public LegInfo createFromParcel( Parcel in ) {
+            return new LegInfo( in );
+        }
+
+        public LegInfo[] newArray( int size ) {
+            return new LegInfo[ size ];
+        }
+    };
+
     int index;
 
     LatLng point;
-    Leg legTo;
+    ArrayList<LatLng> legTo;
 
     Marker marker;
     Polyline polylineTo;
 
     String locationName;
 
-    public WaypointInfo( int index, LatLng point, Leg legTo, Marker marker,
-                         Polyline polylineTo, String locationName ) {
+    long duration;
+    long distance;
+
+    public LegInfo( int index, LatLng point, ArrayList<LatLng> legTo, Marker marker,
+                    Polyline polylineTo, String locationName, long duration,
+                    long distance ) {
+
         this.index = index;
         this.point = point;
         this.legTo = legTo;
         this.marker = marker;
         this.polylineTo = polylineTo;
         this.locationName = locationName;
+        this.distance = distance;
+        this.duration = duration;
+    }
+
+    public LegInfo( Parcel parcel ) {
+        index = parcel.readInt( );
+        point = parcel.readParcelable( ClassLoader.getSystemClassLoader( ) );
+
+        legTo = new ArrayList<>( );
+        parcel.readTypedList( legTo, LatLng.CREATOR );
+
+        locationName = parcel.readString( );
+        duration = parcel.readLong( );
+        distance = parcel.readLong( );
+    }
+
+    @Override
+    public void writeToParcel( Parcel parcel, int i ) {
+        parcel.writeInt( index );
+        parcel.writeParcelable( point, i );
+        parcel.writeTypedList( legTo );
+        parcel.writeString( locationName );
+        parcel.writeLong( duration );
+        parcel.writeLong( distance );
+    }
+
+    @Override
+    public int describeContents( ) {
+        return 0;
     }
 
     public long getDistanceTo( ) {
-        if ( legTo != null )
-            return Long.parseLong( legTo.getDistance( ).getValue( ) );
-        else return 0;
+        return distance;
+    }
+
+    public void setDistanceTo( long distance ) {
+        this.distance = distance;
     }
 
     public long getDurationTo( ) {
-        if ( legTo != null )
-            return Long.parseLong( legTo.getDuration( ).getValue( ) );
-        else return 0;
+        return duration;
+    }
+
+    public void setDurationTo( long duration ) {
+        this.duration = duration;
     }
 }

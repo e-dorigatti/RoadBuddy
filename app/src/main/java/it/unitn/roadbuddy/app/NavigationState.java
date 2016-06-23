@@ -214,13 +214,17 @@ public class NavigationState implements NFAState,
             selectedUser.setSelected( fragment.getContext( ), googleMap, false );
             selectedUser = null;
         }
-        infoFragment.setSelectedUser( null );
 
-        /**
-         * this happens when a trip is selected from the trips fragment
-         * so hide it and restore the previous state
-         */
+        if ( infoFragment != null ) {
+            infoFragment.setSelectedUser( null );
+        }
+
         if ( fragment.selectedDrawable != navigationPathDrawable ) {
+            /**
+             * this happens when a trip is selected from the trips fragment
+             * so hide it and restore the previous state
+             */
+
             fragment.removeDrawable( fragment.selectedDrawable );
             fragment.setSelectedDrawable( navigationPathDrawable );
 
@@ -581,6 +585,7 @@ public class NavigationState implements NFAState,
         @Override
         protected void onPostExecute( Boolean res ) {
             super.onPostExecute( res );
+            navigationPathDrawable.RemoveFromMap( fragment.getContext( ) );
             nfa.Transition( new RestState( ), null );
         }
     }

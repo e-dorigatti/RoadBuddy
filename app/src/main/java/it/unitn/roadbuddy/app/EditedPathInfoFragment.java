@@ -1,7 +1,10 @@
 package it.unitn.roadbuddy.app;
 
 
+import android.content.Context;
 import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,7 +14,6 @@ import com.google.android.gms.maps.model.LatLng;
 import it.unitn.roadbuddy.app.backend.models.Path;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class EditedPathInfoFragment extends SliderContentFragment {
 
@@ -19,7 +21,7 @@ public class EditedPathInfoFragment extends SliderContentFragment {
     TextView txtTotalDistance;
     TextView txtTotalDuration;
 
-    List<WaypointInfo> waypoints = new ArrayList<>( );
+    ArrayList<WaypointInfo> waypoints = new ArrayList<>( );
     DynamicViewArrayAdapter adapter;
 
     long totalDistance = 0;
@@ -28,6 +30,7 @@ public class EditedPathInfoFragment extends SliderContentFragment {
     public static EditedPathInfoFragment newInstance( ) {
         EditedPathInfoFragment fragment = new EditedPathInfoFragment( );
         fragment.largeViewId = R.layout.fragment_edited_path_info_large;
+
         return fragment;
     }
 
@@ -56,6 +59,12 @@ public class EditedPathInfoFragment extends SliderContentFragment {
         adapter = new DynamicViewArrayAdapter( getContext( ) );
         lstWaypoints.setAdapter( adapter );
 
+        for ( WaypointInfo waypoint : waypoints ) {
+            waypoint.setContext( getContext( ) );
+        }
+
+        adapter.addAll( waypoints );
+
         updateSummary( );
 
         return view;
@@ -82,14 +91,16 @@ public class EditedPathInfoFragment extends SliderContentFragment {
     }
 
     public void addWaypoint( int position, LatLng point, long distanceTo, long durationTo, String name ) {
-        WaypointInfo waypoint = new WaypointInfo( point, distanceTo, durationTo, name );
+        WaypointInfo waypoint = new WaypointInfo( point, distanceTo, durationTo, name, getContext( ) );
         waypoints.add( position, waypoint );
-        adapter.insert( waypoint, position );
 
         totalDistance += waypoint.getDistanceTo( );
         totalDuration += waypoint.getDurationTo( );
 
-        updateSummary( );
+        if ( adapter != null ) {
+            adapter.insert( waypoint, position );
+            updateSummary( );
+        }
     }
 
     public void deleteWaypoint( int position ) {
@@ -105,7 +116,7 @@ public class EditedPathInfoFragment extends SliderContentFragment {
 
     public int deleteWaypoint( LatLng point ) {
         for ( int i = 0; i < waypoints.size( ); i++ ) {
-            if ( waypoints.get( i ).point.equals( point ) ) {
+            if ( waypoints.get( i ).getPoint( ).equals( point ) ) {
                 deleteWaypoint( i );
                 return i;
             }
@@ -113,48 +124,88 @@ public class EditedPathInfoFragment extends SliderContentFragment {
 
         return -1;
     }
+}
 
-    class WaypointInfo implements DynamicViewArrayAdapter.Listable {
-        private LatLng point;
-        private long distanceTo;
-        private long durationTo;
-        private String description;
 
-        public WaypointInfo( LatLng point, long distanceTo, long durationTo, String description ) {
-            this.point = point;
-            this.distanceTo = distanceTo;
-            this.durationTo = durationTo;
-            this.description = description;
+class WaypointInfo implements DynamicViewArrayAdapter.Listable, Parcelable {
+
+    public static final Parcelable.Creator<WaypointInfo> CREATOR
+            = new Parcelable.Creator<WaypointInfo>( ) {
+
+        public WaypointInfo createFromParcel( Parcel in ) {
+            return new WaypointInfo( in );
         }
 
-        public LatLng getPoint( ) {
-            return point;
+        public WaypointInfo[] newArray( int size ) {
+            return new WaypointInfo[ size ];
         }
+    };
 
-        public long getDistanceTo( ) {
-            return distanceTo;
-        }
+    private LatLng point;
+    private long distanceTo;
+    private long durationTo;
+    private String description;
+    private Context context;
 
-        public long getDurationTo( ) {
-            return durationTo;
-        }
+    public WaypointInfo( LatLng point, long distanceTo, long durationTo,
+                         String description, Context context ) {
 
-        public String getDescription( ) {
-            return description;
-        }
+        this.point = point;
+        this.distanceTo = distanceTo;
+        this.durationTo = durationTo;
+        this.description = description;
+        this.context = context;
+    }
 
-        public View getView( int position, View convertView, ViewGroup parent ) {
-            WaypointInfo waypoint = waypoints.get( position );
+    public WaypointInfo( Parcel parcel ) {
+        point = parcel.readParcelable( ClassLoader.getSystemClassLoader( ) );
+        distanceTo = parcel.readLong( );
+        durationTo = parcel.readLong( );
+        description = parcel.readString( );
+    }
 
-            TextView txt = new TextView( getContext( ) );
-            txt.setText( String.format(
-                    "%d) %s - Distance: %s, Duration %s", position + 1,
-                    waypoint.getDescription( ),
-                    Path.formatDistance( waypoint.getDistanceTo( ) ),
-                    Path.formatDuration( waypoint.getDurationTo( ) )
-            ) );
+    @Override
+    public void writeToParcel( Parcel parcel, int i ) {
+        parcel.writeParcelable( point, i );
+        parcel.writeLong( distanceTo );
+        parcel.writeLong( durationTo );
+        parcel.writeString( description );
+    }
 
-            return txt;
-        }
+    @Override
+    public int describeContents( ) {
+        return 0;
+    }
+
+    public LatLng getPoint( ) {
+        return point;
+    }
+
+    public long getDistanceTo( ) {
+        return distanceTo;
+    }
+
+    public long getDurationTo( ) {
+        return durationTo;
+    }
+
+    public String getDescription( ) {
+        return description;
+    }
+
+    public void setContext( Context context ) {
+        this.context = context;
+    }
+
+    public View getView( int position, View convertView, ViewGroup parent ) {
+        TextView txt = new TextView( context );
+        txt.setText( String.format(
+                "%d) %s - Distance: %s, Duration %s", position + 1,
+                getDescription( ),
+                Path.formatDistance( getDistanceTo( ) ),
+                Path.formatDuration( getDurationTo( ) )
+        ) );
+
+        return txt;
     }
 }
