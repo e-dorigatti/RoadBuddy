@@ -328,9 +328,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public void showTrip( Path path ) {
         setZoomOnTrip( path );
-        Drawable d = new DrawablePath( path );
 
-        addDrawable( d );
+        Drawable d = shownDrawablesByModel.get( path.getId( ) );
+        if ( d == null ) {
+            d = new DrawablePath( path );
+            addDrawable( d );
+        }
+
         setSelectedDrawable( d );
     }
 
