@@ -181,7 +181,8 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmt = conn.prepareStatement(
                     String.format(
-                            "SELECT %1$s, %2$s, %4$s, %5$s, %6$s, %7$s FROM %3$s WHERE ST_DWithin(%2$s, ?, ?)",
+                            "SELECT %1$s, ST_SimplifyPreserveTopology(%2$s, 0.01) AS %2$s, %4$s, " +
+                                    "%5$s, %6$s, %7$s FROM %3$s WHERE ST_DWithin(%2$s, ?, ?)",
                             COLUMN_NAME_ID, COLUMN_NAME_PATH, getSchemaName( ), COLUMN_NAME_OWNER,
                             COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION, COLUMN_NAME_DESCRIPTION
                     )

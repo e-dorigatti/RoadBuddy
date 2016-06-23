@@ -163,7 +163,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onDestroy( ) {
-        mainActivity.mAdapter.currentMF = null;
+        mainActivity.mAdapter.mapFragment = null;
         Log.v( "MY_STATE_LOG", "map fragment distrutto" );
         super.onDestroy( );
     }

@@ -19,8 +19,6 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.widget.Toast;
-
 import com.facebook.FacebookSdk;
 import com.facebook.appevents.AppEventsLogger;
 import com.google.android.gms.appindexing.Action;
@@ -31,18 +29,17 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
-
-import java.sql.SQLException;
-
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.Path;
 import it.unitn.roadbuddy.app.backend.models.User;
 import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
+import java.sql.SQLException;
+
 public class MainActivity extends AppCompatActivity
         implements GoogleApiClient.ConnectionCallbacks,
-        LocationListener {
+                   LocationListener {
 
     public static final String
             INTENT_JOIN_TRIP = "join-trip",
@@ -84,6 +81,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate( Bundle savedInstanceState ) {
         super.onCreate( savedInstanceState );
+
         FacebookSdk.sdkInitialize( getApplicationContext( ) );  // Initialize the SDK before executing any other operations
         setContentView( R.layout.activity_main );
 
@@ -91,9 +89,11 @@ public class MainActivity extends AppCompatActivity
         TabLayout tabLayout = ( TabLayout ) findViewById( R.id.tab_layout );
         assert tabLayout != null;
         tabLayout.setTabGravity( TabLayout.GRAVITY_FILL );
+
         mPager = ( ViewPager ) findViewById( R.id.pager );
         mAdapter = new PagerAdapter( getSupportFragmentManager( ) );
         mPager.setAdapter( mAdapter );
+
         mPager.addOnPageChangeListener( new TabLayout.TabLayoutOnPageChangeListener( tabLayout ) );
         tabLayout.setOnTabSelectedListener( new TabLayout.OnTabSelectedListener( ) {
             @Override
@@ -189,8 +189,8 @@ public class MainActivity extends AppCompatActivity
         if ( locationPermissionEnabled ) {
             googleApiClient.connect( );
             /*
-            if ( mAdapter.getCurrentMF( ) != null ) {
-                mAdapter.getCurrentMF( ).onStart( );
+            if ( mAdapter.getMapFragment( ) != null ) {
+                mAdapter.getMapFragment( ).onStart( );
             }
             */
         }
@@ -325,7 +325,7 @@ public class MainActivity extends AppCompatActivity
         try {
             DAOFactory.getUserDAO( ).setCurrentLocation(
                     currentUserId, new LatLng( location.getLatitude( ),
-                            location.getLongitude( ) )
+                                               location.getLongitude( ) )
             );
         }
         catch ( BackendException exc ) {
@@ -336,7 +336,7 @@ public class MainActivity extends AppCompatActivity
 
     public void showChoosenPath( Path path ) {
         mPager.setCurrentItem( 0 );
-        // ((MapFragment) mAdapter.getCurrentMF()).setZoomOnTrip(path);
+        // ((MapFragment) mAdapter.getMapFragment()).setZoomOnTrip(path);
         /*LinearLayout linearLayout = (LinearLayout) getLayoutInflater().inflate(R.layout.fragment_drawable_path_info_large, null);
         TextView txtPathDescription = (TextView) linearLayout.findViewById(R.id.txtPathDescription);        TextView txtTotalDistance = (TextView) linearLayout.findViewById(R.id.txtTotalDistance);
         TextView txtTotalDuration = (TextView) linearLayout.findViewById(R.id.txtTotalDuration);
@@ -344,10 +344,12 @@ public class MainActivity extends AppCompatActivity
         txtTotalDistance.setText("Distance: " + Long.toString(path.getDistance()));
         txtTotalDuration.setText("Expected Duration: " + Long.toString(path.getDuration()));*/
 
-        MapFragment fragment =( MapFragment ) mAdapter.getCurrentMF( );
+        MapFragment fragment = ( MapFragment ) mAdapter.getMapFragment( );
 
-        fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
-        fragment.showTrip( path );
+        if ( fragment != null ) {
+            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+            fragment.showTrip( path );
+        }
     }
 
     public boolean isLocationPermissionEnabled( ) {
