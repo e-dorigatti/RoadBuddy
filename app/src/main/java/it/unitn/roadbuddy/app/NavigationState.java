@@ -108,17 +108,19 @@ public class NavigationState implements NFAState,
         googleMap.setOnMapClickListener( this );
 
         switch ( currentInterfaceState ) {
-            case STATE_INITIAL:
+            case STATE_INITIAL: {
                 if ( invitationTrip == null )
                     newTrip( );
                 else handleInvite( );
                 break;
+            }
 
-            case STATE_PATH_DIALOG:
+            case STATE_PATH_DIALOG: {
                 newTrip( );
                 break;
+            }
 
-            case STATE_CREATING_TRIP:
+            case STATE_CREATING_TRIP: {
                 Path path = null;
                 if ( navigationPathDrawable != null ) {
                     path = navigationPathDrawable.getPath( );
@@ -132,34 +134,41 @@ public class NavigationState implements NFAState,
                         true
                 );
                 break;
+            }
 
-            case STATE_JOIN_DIALOG:
+            case STATE_JOIN_DIALOG: {
                 handleInvite( );
                 break;
+            }
 
-            case STATE_JOINING_TRIP:
+            case STATE_JOINING_TRIP: {
+                Path path = navigationPathDrawable != null ? navigationPathDrawable.getPath( ) : null;
                 taskManager.startRunningTask(
-                        new CreateTripAsync( navigationPathDrawable.getPath( ), fragment.getCurrentUser( ) ),
+                        new CreateTripAsync( path, fragment.getCurrentUser( ) ),
                         true
                 );
-
                 break;
+            }
 
-            case STATE_INVITE_DIALOG:
+            case STATE_INVITE_DIALOG: {
                 inviteBuddy( );
                 break;
+            }
 
-            case STATE_INVITING_BUDDY:
+            case STATE_INVITING_BUDDY: {
                 taskManager.startRunningTask( new SendInviteAsync( ), true, invitedBuddyName );
                 break;
+            }
 
-            case STATE_NAVIGATION:
+            case STATE_NAVIGATION: {
                 startTrip( );
                 break;
+            }
 
-            case STATE_LEAVING:
+            case STATE_LEAVING: {
                 taskManager.startRunningTask( new AbandonTripAsync( ), true );
                 break;
+            }
         }
     }
 
