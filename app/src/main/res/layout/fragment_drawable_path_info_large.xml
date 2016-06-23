@@ -1,25 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical">
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-    <TextView
+        <TextView
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
+            android:singleLine="true"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:id="@+id/txtPathDescription"/>
+            android:id="@+id/txtPathDescription"
+            android:background="@color/indigo_500"
+            android:paddingTop="18dp"
+            android:paddingBottom="20dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:textColor="@android:color/white"
+            android:gravity="center_vertical"/>
 
-    <TextView
+        <com.joooonho.SelectableRoundedImageView
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/card_image_slider"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:scaleType="centerCrop"
+            android:layout_marginLeft="0dp"
+            android:layout_marginRight="0dp"
+            android:layout_marginTop="0.5dp"
+            android:layout_marginBottom="8dp"
+            android:layout_below="@id/txtPathDescription"
+            app:sriv_left_top_corner_radius="2dip"
+            app:sriv_right_top_corner_radius="2dip"
+            app:sriv_left_bottom_corner_radius="2dip"
+            app:sriv_right_bottom_corner_radius="2dip"
+            app:sriv_border_width="0dip"
+            app:sriv_oval="false" />
+
+        <TextView
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:id="@+id/txtTotalDistance"/>
+            android:id="@+id/txtTotalDistance"
+            android:gravity="center_vertical"
+            android:textSize="20sp"
+            android:layout_below="@id/card_image_slider"
+            android:paddingBottom="10dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            />
 
-    <TextView
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
-            android:id="@+id/txtTotalDuration"/>
+            android:id="@+id/txtTotalDuration"
+            android:gravity="center_vertical"
+            android:textSize="20sp"
+            android:layout_below="@id/txtTotalDistance"
+            android:paddingBottom="10dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            />
 
-</LinearLayout>
+    </RelativeLayout>
