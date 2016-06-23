@@ -37,13 +37,11 @@ public class User implements Parcelable {
     }
 
     public User( Parcel parcel ) {
-        this(
-                parcel.readInt( ),
-                parcel.readString( ),
-                ( LatLng ) parcel.readParcelable( ClassLoader.getSystemClassLoader( ) ),
-                ( Date ) parcel.readSerializable( ),
-                ( Integer ) parcel.readValue( ClassLoader.getSystemClassLoader( ) )
-        );
+        this.id = parcel.readInt( );
+        this.userName = parcel.readString( );
+        this.lastPosition = parcel.readParcelable( ClassLoader.getSystemClassLoader( ) );
+        this.lastPositionUpdated = ( Date ) parcel.readSerializable( );
+        this.trip = ( Integer ) parcel.readValue( ClassLoader.getSystemClassLoader( ) );
     }
 
     @Override

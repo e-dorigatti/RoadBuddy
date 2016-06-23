@@ -43,7 +43,7 @@ public class Trip implements Parcelable {
     public void writeToParcel( Parcel parcel, int i ) {
         parcel.writeInt( id );
         parcel.writeTypedList( participants );
-        parcel.writeSerializable( path );
+        parcel.writeParcelable( path, i );
     }
 
     @Override

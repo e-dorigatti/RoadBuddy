@@ -1,16 +1,14 @@
 package it.unitn.roadbuddy.app;
 
 import android.graphics.Color;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.LinearLayout;
+import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import com.google.android.gms.maps.model.LatLng;
@@ -61,7 +59,8 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
             lstBuddies.setOnItemClickListener( this );
         }
 
-        if ( tripPath != null ) {
+        FrameLayout frmPathInfo = ( FrameLayout ) view.findViewById( R.id.frmPathInfo );
+        if ( tripPath != null && frmPathInfo != null ) {
             FragmentTransaction transaction = getFragmentManager( ).beginTransaction( );
             transaction.add( R.id.frmPathInfo, tripPath.getInfoFragment( ) );
             transaction.commit( );
@@ -132,10 +131,10 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
         public View getView( int position, View convertView, ViewGroup parent ) {
             TextView txt = new TextView( getContext( ) );
             txt.setTextColor( Color.WHITE );
-            txt.setCompoundDrawablesWithIntrinsicBounds(R.mipmap.ic_person_outline_white_24dp, 0, 0, 0);
+            txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_person_outline_white_24dp, 0, 0, 0 );
             txt.setCompoundDrawablePadding( 56 );
-            float density = getContext().getResources().getDisplayMetrics().density;
-            int h = (int) ( 68 * density );
+            float density = getContext( ).getResources( ).getDisplayMetrics( ).density;
+            int h = ( int ) ( 68 * density );
             txt.setHeight( h );
             txt.setWidth( ViewGroup.LayoutParams.MATCH_PARENT );
             txt.setPadding( 16, 8, 16, 0 );

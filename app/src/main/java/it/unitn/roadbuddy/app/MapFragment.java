@@ -8,6 +8,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
@@ -118,7 +119,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 ( FrameLayout ) view.findViewById( R.id.sliderLayout )
         );
         slidingLayout = ( com.sothree.slidinguppanel.SlidingUpPanelLayout ) view.findViewById( R.id.sliding_layout );
-        setSLiderStatus(  SlidingUpPanelLayout.PanelState.HIDDEN );
+        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
 
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
@@ -130,17 +131,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( nfa != null )
             nfa.onSaveInstanceState( outState );
 
-        ArrayList<Integer> drawables = new ArrayList<>( );
-        for ( Map.Entry<Integer, Drawable> entry : shownDrawablesByModel.entrySet( ) ) {
-            drawables.add( entry.getKey( ) );
+        ArrayList<Parcelable> drawables = new ArrayList<>( );
+        for ( Drawable d : shownDrawablesByModel.values( ) )
+            drawables.add( d );
+        outState.putParcelableArrayList( DRAWABLES_LIST_KEY, drawables );
 
-            String key = String.format( DRAWABLE_KEY_FORMAT, entry.getKey( ) );
-            outState.putSerializable( key, entry.getValue( ) );
-        }
-
-        outState.putIntegerArrayList( DRAWABLES_LIST_KEY, drawables );
-        if ( selectedDrawable != null )
+        if ( selectedDrawable != null ) {
             outState.putInt( SELECTED_DRAWABLE_KEY, selectedDrawable.getModelId( ) );
+        }
 
         outState.putParcelable( CAMERA_LOCATION_KEY, googleMap.getCameraPosition( ) );
     }
@@ -155,7 +153,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onStart( ) {
-        setSLiderStatus(  SlidingUpPanelLayout.PanelState.HIDDEN );
+        setSLiderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
         if ( nfa != null )
             nfa.Resume( savedInstanceState );
         super.onStart( );
@@ -163,7 +161,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onDestroy( ) {
-        mainActivity.mAdapter.currentMF = null;
+        mainActivity.mAdapter.mapFragment = null;
         Log.v( "MY_STATE_LOG", "map fragment distrutto" );
         super.onDestroy( );
     }
@@ -177,10 +175,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( savedInstanceState != null ) {
             map.clear( );
 
-            ArrayList<Integer> drawables = savedInstanceState.getIntegerArrayList( DRAWABLES_LIST_KEY );
-            for ( int model_id : drawables ) {
-                String key = String.format( DRAWABLE_KEY_FORMAT, model_id );
-                Drawable d = ( Drawable ) savedInstanceState.getSerializable( key );
+            ArrayList<Drawable> drawables = savedInstanceState.getParcelableArrayList( DRAWABLES_LIST_KEY );
+            for ( Drawable d : drawables ) {
+                /**
+                 * for some reason polylines in drawable paths are preserved
+                 * even when marked as transient and not written in the parcel
+                 * causing funny bugs as we've just cleared the map, but the
+                 * polyline still thinks she's visible
+                 */
+
+                d.RemoveFromMap( getContext( ) );
                 addDrawable( d );
             }
 
@@ -228,24 +232,30 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     /**
      * When issuing many status changes in a short amount of time
      * only the first one gets executed and the rest is discarded.
-     *
+     * <p/>
      * We keep track of the latest such status and set it some time
      * in the future so as to allow everyone to set a status
      */
     void setSLiderStatus( SlidingUpPanelLayout.PanelState status ) {
-        if ( setSliderStatus != null )
-            mainActivity.backgroundTasksHandler.removeCallbacks( setSliderStatus );
+        if ( mainActivity.backgroundTasksHandler != null ) {
+            if ( setSliderStatus != null )
+                mainActivity.backgroundTasksHandler.removeCallbacks( setSliderStatus );
 
-        setSliderStatus = new SetSliderStatusRunnable(
-                slidingLayout,
-                status
-        );
+            setSliderStatus = new SetSliderStatusRunnable(
+                    slidingLayout,
+                    status
+            );
 
-        mainActivity.backgroundTasksHandler.postDelayed( setSliderStatus, 500 );
+            mainActivity.backgroundTasksHandler.postDelayed( setSliderStatus, 500 );
+        }
+        else slidingLayout.setPanelState( status );
     }
 
     // draws a drawable and adds it to the index
     void addDrawable( Drawable drawable ) {
+        if ( shownDrawablesByModel.get( drawable.getModelId( ) ) != null )
+            return;
+
         String mapId = drawable.DrawToMap( getContext( ), googleMap );
         int modelId = drawable.getModelId( );
 
@@ -255,6 +265,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     // removes a drawable from the map and from the index
     void removeDrawable( Drawable drawable ) {
+        if ( drawable == null )
+            return;
+
         if ( drawable == selectedDrawable )
             setSelectedDrawable( null );
 
@@ -288,11 +301,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( selectedDrawable != null ) {
             selectedDrawable.setSelected( getContext( ), googleMap, true );
             sliderLayout.setFragment( selectedDrawable.getInfoFragment( ) );
-            setSLiderStatus(  SlidingUpPanelLayout.PanelState.COLLAPSED );
+            setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
         }
         else {
             sliderLayout.setFragment( null );
-            setSLiderStatus(  SlidingUpPanelLayout.PanelState.HIDDEN );
+            setSLiderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
         }
     }
 
@@ -307,9 +320,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         shownDrawablesByModel.clear( );
 
         if ( selectedDrawable != null ) {
-            addDrawable( selectedDrawable );
+            shownDrawablesByMapId.put( selectedDrawable.getMapId( ), selectedDrawable );
+            shownDrawablesByModel.put( selectedDrawable.getModelId( ), selectedDrawable );
         }
-
     }
 
     public void setZoomOnTrip( Path path ) {
@@ -325,9 +338,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     public void showTrip( Path path ) {
         setZoomOnTrip( path );
-        Drawable d = new DrawablePath( path );
 
-        addDrawable( d );
+        Drawable d = shownDrawablesByModel.get( path.getId( ) );
+        if ( d == null ) {
+            d = new DrawablePath( path );
+            addDrawable( d );
+        }
+
         setSelectedDrawable( d );
     }
 

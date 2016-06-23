@@ -141,10 +141,7 @@ public class TripsFragment extends Fragment {
         //Create a LatLng object for the current user's location
         latLng = new LatLng(latitude, longitude);
 
-
-
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, latLng);
-
     }
 
     @Override

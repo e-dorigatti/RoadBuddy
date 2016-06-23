@@ -1,15 +1,26 @@
 package it.unitn.roadbuddy.app.backend.models;
 
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import com.google.android.gms.maps.model.LatLng;
-import it.unitn.roadbuddy.app.SerializablePoint;
 
-import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Path implements Serializable {
+public class Path implements Parcelable {
+    public static final Parcelable.Creator<Path> CREATOR
+            = new Parcelable.Creator<Path>( ) {
+
+        public Path createFromParcel( Parcel in ) {
+            return new Path( in );
+        }
+
+        public Path[] newArray( int size ) {
+            return new Path[ size ];
+        }
+    };
 
     protected int owner;
     private int id;
@@ -18,11 +29,7 @@ public class Path implements Serializable {
     private long distance;
 
     private String description;
-
-    // LatLng is not serializable, but we need to serialize paths
-    // so store a copy of them in a format suitable for serialization
-    private transient List<List<LatLng>> legs = new ArrayList<>( );
-    private List<List<SerializablePoint>> serializableLegs;
+    private List<List<LatLng>> legs = new ArrayList<>( );
 
     public Path( int id, int owner, long distance, long duration, String description ) {
         this.id = id;
@@ -31,6 +38,21 @@ public class Path implements Serializable {
         setDescription( description );
         setDistance( distance );
         setDuration( duration );
+    }
+
+    public Path( Parcel parcel ) {
+        owner = parcel.readInt( );
+        id = parcel.readInt( );
+        duration = parcel.readLong( );
+        distance = parcel.readLong( );
+        description = parcel.readString( );
+
+        legs = new ArrayList<>( );
+        for ( int i = parcel.readInt( ); i > 0; i++ ) {
+            List<LatLng> leg = new ArrayList<>( );
+            parcel.readTypedList( leg, LatLng.CREATOR );
+            legs.add( leg );
+        }
     }
 
     public static String formatDistance( long distance ) {
@@ -64,34 +86,11 @@ public class Path implements Serializable {
     }
 
     public List<List<LatLng>> getLegs( ) {
-        if ( legs == null && serializableLegs != null ) {
-            // first access after de-serialization: restore the legs
-            legs = new ArrayList<>( );
-            for ( List<SerializablePoint> serializableLeg : serializableLegs ) {
-                List<LatLng> leg = new ArrayList<>( );
-                for ( SerializablePoint point : serializableLeg )
-                    leg.add( point.toLatLng( ) );
-                legs.add( leg );
-            }
-
-            serializableLegs = null;  // free up some memory
-        }
-
         return new ArrayList<>( legs );
     }
 
     public void setLegs( List<List<LatLng>> legs ) {
         this.legs = legs;
-
-        if ( legs != null ) {
-            serializableLegs = new ArrayList<>( );
-            for ( List<LatLng> leg : legs ) {
-                List<SerializablePoint> serializableLeg = new ArrayList<>( );
-                for ( LatLng point : leg )
-                    serializableLeg.add( new SerializablePoint( point ) );
-                serializableLegs.add( serializableLeg );
-            }
-        }
     }
 
     @Override
@@ -122,6 +121,24 @@ public class Path implements Serializable {
 
     public void setDescription( String description ) {
         this.description = description;
+    }
+
+    @Override
+    public void writeToParcel( Parcel parcel, int i ) {
+        parcel.writeInt( owner );
+        parcel.writeInt( id );
+        parcel.writeLong( duration );
+        parcel.writeLong( distance );
+        parcel.writeString( description );
+
+        parcel.writeInt( legs.size( ) );
+        for ( List<LatLng> leg : legs )
+            parcel.writeTypedList( leg );
+    }
+
+    @Override
+    public int describeContents( ) {
+        return 0;
     }
 }
 

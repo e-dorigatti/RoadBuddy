@@ -2,6 +2,7 @@ package it.unitn.roadbuddy.app;
 
 
 import android.content.Context;
+import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.view.View;
 import com.google.android.gms.maps.GoogleMap;
@@ -12,7 +13,7 @@ import java.io.Serializable;
 /**
  * This interface bridges database objects with objects displayed on the map
  */
-public interface Drawable extends Serializable {
+public interface Drawable extends Parcelable {
 
     /**
      * Returns the id of the encapsulated model

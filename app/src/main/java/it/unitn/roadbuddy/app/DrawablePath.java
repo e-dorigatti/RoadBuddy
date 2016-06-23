@@ -2,6 +2,8 @@ package it.unitn.roadbuddy.app;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.*;
@@ -11,13 +13,28 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DrawablePath implements Drawable {
-    protected Path path;
-    protected transient Polyline polyline;
+    public static final Parcelable.Creator<DrawablePath> CREATOR
+            = new Parcelable.Creator<DrawablePath>( ) {
 
-    protected transient List<Marker> waypoints;
+        public DrawablePath createFromParcel( Parcel in ) {
+            return new DrawablePath( in );
+        }
+
+        public DrawablePath[] newArray( int size ) {
+            return new DrawablePath[ size ];
+        }
+    };
+
+    protected Path path;
+    protected Polyline polyline;
+    protected List<Marker> waypoints;
 
     public DrawablePath( Path path ) {
         this.path = path;
+    }
+
+    public DrawablePath( Parcel parcel ) {
+        this.path = parcel.readParcelable( ClassLoader.getSystemClassLoader( ) );
     }
 
     public Path getPath( ) {
@@ -44,14 +61,16 @@ public class DrawablePath implements Drawable {
 
     @Override
     public String DrawToMap( Context context, GoogleMap map ) {
-        PolylineOptions opts = new PolylineOptions( )
-                .clickable( true );
+        if ( polyline == null ) {
+            PolylineOptions opts = new PolylineOptions( )
+                    .clickable( true );
 
-        for ( List<LatLng> leg : path.getLegs( ) )
-            opts.addAll( leg );
+            for ( List<LatLng> leg : path.getLegs( ) )
+                opts.addAll( leg );
 
-        polyline = map.addPolyline( opts );
-        setSelected( context, map, false );
+            polyline = map.addPolyline( opts );
+            setSelected( context, map, false );
+        }
 
         return polyline.getId( );
     }
@@ -78,15 +97,17 @@ public class DrawablePath implements Drawable {
         if ( selected ) {
             polyline.setColor( Color.RED );
 
-            waypoints = new ArrayList<>( );
-            List<List<LatLng>> legs = path.getLegs( );
-            for ( int i = 0; i < legs.size( ); i++ ) {
-                List<LatLng> leg = legs.get( i );
+            if ( waypoints == null ) {
+                waypoints = new ArrayList<>( );
+                List<List<LatLng>> legs = path.getLegs( );
+                for ( int i = 0; i < legs.size( ); i++ ) {
+                    List<LatLng> leg = legs.get( i );
 
-                if ( i == 0 ) {
-                    waypoints.add( addMarker( map, leg.get( 0 ) ) );
+                    if ( i == 0 ) {
+                        waypoints.add( addMarker( map, leg.get( 0 ) ) );
+                    }
+                    waypoints.add( addMarker( map, leg.get( leg.size( ) - 1 ) ) );
                 }
-                waypoints.add( addMarker( map, leg.get( leg.size( ) - 1 ) ) );
             }
         }
         else {
@@ -108,5 +129,15 @@ public class DrawablePath implements Drawable {
     @Override
     public Fragment getInfoFragment( ) {
         return DrawablePathInfoFragment.newInstance( this );
+    }
+
+    @Override
+    public void writeToParcel( Parcel parcel, int i ) {
+        parcel.writeParcelable( path, i );
+    }
+
+    @Override
+    public int describeContents( ) {
+        return 0;
     }
 }

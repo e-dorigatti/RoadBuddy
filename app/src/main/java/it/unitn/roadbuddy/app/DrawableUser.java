@@ -4,21 +4,47 @@ package it.unitn.roadbuddy.app;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import it.unitn.roadbuddy.app.backend.models.Path;
 import it.unitn.roadbuddy.app.backend.models.User;
 
 public class DrawableUser implements Drawable {
+    public static final Parcelable.Creator<DrawableUser> CREATOR
+            = new Parcelable.Creator<DrawableUser>( ) {
+
+        public DrawableUser createFromParcel( Parcel in ) {
+            return new DrawableUser( in );
+        }
+
+        public DrawableUser[] newArray( int size ) {
+            return new DrawableUser[ size ];
+        }
+    };
 
     protected User user;
     protected Marker marker;
 
     public DrawableUser( User user ) {
         this.user = user;
+    }
+
+    public DrawableUser( Parcel parcel ) {
+        this.user = parcel.readParcelable( ClassLoader.getSystemClassLoader( ) );
+    }
+
+    @Override
+    public void writeToParcel( Parcel parcel, int i ) {
+        parcel.writeParcelable( user, i );
+    }
+
+    @Override
+    public int describeContents( ) {
+        return 0;
     }
 
     @Override

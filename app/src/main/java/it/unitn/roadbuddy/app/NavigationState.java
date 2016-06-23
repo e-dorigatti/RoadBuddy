@@ -1,6 +1,7 @@
 package it.unitn.roadbuddy.app;
 
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -108,17 +109,19 @@ public class NavigationState implements NFAState,
         googleMap.setOnMapClickListener( this );
 
         switch ( currentInterfaceState ) {
-            case STATE_INITIAL:
+            case STATE_INITIAL: {
                 if ( invitationTrip == null )
                     newTrip( );
                 else handleInvite( );
                 break;
+            }
 
-            case STATE_PATH_DIALOG:
+            case STATE_PATH_DIALOG: {
                 newTrip( );
                 break;
+            }
 
-            case STATE_CREATING_TRIP:
+            case STATE_CREATING_TRIP: {
                 Path path = null;
                 if ( navigationPathDrawable != null ) {
                     path = navigationPathDrawable.getPath( );
@@ -132,34 +135,37 @@ public class NavigationState implements NFAState,
                         true
                 );
                 break;
+            }
 
-            case STATE_JOIN_DIALOG:
+            case STATE_JOIN_DIALOG: {
                 handleInvite( );
                 break;
+            }
 
-            case STATE_JOINING_TRIP:
-                taskManager.startRunningTask(
-                        new CreateTripAsync( navigationPathDrawable.getPath( ), fragment.getCurrentUser( ) ),
-                        true
-                );
-
+            case STATE_JOINING_TRIP: {
+                taskManager.startRunningTask( new JoinTripAsync( ), true, invitationTrip );
                 break;
+            }
 
-            case STATE_INVITE_DIALOG:
+            case STATE_INVITE_DIALOG: {
                 inviteBuddy( );
                 break;
+            }
 
-            case STATE_INVITING_BUDDY:
+            case STATE_INVITING_BUDDY: {
                 taskManager.startRunningTask( new SendInviteAsync( ), true, invitedBuddyName );
                 break;
+            }
 
-            case STATE_NAVIGATION:
+            case STATE_NAVIGATION: {
                 startTrip( );
                 break;
+            }
 
-            case STATE_LEAVING:
+            case STATE_LEAVING: {
                 taskManager.startRunningTask( new AbandonTripAsync( ), true );
                 break;
+            }
         }
     }
 
@@ -184,9 +190,9 @@ public class NavigationState implements NFAState,
     public void onRestoreInstanceState( Bundle savedInstanceState ) {
         if ( savedInstanceState != null ) {
             currentTrip = savedInstanceState.getParcelable( CURRENT_TRIP_KEY );
-            navigationPathDrawable = ( DrawablePath ) savedInstanceState.getSerializable( DRAWABLE_PATH_KEY );
+            navigationPathDrawable = savedInstanceState.getParcelable( DRAWABLE_PATH_KEY );
             buddies = savedInstanceState.getParcelableArrayList( BUDDIES_KEY );
-            selectedUser = ( DrawableUser ) savedInstanceState.getSerializable( SELECTED_USER_KEY );
+            selectedUser = savedInstanceState.getParcelable( SELECTED_USER_KEY );
             invitationTrip = ( Integer ) savedInstanceState.getSerializable( INVITATION_TRIP_KEY );
             currentInterfaceState = savedInstanceState.getInt( UI_STATE_KEY );
             inviterName = savedInstanceState.getString( INVITER_NAME_KEY );
@@ -197,11 +203,11 @@ public class NavigationState implements NFAState,
     @Override
     public void onSaveInstanceState( Bundle savedInstanceState ) {
         savedInstanceState.putParcelable( CURRENT_TRIP_KEY, currentTrip );
-        savedInstanceState.putSerializable( DRAWABLE_PATH_KEY, navigationPathDrawable );
+        savedInstanceState.putParcelable( DRAWABLE_PATH_KEY, navigationPathDrawable );
         savedInstanceState.putParcelableArrayList(
                 BUDDIES_KEY, new ArrayList<Parcelable>( buddies )
         );
-        savedInstanceState.putSerializable( SELECTED_USER_KEY, selectedUser );
+        savedInstanceState.putParcelable( SELECTED_USER_KEY, selectedUser );
         savedInstanceState.putSerializable( INVITATION_TRIP_KEY, invitationTrip );
         savedInstanceState.putInt( UI_STATE_KEY, currentInterfaceState );
         savedInstanceState.putString( INVITER_NAME_KEY, inviterName );
@@ -344,7 +350,7 @@ public class NavigationState implements NFAState,
         }
         else {
             navigationPathDrawable = ( DrawablePath ) fragment.selectedDrawable;
-            navigationPathDrawable.setSelected( fragment.getContext( ), googleMap, true );
+            fragment.setSelectedDrawable( navigationPathDrawable );
             taskManager.startRunningTask(
                     new CreateTripAsync( navigationPathDrawable.getPath( ), fragment.getCurrentUser( ) ),
                     true
@@ -370,8 +376,7 @@ public class NavigationState implements NFAState,
         } );
 
         if ( navigationPathDrawable != null ) {
-            navigationPathDrawable.DrawToMap( fragment.getContext( ), googleMap );
-            navigationPathDrawable.setSelected( fragment.getContext( ), googleMap, true );
+            fragment.setSelectedDrawable( navigationPathDrawable );
         }
 
         infoFragment = NavigationInfoFragment.newInstance(
@@ -522,8 +527,10 @@ public class NavigationState implements NFAState,
         protected void onPostExecute( Trip res ) {
             if ( res != null ) {
                 currentTrip = res;
-                if ( currentTrip.getPath( ) != null )
+                if ( currentTrip.getPath( ) != null ) {
                     navigationPathDrawable = new DrawablePath( currentTrip.getPath( ) );
+                    fragment.addDrawable( navigationPathDrawable );
+                }
                 startTrip( );
             }
             else {
@@ -569,7 +576,9 @@ public class NavigationState implements NFAState,
         @Override
         protected void onPostExecute( Boolean res ) {
             super.onPostExecute( res );
-            navigationPathDrawable.RemoveFromMap( fragment.getContext( ) );
+            fragment.removeDrawable( navigationPathDrawable );
+            fragment.sliderLayout.setView( null );
+            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
             nfa.Transition( new RestState( ), null );
         }
     }
@@ -651,12 +660,17 @@ public class NavigationState implements NFAState,
                  * to avoid concurrency issues and don't need to add explicit
                  * synchronization to the rest of the code.
                  */
-                fragment.getActivity( ).runOnUiThread( new Runnable( ) {
-                    @Override
-                    public void run( ) {
-                        updateBuddies( participants );
-                    }
-                } );
+                Activity activity = fragment.getActivity( );
+
+                if ( activity != null ) {
+                    activity.runOnUiThread(
+                            new Runnable( ) {
+                                @Override
+                                public void run( ) {
+                                    updateBuddies( participants );
+                                }
+                            } );
+                }
             }
             catch ( BackendException exc ) {
                 Log.e( getClass( ).getName( ), "while getting users of trip", exc );

@@ -186,11 +186,14 @@ public class AddPathState implements NFAState,
                 .title( Integer.toString( i ) );
     }
 
-    void addNewWaypoint( LegInfo from, LegInfo to, DirectionCallback callback ) {
-        // placeholder waypoint, will be filled with the right information
-        infoFragment.appendWaypoint(
-                to.point, 0, 0, fragment.getString( R.string.path_edit_geocoding_pending )
-        );
+    void addNewWaypoint( LegInfo from, LegInfo to, DirectionCallback callback, boolean appendTemp ) {
+
+        if ( appendTemp ) {
+            // placeholder waypoint, will be filled with the right information
+            infoFragment.appendWaypoint(
+                    to.point, 0, 0, fragment.getString( R.string.path_edit_geocoding_pending )
+            );
+        }
 
         GoogleDirection
                 .withServerKey( BuildConfig.APIKEY )
@@ -248,7 +251,8 @@ public class AddPathState implements NFAState,
             LegInfo previous = path.get( position - 1 );
             LegInfo next = path.get( position + 1 );
             addNewWaypoint( previous, next,
-                            new DeleteWaypointDirectionReceived( waypoint, next ) );
+                            new DeleteWaypointDirectionReceived( waypoint, next ),
+                            false );
             startMarkerAnimation( waypoint.marker );
         }
     }
@@ -311,7 +315,7 @@ public class AddPathState implements NFAState,
 
         if ( path.size( ) > 1 ) {
             LegInfo from = path.get( path.size( ) - 2 );
-            addNewWaypoint( from, waypoint, new InsertWaypointDirectionReceived( ) );
+            addNewWaypoint( from, waypoint, new InsertWaypointDirectionReceived( ), true );
         }
         else {
             taskManager.startRunningTask( new RetrieveWaypointDescriptionAsync( false ), true, waypoint );
@@ -413,9 +417,10 @@ public class AddPathState implements NFAState,
                 path.remove( toDelete );
                 updateWaypoint( next, direction );
 
-                infoFragment.deleteWaypoint( toDelete.point );
+                Utils.Assert( infoFragment.deleteWaypoint( toDelete.point ) >= 0, false );
 
                 int position = infoFragment.deleteWaypoint( next.point );
+                Utils.Assert( position >= 0, false );
                 infoFragment.addWaypoint(
                         position,
                         next.point,
