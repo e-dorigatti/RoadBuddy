@@ -11,7 +11,8 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/indigo_500">
+        android:background="@color/indigo_500"
+        android:layout_marginBottom="1dp">
         <ListView
             android:layout_width="300dp"
             android:layout_height="wrap_content"
@@ -22,10 +23,10 @@
 
 
     <FrameLayout
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/frmPathInfo"
-        android:padding="10dp">
+        android:padding="0dp">
     </FrameLayout>
 
 </LinearLayout>

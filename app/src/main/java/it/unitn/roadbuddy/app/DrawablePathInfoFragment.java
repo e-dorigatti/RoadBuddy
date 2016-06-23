@@ -5,14 +5,19 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import java.util.Random;
+
 import it.unitn.roadbuddy.app.backend.models.Path;
 
 public class DrawablePathInfoFragment extends Fragment {
 
     DrawablePath drawablePath;
-    LinearLayout mainLayout;
+    RelativeLayout mainLayout;
+    private int randomNum;
 
     public static DrawablePathInfoFragment newInstance( DrawablePath drawablePath ) {
         DrawablePathInfoFragment f = new DrawablePathInfoFragment( );
@@ -23,11 +28,11 @@ public class DrawablePathInfoFragment extends Fragment {
     @Override
     public View onCreateView( LayoutInflater inflater, ViewGroup container,
                               Bundle savedInstanceState ) {
-
-        mainLayout = ( LinearLayout ) inflater.inflate(
+        randomNum = getRandomNumberInRange(1,4);
+        mainLayout = (RelativeLayout) inflater.inflate(
                 R.layout.fragment_drawable_path_info_large, container, false
         );
-
+        ImageView vImg = (ImageView) mainLayout.findViewById(R.id.card_image_slider);
         TextView txtDuration = ( TextView ) mainLayout.findViewById( R.id.txtTotalDuration );
         TextView txtDistance = ( TextView ) mainLayout.findViewById( R.id.txtTotalDistance );
         TextView txtDescription = ( TextView ) mainLayout.findViewById( R.id.txtPathDescription );
@@ -44,8 +49,31 @@ public class DrawablePathInfoFragment extends Fragment {
                     ) );
 
             txtDescription.setText( drawablePath.getPath( ).getDescription( ) );
+            switch (randomNum){
+                case 1:
+                    vImg.setImageResource(R.drawable.sample_background);
+                    break;
+                case 2:
+                    vImg.setImageResource(R.drawable.sample_background2);
+                    break;
+                case 3:
+                    vImg.setImageResource(R.drawable.sample_background3);
+                    break;
+                case 4:
+                    vImg.setImageResource(R.drawable.sample_background4);
+                    break;
+            }
         }
 
         return mainLayout;
+    }
+    private static int getRandomNumberInRange(int min, int max) {
+
+        if (min >= max) {
+            throw new IllegalArgumentException("max must be greater than min");
+        }
+
+        Random r = new Random();
+        return r.nextInt((max - min) + 1) + min;
     }
 }
