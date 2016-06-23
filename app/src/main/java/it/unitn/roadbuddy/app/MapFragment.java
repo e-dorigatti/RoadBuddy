@@ -118,7 +118,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 ( FrameLayout ) view.findViewById( R.id.sliderLayout )
         );
         slidingLayout = ( com.sothree.slidinguppanel.SlidingUpPanelLayout ) view.findViewById( R.id.sliding_layout );
-        setSLiderStatus(  SlidingUpPanelLayout.PanelState.HIDDEN );
+        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
 
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
@@ -155,7 +155,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onStart( ) {
-        setSLiderStatus(  SlidingUpPanelLayout.PanelState.HIDDEN );
+        setSLiderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
         if ( nfa != null )
             nfa.Resume( savedInstanceState );
         super.onStart( );
@@ -228,20 +228,23 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     /**
      * When issuing many status changes in a short amount of time
      * only the first one gets executed and the rest is discarded.
-     *
+     * <p/>
      * We keep track of the latest such status and set it some time
      * in the future so as to allow everyone to set a status
      */
     void setSLiderStatus( SlidingUpPanelLayout.PanelState status ) {
-        if ( setSliderStatus != null )
-            mainActivity.backgroundTasksHandler.removeCallbacks( setSliderStatus );
+        if ( mainActivity.backgroundTasksHandler != null ) {
+            if ( setSliderStatus != null )
+                mainActivity.backgroundTasksHandler.removeCallbacks( setSliderStatus );
 
-        setSliderStatus = new SetSliderStatusRunnable(
-                slidingLayout,
-                status
-        );
+            setSliderStatus = new SetSliderStatusRunnable(
+                    slidingLayout,
+                    status
+            );
 
-        mainActivity.backgroundTasksHandler.postDelayed( setSliderStatus, 500 );
+            mainActivity.backgroundTasksHandler.postDelayed( setSliderStatus, 500 );
+        }
+        else slidingLayout.setPanelState( status );
     }
 
     // draws a drawable and adds it to the index
@@ -288,11 +291,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( selectedDrawable != null ) {
             selectedDrawable.setSelected( getContext( ), googleMap, true );
             sliderLayout.setFragment( selectedDrawable.getInfoFragment( ) );
-            setSLiderStatus(  SlidingUpPanelLayout.PanelState.COLLAPSED );
+            setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
         }
         else {
             sliderLayout.setFragment( null );
-            setSLiderStatus(  SlidingUpPanelLayout.PanelState.HIDDEN );
+            setSLiderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
         }
     }
 
