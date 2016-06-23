@@ -16,8 +16,12 @@ import android.widget.FrameLayout;
  */
 public abstract class SliderContentFragment extends Fragment {
 
-    protected int smallViewId = -1;
-    protected int largeViewId = -1;
+    public static final String
+            SMALL_VIEW_KEY = "small-view",
+            LARGE_VIEW_KEY = "large-view";
+
+    protected Integer smallViewId = null;
+    protected Integer largeViewId = null;
     FrameLayout mainLayout;
     View smallView;
     View largeView;
@@ -26,16 +30,26 @@ public abstract class SliderContentFragment extends Fragment {
     public View onCreateView( LayoutInflater inflater, ViewGroup container,
                               Bundle savedInstanceState ) {
 
+        super.onCreateView( inflater, container, savedInstanceState );
+
+        if ( savedInstanceState != null ) {
+            if ( smallViewId == null )
+                smallViewId = ( Integer ) savedInstanceState.getSerializable( SMALL_VIEW_KEY );
+
+            if ( largeViewId == null )
+                largeViewId = ( Integer ) savedInstanceState.getSerializable( LARGE_VIEW_KEY );
+        }
+
         mainLayout = ( FrameLayout ) inflater.inflate(
                 R.layout.drawable_info_fragment_layout, container, false
         );
 
-        if ( smallViewId >= 0 ) {
+        if ( smallViewId != null ) {
             smallView = inflater.inflate( smallViewId, mainLayout, false );
             mainLayout.addView( smallView );
         }
 
-        if ( largeViewId >= 0 ) {
+        if ( largeViewId != null ) {
             largeView = inflater.inflate( largeViewId, mainLayout, false );
             if ( smallView == null )
                 mainLayout.addView( largeView );

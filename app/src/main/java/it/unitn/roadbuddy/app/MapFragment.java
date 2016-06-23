@@ -20,7 +20,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -30,19 +29,13 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.CommentPOI;
 import it.unitn.roadbuddy.app.backend.models.Path;
 import it.unitn.roadbuddy.app.backend.models.User;
+
+import java.util.*;
 
 
 public class MapFragment extends Fragment implements OnMapReadyCallback {
@@ -55,21 +48,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     MainActivity mainActivity;
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
-    com.sothree.slidinguppanel.SlidingUpPanelLayout slidingLayout;
     ViewContainer sliderLayout;
-
     Map<String, Drawable> shownDrawablesByMapId = new HashMap<>( );
     Map<Integer, Drawable> shownDrawablesByModel = new HashMap<>( );
-
     GoogleMap googleMap;
     NFA nfa;
     Drawable selectedDrawable;
-
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
-
     NFAState initialState;
-
     Bundle savedInstanceState;
+    SetSliderStatusRunnable setSliderStatus;
+    private SlidingUpPanelLayout slidingLayout;
 
     public MapFragment( ) {
     }
@@ -129,7 +118,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 ( FrameLayout ) view.findViewById( R.id.sliderLayout )
         );
         slidingLayout = ( com.sothree.slidinguppanel.SlidingUpPanelLayout ) view.findViewById( R.id.sliding_layout );
-        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+        setSLiderStatus(  SlidingUpPanelLayout.PanelState.HIDDEN );
 
         SupportMapFragment mapFragment = ( SupportMapFragment ) getChildFragmentManager( ).findFragmentById( R.id.map );
         mapFragment.getMapAsync( this );
@@ -166,7 +155,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onStart( ) {
-        slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+        setSLiderStatus(  SlidingUpPanelLayout.PanelState.HIDDEN );
         if ( nfa != null )
             nfa.Resume( savedInstanceState );
         super.onStart( );
@@ -236,6 +225,25 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         savedInstanceState = null;
     }
 
+    /**
+     * When issuing many status changes in a short amount of time
+     * only the first one gets executed and the rest is discarded.
+     *
+     * We keep track of the latest such status and set it some time
+     * in the future so as to allow everyone to set a status
+     */
+    void setSLiderStatus( SlidingUpPanelLayout.PanelState status ) {
+        if ( setSliderStatus != null )
+            mainActivity.backgroundTasksHandler.removeCallbacks( setSliderStatus );
+
+        setSliderStatus = new SetSliderStatusRunnable(
+                slidingLayout,
+                status
+        );
+
+        mainActivity.backgroundTasksHandler.postDelayed( setSliderStatus, 500 );
+    }
+
     // draws a drawable and adds it to the index
     void addDrawable( Drawable drawable ) {
         String mapId = drawable.DrawToMap( getContext( ), googleMap );
@@ -247,6 +255,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     // removes a drawable from the map and from the index
     void removeDrawable( Drawable drawable ) {
+        if ( drawable == selectedDrawable )
+            setSelectedDrawable( null );
+
         drawable.RemoveFromMap( getContext( ) );
 
         shownDrawablesByModel.remove( drawable.getModelId( ) );
@@ -277,11 +288,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( selectedDrawable != null ) {
             selectedDrawable.setSelected( getContext( ), googleMap, true );
             sliderLayout.setFragment( selectedDrawable.getInfoFragment( ) );
-            slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
+            setSLiderStatus(  SlidingUpPanelLayout.PanelState.COLLAPSED );
         }
         else {
             sliderLayout.setFragment( null );
-            slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.HIDDEN );
+            setSLiderStatus(  SlidingUpPanelLayout.PanelState.HIDDEN );
         }
     }
 
@@ -387,6 +398,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         protected void onProgressUpdate( Drawable... values ) {
             super.onProgressUpdate( values );
 
+            Drawable selected = selectedDrawable;
             Drawable drawable = values[ 0 ];
 
             Drawable oldDrawable = shownDrawablesByModel.get( drawable.getModelId( ) );
@@ -394,15 +406,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 removeDrawable( oldDrawable );
 
             addDrawable( drawable );
-            missingDrawables.remove( drawable.getModelId( ) );
+            if ( drawable.equals( selected ) )
+                setSelectedDrawable( drawable );
 
-            if ( drawable.equals( selectedDrawable ) ) {
-                // they represent the same database object but are actually
-                // different references so replace them but keep it selected
-                selectedDrawable = drawable;
-                drawable.setSelected( context, googleMap, true );
-            }
-            else drawable.setSelected( context, googleMap, false );
+            missingDrawables.remove( drawable.getModelId( ) );
         }
 
         @Override
@@ -412,23 +419,44 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     removeDrawable( shownDrawablesByModel.get( drawable ) );
                 }
             }
-            else {
-                showToast( R.string.generic_backend_error );
-            }
+
+            if ( floatingActionMenu != null )
+                floatingActionMenu.getMenuIconView( ).clearAnimation( );
+
             super.onPostExecute( success );
         }
 
     }
 
+    class SetSliderStatusRunnable implements Runnable {
+
+        SlidingUpPanelLayout panel;
+        SlidingUpPanelLayout.PanelState state;
+
+        public SetSliderStatusRunnable( SlidingUpPanelLayout panel, SlidingUpPanelLayout.PanelState state ) {
+            this.panel = panel;
+            this.state = state;
+        }
+
+        @Override
+        public void run( ) {
+            mainActivity.runOnUiThread( new Runnable( ) {
+                @Override
+                public void run( ) {
+                    panel.setPanelState( state );
+                }
+            } );
+
+            setSliderStatus = null;
+        }
+    }
 }
 
 class ViewContainer {
 
     LayoutInflater inflater;
     FragmentManager fragmentManager;
-
     ViewGroup container;
-
     View currentView;
     Fragment currentFragment;
 
@@ -496,6 +524,4 @@ class ViewContainer {
     public void hideParent( ) {
         //container.setVisibility( View.INVISIBLE );
     }
-
-
 }

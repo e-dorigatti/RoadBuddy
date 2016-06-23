@@ -7,16 +7,38 @@
     style="@style/MyCardViewStyle"
     >
 
+
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+
+        >
+        <com.joooonho.SelectableRoundedImageView
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/card_image"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:scaleType="centerCrop"
+            app:sriv_left_top_corner_radius="2dip"
+            app:sriv_right_top_corner_radius="2dip"
+            app:sriv_left_bottom_corner_radius="0dip"
+            app:sriv_right_bottom_corner_radius="0dip"
+            app:sriv_border_width="2dip"
+            app:sriv_border_color="@color/blue_700"
+            app:sriv_oval="false" />
 
         <TextView
             android:id="@+id/path_id"
             android:textStyle="bold"
+            android:textSize="20sp"
             android:layout_width="match_parent"
-            android:layout_height="20dp"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/card_image"
             android:text="contact det"
+            android:paddingTop="18dp"
+            android:paddingBottom="10dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
             android:gravity="center_vertical"
             android:textColor="@android:color/white" />
 
@@ -25,32 +47,38 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:textSize="12sp"
+            android:textSize="14sp"
             android:layout_below="@id/path_id"
-            android:layout_marginTop="10dp"
-            android:layout_marginStart="5dp"
-            android:textColor="@android:color/white" />
+            android:paddingBottom="10dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:textColor="@android:color/white"
+            android:layout_weight="0.25" />
 
         <TextView
             android:id="@+id/path_duration"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:textSize="12sp"
+            android:textSize="14sp"
             android:layout_below="@id/path_owner"
-            android:layout_marginTop="10dp"
-            android:layout_marginStart="5dp"
-            android:textColor="@android:color/white" />
+            android:paddingBottom="10dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:textColor="@android:color/white"
+            android:layout_weight="0.25" />
         <TextView
             android:id="@+id/path_distance"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingStart="16dp"
-            android:textSize="12sp"
-            android:layout_marginTop="10dp"
-            android:layout_alignParentEnd="true"
-            android:layout_marginStart="20dp"
+            android:gravity="center_vertical"
+            android:layout_alignParentRight="true"
+            android:textSize="14sp"
             android:layout_alignBaseline="@id/path_duration"
-            android:textColor="@android:color/white" />
+            android:paddingBottom="10dp"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:textColor="@android:color/white"
+            android:layout_weight="0.25" />
     </RelativeLayout>
     </android.support.v7.widget.CardView>

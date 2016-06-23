@@ -44,8 +44,11 @@ public class MainActivity extends AppCompatActivity
         implements GoogleApiClient.ConnectionCallbacks,
         LocationListener {
 
-    public static final String INTENT_JOIN_TRIP = "join-trip";
-    public static final String JOIN_TRIP_INVITER_KEY = "trip-inviter";
+    public static final String
+            INTENT_JOIN_TRIP = "join-trip",
+            JOIN_TRIP_INVITER_KEY = "trip-inviter",
+            CURRENT_USER_KEY = "current-user",
+            CURRENT_USER_ID_KEY = "current-user-id";
 
     public static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
 
@@ -58,7 +61,7 @@ public class MainActivity extends AppCompatActivity
     HandlerThread backgroundThread;
     Handler backgroundTasksHandler;
     CheckInvitesRunnable inviteRunnable;
-    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
+    GetCurrentUserRunnable getUserRunnable;
 
     /**
      * Store the intent used to launch the app as well as the previous
@@ -114,6 +117,10 @@ public class MainActivity extends AppCompatActivity
         if ( savedInstanceState == null ) {
             this.intent = getIntent( );
         }
+        else {
+            currentUser = ( User ) savedInstanceState.getParcelable( CURRENT_USER_KEY );
+            currentUserId = ( Integer ) savedInstanceState.getSerializable( CURRENT_USER_ID_KEY );
+        }
 
         googleApiClient = new GoogleApiClient.Builder( this )
                 .addConnectionCallbacks( this )
@@ -140,9 +147,12 @@ public class MainActivity extends AppCompatActivity
             return;
         }
 
-        taskManager.startRunningTask( new GetCurrentUserAsync( ), true );
         inviteRunnable = new CheckInvitesRunnable(
                 backgroundTasksHandler, getApplicationContext( ), currentUserId
+        );
+
+        getUserRunnable = new GetCurrentUserRunnable(
+                backgroundTasksHandler
         );
 
         if ( ContextCompat.checkSelfPermission( this, Manifest.permission.ACCESS_FINE_LOCATION ) !=
@@ -201,6 +211,13 @@ public class MainActivity extends AppCompatActivity
                 Uri.parse( "android-app://it.unitn.roadbuddy.app/http/host/path" )
         );
         AppIndex.AppIndexApi.start( client, viewAction );
+    }
+
+    @Override
+    protected void onSaveInstanceState( Bundle outState ) {
+        super.onSaveInstanceState( outState );
+        outState.putParcelable( CURRENT_USER_KEY, currentUser );
+        outState.putSerializable( CURRENT_USER_ID_KEY, currentUserId );
     }
 
     private void showMessageOKCancel( String message, DialogInterface.OnClickListener okListener ) {
@@ -327,47 +344,39 @@ public class MainActivity extends AppCompatActivity
         txtPathDescription.setText(path.getDescription());
         txtTotalDistance.setText("Distance: " + Long.toString(path.getDistance()));
         txtTotalDuration.setText("Expected Duration: " + Long.toString(path.getDuration()));*/
-        ( ( MapFragment ) mAdapter.getCurrentMF( ) ).slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
-        // ((MapFragment) mAdapter.getCurrentMF()).sliderLayout.setView(linearLayout);
-        ( ( MapFragment ) mAdapter.getCurrentMF( ) ).showTrip( path );
+
+        MapFragment fragment =( MapFragment ) mAdapter.getCurrentMF( );
+
+        fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+        fragment.showTrip( path );
     }
 
     public boolean isLocationPermissionEnabled( ) {
         return locationPermissionEnabled;
     }
 
-    class GetCurrentUserAsync extends CancellableAsyncTask<Void, Integer, User> {
+    class GetCurrentUserRunnable implements Runnable {
 
-        String exceptionMessage;
+        public static final int INTERVAL = 15 * 1000;
 
-        public GetCurrentUserAsync( ) {
-            super( taskManager );
+        Handler handler;
+
+        public GetCurrentUserRunnable( Handler handler ) {
+            this.handler = handler;
+
+            handler.post( this );
         }
 
         @Override
-        protected User doInBackground( Void... nothing ) {
+        public void run( ) {
             try {
-                return DAOFactory.getUserDAO( ).getUser( currentUserId );
+                currentUser = DAOFactory.getUserDAO( ).getUser( currentUserId );
             }
             catch ( BackendException exc ) {
-                exceptionMessage = exc.getMessage( );
                 Log.e( getClass( ).getName( ), "while retrieving current user", exc );
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute( User user ) {
-            if ( user != null ) {
-                currentUser = user;
-            }
-            else {
-                Toast.makeText( getApplicationContext( ), R.string.generic_backend_error, Toast.LENGTH_LONG ).show( );
             }
 
-            super.onPostExecute( user );
-
-            taskManager.startRunningTask( new GetCurrentUserAsync( ), true );
+            handler.postDelayed( this, INTERVAL );
         }
     }
 }

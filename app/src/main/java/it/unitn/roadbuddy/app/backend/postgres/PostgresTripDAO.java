@@ -143,7 +143,7 @@ public class PostgresTripDAO extends PostgresDAOBase implements TripDAO {
                                 "%2$s.%10$s AS %2$s_%10$s, %2$s.%11$s AS %2$s_%11$s, %2$s.%12$s AS %2$s_%12$s, " +
                                 "%2$s.%13$s AS %2$s_%13$s, %2$s.%14$s AS %2$s_%14$s, %3$s.%15$s AS %3$s_%15$s " +
 
-                                "FROM %19$s AS %3$s JOIN %17$s AS %1$s ON %1$s.%8$s = %3$s.%15$s " +
+                                "FROM %19$s AS %3$s LEFT OUTER JOIN %17$s AS %1$s ON %1$s.%8$s = %3$s.%15$s " +
                                 "LEFT OUTER JOIN %18$s AS %2$s ON %2$s.%9$s = %3$s.%16$s " +
                                 "WHERE %3$s.%15$s = ?",
 
