@@ -18,8 +18,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -256,13 +254,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void RefreshMapContent( ) {
-        // show rotating animation
-        Animation animRotate = AnimationUtils.loadAnimation( getContext( ), R.anim.rotate );
-        floatingActionMenu = ( FloatingActionMenu ) getView( ).findViewById( R.id.fab );
-        if ( floatingActionMenu != null && floatingActionMenu.getAnimation( ) == null )
-            if ( floatingActionMenu != null )
-                floatingActionMenu.getMenuIconView( ).startAnimation( animRotate );
-
         // run async task
         LatLngBounds bounds = googleMap.getProjection( ).getVisibleRegion( ).latLngBounds;
         taskManager.startRunningTask( new RefreshMapAsync( getContext( ) ), true, bounds );
@@ -424,10 +415,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             else {
                 showToast( R.string.generic_backend_error );
             }
-
-            if ( floatingActionMenu != null )
-                floatingActionMenu.getMenuIconView( ).clearAnimation( );
-
             super.onPostExecute( success );
         }
 

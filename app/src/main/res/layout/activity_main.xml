@@ -26,18 +26,18 @@
         <android.support.design.widget.TabItem
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:id="@+id/tab_map"
-            android:text="@string/tab_map"/>
+            android:text="@string/tab_map"
+            android:id="@+id/tab_map" />
         <android.support.design.widget.TabItem
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:id="@+id/tab_trips"
-            android:text="@string/tab_trips"/>
+            android:text="@string/tab_trips"
+            android:id="@+id/tab_trips" />
         <android.support.design.widget.TabItem
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:id="@+id/tab_settings"
-            android:text="@string/tab_settings"/>
+            android:text="@string/tab_profile"
+            android:id="@+id/tab_settings" />
     </android.support.design.widget.TabLayout>
 
 </RelativeLayout>

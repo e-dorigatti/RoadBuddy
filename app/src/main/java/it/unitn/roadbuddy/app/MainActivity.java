@@ -20,6 +20,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
+
 import com.facebook.FacebookSdk;
 import com.facebook.appevents.AppEventsLogger;
 import com.google.android.gms.appindexing.Action;
@@ -30,17 +31,18 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+
+import java.sql.SQLException;
+
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.Path;
 import it.unitn.roadbuddy.app.backend.models.User;
 import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
-import java.sql.SQLException;
-
 public class MainActivity extends AppCompatActivity
         implements GoogleApiClient.ConnectionCallbacks,
-                   LocationListener {
+        LocationListener {
 
     public static final String INTENT_JOIN_TRIP = "join-trip";
     public static final String JOIN_TRIP_INVITER_KEY = "trip-inviter";
@@ -306,7 +308,7 @@ public class MainActivity extends AppCompatActivity
         try {
             DAOFactory.getUserDAO( ).setCurrentLocation(
                     currentUserId, new LatLng( location.getLatitude( ),
-                                               location.getLongitude( ) )
+                            location.getLongitude( ) )
             );
         }
         catch ( BackendException exc ) {

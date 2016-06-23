@@ -31,8 +31,8 @@
 
 
     </FrameLayout>
-    <SearchView
+    <android.support.v7.widget.SearchView
         android:id="@id/search_bar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"></SearchView>
+        android:layout_height="wrap_content"/>
 </RelativeLayout>

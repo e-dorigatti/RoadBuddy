@@ -8,7 +8,6 @@ import android.widget.ArrayAdapter;
 
 import java.util.List;
 
-
 /**
  * Array adapter which allows each item to customize its view
  */

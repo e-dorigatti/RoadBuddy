@@ -166,23 +166,6 @@ public class TripsFragment extends Fragment {
         super.onDetach( );
     }
 
-    public void updateList( ) {
-        LatLng myPos;
-        if(myLocation != null) {
-            //Get latitude
-            latitude = myLocation.getLatitude();
-            //Get longitude
-            longitude = myLocation.getLongitude();
-        }
-        //Create a LatLng object for the current user's location
-        myPos = new LatLng(latitude, longitude);
-        taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
-    }
-    public void handleShakeEvent(){
-        Log.v("SHAKE", "Device shaked");
-        Toast.makeText( getActivity( ).getApplicationContext( ), "Trip list updated..", Toast.LENGTH_LONG ).show( );
-        updateList();
-    }
     @Override
     public void onResume() {
         super.onResume();
@@ -196,6 +179,34 @@ public class TripsFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         Log.v("MY_STATE_LOG", "trips fragment distrutto");
+    }
+
+    public void updateList( ) {
+        LatLng myPos;
+        if(myLocation != null) {
+            //Get latitude
+            latitude = myLocation.getLatitude();
+            //Get longitude
+            longitude = myLocation.getLongitude();
+        }
+        //Create a LatLng object for the current user's location
+        myPos = new LatLng(latitude, longitude);
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
+    }
+
+    public void handleShakeEvent(){
+        Log.v("SHAKE", "Device shaked");
+        showToast("Trip list updating..");
+        updateList();
+    }
+
+    public void showToast( String text ) {
+        Toast.makeText( getActivity( ).getApplicationContext( ), text, Toast.LENGTH_LONG ).show( );
+    }
+
+    public void showToast( int textId ) {
+        String msg = getString( textId );
+        showToast( msg );
     }
 
     class getTrips extends CancellableAsyncTask<LatLng, Integer, List<Path>> {
@@ -306,4 +317,3 @@ public class TripsFragment extends Fragment {
         }
     }
 }
-
