@@ -101,7 +101,7 @@ public class NavigationState implements NFAState,
         this.nfa = nfa;
         this.googleMap = fragment.googleMap;
 
-        fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
+        fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
         fragment.clearMap( );
 
         googleMap.setOnMarkerClickListener( this );
@@ -229,23 +229,7 @@ public class NavigationState implements NFAState,
             fragment.setSelectedDrawable( navigationPathDrawable );
 
             fragment.sliderLayout.setFragment( infoFragment );
-
-            /**
-             * For some unknown reason settings the sliding layout to collapsed
-             * right now does not work and it stays hidden, so hide it after
-             * a while
-             */
-            fragment.mainActivity.backgroundTasksHandler.postDelayed( new Runnable( ) {
-                @Override
-                public void run( ) {
-                    fragment.mainActivity.runOnUiThread( new Runnable( ) {
-                        @Override
-                        public void run( ) {
-                            fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
-                        }
-                    } );
-                }
-            }, 500 );
+            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
         }
     }
 
@@ -276,7 +260,7 @@ public class NavigationState implements NFAState,
 
     void moveCameraTo( LatLng point, float zoom ) {
         CameraUpdate anim = CameraUpdateFactory.newLatLngZoom( point, zoom );
-        fragment.slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
+        fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
         googleMap.animateCamera( anim );
     }
 

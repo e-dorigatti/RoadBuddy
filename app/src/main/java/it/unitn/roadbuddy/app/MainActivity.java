@@ -19,7 +19,6 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.widget.Toast;
 import com.facebook.FacebookSdk;
 import com.facebook.appevents.AppEventsLogger;
 import com.google.android.gms.appindexing.Action;
@@ -59,7 +58,7 @@ public class MainActivity extends AppCompatActivity
     HandlerThread backgroundThread;
     Handler backgroundTasksHandler;
     CheckInvitesRunnable inviteRunnable;
-    CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
+    GetCurrentUserRunnable getUserRunnable;
 
     /**
      * Store the intent used to launch the app as well as the previous
@@ -145,9 +144,12 @@ public class MainActivity extends AppCompatActivity
             return;
         }
 
-        taskManager.startRunningTask( new GetCurrentUserAsync( ), true );
         inviteRunnable = new CheckInvitesRunnable(
                 backgroundTasksHandler, getApplicationContext( ), currentUserId
+        );
+
+        getUserRunnable = new GetCurrentUserRunnable(
+                backgroundTasksHandler
         );
 
         if ( ContextCompat.checkSelfPermission( this, Manifest.permission.ACCESS_FINE_LOCATION ) !=
@@ -339,47 +341,39 @@ public class MainActivity extends AppCompatActivity
         txtPathDescription.setText(path.getDescription());
         txtTotalDistance.setText("Distance: " + Long.toString(path.getDistance()));
         txtTotalDuration.setText("Expected Duration: " + Long.toString(path.getDuration()));*/
-        ( ( MapFragment ) mAdapter.getCurrentMF( ) ).slidingLayout.setPanelState( SlidingUpPanelLayout.PanelState.COLLAPSED );
-        // ((MapFragment) mAdapter.getCurrentMF()).sliderLayout.setView(linearLayout);
-        ( ( MapFragment ) mAdapter.getCurrentMF( ) ).showTrip( path );
+
+        MapFragment fragment =( MapFragment ) mAdapter.getCurrentMF( );
+
+        fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+        fragment.showTrip( path );
     }
 
     public boolean isLocationPermissionEnabled( ) {
         return locationPermissionEnabled;
     }
 
-    class GetCurrentUserAsync extends CancellableAsyncTask<Void, Integer, User> {
+    class GetCurrentUserRunnable implements Runnable {
 
-        String exceptionMessage;
+        public static final int INTERVAL = 15 * 1000;
 
-        public GetCurrentUserAsync( ) {
-            super( taskManager );
+        Handler handler;
+
+        public GetCurrentUserRunnable( Handler handler ) {
+            this.handler = handler;
+
+            handler.post( this );
         }
 
         @Override
-        protected User doInBackground( Void... nothing ) {
+        public void run( ) {
             try {
-                return DAOFactory.getUserDAO( ).getUser( currentUserId );
+                currentUser = DAOFactory.getUserDAO( ).getUser( currentUserId );
             }
             catch ( BackendException exc ) {
-                exceptionMessage = exc.getMessage( );
                 Log.e( getClass( ).getName( ), "while retrieving current user", exc );
-                return null;
-            }
-        }
-
-        @Override
-        protected void onPostExecute( User user ) {
-            if ( user != null ) {
-                currentUser = user;
-            }
-            else {
-                Toast.makeText( getApplicationContext( ), R.string.generic_backend_error, Toast.LENGTH_LONG ).show( );
             }
 
-            super.onPostExecute( user );
-
-            taskManager.startRunningTask( new GetCurrentUserAsync( ), true );
+            handler.postDelayed( this, INTERVAL );
         }
     }
 }

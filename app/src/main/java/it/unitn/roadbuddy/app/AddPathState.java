@@ -120,9 +120,7 @@ public class AddPathState implements NFAState,
 
         infoFragment = EditedPathInfoFragment.newInstance( );
         fragment.sliderLayout.setFragment( infoFragment );
-        fragment.slidingLayout.setPanelState(
-                SlidingUpPanelLayout.PanelState.COLLAPSED
-        );
+        fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
 
         if ( savedInstanceState != null ) {
             int n = savedInstanceState.getInt( PATH_SIZE_KEY );
@@ -157,9 +155,7 @@ public class AddPathState implements NFAState,
         map.setOnMapClickListener( null );
         map.setOnMarkerClickListener( null );
 
-        fragment.slidingLayout.setPanelState(
-                SlidingUpPanelLayout.PanelState.HIDDEN
-        );
+        fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
 
         taskManager.stopRunningTasksOfType( SavePathAsync.class );
         clearPath( );
