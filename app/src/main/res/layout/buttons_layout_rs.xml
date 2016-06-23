@@ -14,7 +14,8 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_marginRight="10dp"
-        android:layout_marginBottom="10dp">
+        android:layout_marginBottom="10dp"
+        android:backgroundTint="@color/teal_700">
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/btnStartRiding"
             android:layout_width="wrap_content"
