@@ -42,7 +42,7 @@ import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
 public class MainActivity extends AppCompatActivity
         implements GoogleApiClient.ConnectionCallbacks,
-                   LocationListener {
+        LocationListener {
 
     public static final String
             INTENT_JOIN_TRIP = "join-trip",
@@ -325,7 +325,7 @@ public class MainActivity extends AppCompatActivity
         try {
             DAOFactory.getUserDAO( ).setCurrentLocation(
                     currentUserId, new LatLng( location.getLatitude( ),
-                                               location.getLongitude( ) )
+                            location.getLongitude( ) )
             );
         }
         catch ( BackendException exc ) {

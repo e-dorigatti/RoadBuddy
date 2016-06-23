@@ -29,7 +29,7 @@
     <string name="pref_dev_settings_enabled_title">Enabled</string>
     <string name="pref_dev_user_name_summary">Changes the current user</string>
     <string name="pref_dev_user_name_title">User Name</string>
-    <string name="app_initial_loading">Connecting to backend...</string>
+    <string name="app_initial_loading">Connecting to backend ...</string>
 
     <string name="path_edit_total_distance" formatted="false">Total Distance: %s</string>
     <string name="path_edit_total_duration" formatted="false">Expected Duration: %s</string>
@@ -39,8 +39,8 @@
     <string name="location_access_denied">You won\'t be able to see your location on the map</string>
 
     <string name="tab_map">Map</string>
-    <string name="tab_trips">Viaggi</string>
-    <string name="tab_settings">Impostazioni</string>
+    <string name="tab_trips">Trips</string>
+    <string name="tab_profile">Profile</string>
 
     <string name="rest_add_path">Add path</string>
     <string name="rest_add_point">Add point</string>

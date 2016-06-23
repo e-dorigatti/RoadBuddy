@@ -317,4 +317,3 @@ public class TripsFragment extends Fragment {
         }
     }
 }
-
