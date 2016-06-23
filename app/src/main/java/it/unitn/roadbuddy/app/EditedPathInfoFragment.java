@@ -106,6 +106,8 @@ public class EditedPathInfoFragment extends SliderContentFragment {
     public void deleteWaypoint( int position ) {
         WaypointInfo waypoint = waypoints.get( position );
         waypoints.remove( position );
+
+        Utils.Assert( adapter.getPosition( waypoint ) >= 0, false );
         adapter.remove( waypoint );
 
         totalDistance -= waypoint.getDistanceTo( );
