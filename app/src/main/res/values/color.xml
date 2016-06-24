@@ -6,7 +6,7 @@
 
 <resources>
     <color name="PrimaryColor">#2196F3</color>
-    <color name="PrimaryDarkColor">#1976D2</color>
+    <color name="PrimaryDarkColor">#1976d2</color>
     <color name="indicator">#ecd95a</color>
 
     <!-- All material design colors -->

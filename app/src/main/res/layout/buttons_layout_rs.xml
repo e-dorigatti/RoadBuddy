@@ -9,7 +9,6 @@
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        fab:menu_labels_style="@style/RestMenuLabelsStyle"
         fab:menu_animationDelayPerItem="10"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
@@ -42,5 +41,4 @@
     </com.github.clans.fab.FloatingActionMenu>
 
 </RelativeLayout>
-
 

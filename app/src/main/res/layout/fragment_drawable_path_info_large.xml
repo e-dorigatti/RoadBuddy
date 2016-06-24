@@ -18,32 +18,13 @@
             android:textColor="@android:color/white"
             android:gravity="center_vertical"/>
 
-        <!-- img view removed for the moment
-        <com.joooonho.SelectableRoundedImageView
-            xmlns:app="http://schemas.android.com/apk/res-auto"
-            android:id="@+id/card_image_slider"
-            android:layout_width="match_parent"
-            android:layout_height="250dp"
-            android:scaleType="centerCrop"
-            android:layout_marginLeft="0dp"
-            android:layout_marginRight="0dp"
-            android:layout_marginTop="0.5dp"
-            android:layout_marginBottom="8dp"
-            android:layout_below="@id/txtPathDescription"
-            app:sriv_left_top_corner_radius="2dip"
-            app:sriv_right_top_corner_radius="2dip"
-            app:sriv_left_bottom_corner_radius="2dip"
-            app:sriv_right_bottom_corner_radius="2dip"
-            app:sriv_border_width="0dip"
-            app:sriv_oval="false" />-->
-
         <TextView
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:id="@+id/txtTotalDistance"
             android:gravity="center_vertical"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:layout_below="@id/txtPathDescription"
             android:layout_marginTop="36dp"
             android:paddingBottom="10dp"
@@ -57,7 +38,7 @@
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:id="@+id/txtTotalDuration"
             android:gravity="center_vertical"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:layout_below="@id/txtTotalDistance"
             android:paddingBottom="10dp"
             android:paddingLeft="10dp"
