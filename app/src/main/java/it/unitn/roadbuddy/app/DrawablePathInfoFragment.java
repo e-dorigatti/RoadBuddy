@@ -5,7 +5,6 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -32,7 +31,7 @@ public class DrawablePathInfoFragment extends Fragment {
         mainLayout = (RelativeLayout) inflater.inflate(
                 R.layout.fragment_drawable_path_info_large, container, false
         );
-        ImageView vImg = (ImageView) mainLayout.findViewById(R.id.card_image_slider);
+       // ImageView vImg = (ImageView) mainLayout.findViewById(R.id.card_image_slider);
         TextView txtDuration = ( TextView ) mainLayout.findViewById( R.id.txtTotalDuration );
         TextView txtDistance = ( TextView ) mainLayout.findViewById( R.id.txtTotalDistance );
         TextView txtDescription = ( TextView ) mainLayout.findViewById( R.id.txtPathDescription );
@@ -49,7 +48,7 @@ public class DrawablePathInfoFragment extends Fragment {
                     ) );
 
             txtDescription.setText( drawablePath.getPath( ).getDescription( ) );
-            switch (randomNum){
+           /* switch (randomNum){
                 case 1:
                     vImg.setImageResource(R.drawable.sample_background);
                     break;
@@ -62,7 +61,7 @@ public class DrawablePathInfoFragment extends Fragment {
                 case 4:
                     vImg.setImageResource(R.drawable.sample_background4);
                     break;
-            }
+            }*/
         }
 
         return mainLayout;

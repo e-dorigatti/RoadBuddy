@@ -198,7 +198,7 @@ public class TripsFragment extends Fragment {
     }
 
     public void showToast( String text ) {
-        Toast.makeText( getActivity( ).getApplicationContext( ), text, Toast.LENGTH_LONG ).show( );
+        Toast.makeText( getActivity( ).getApplicationContext( ), text, Toast.LENGTH_SHORT ).show( );
     }
 
     public void showToast( int textId ) {
@@ -258,7 +258,7 @@ public class TripsFragment extends Fragment {
 
                 @Override
                 public void onLongClick(View view, int position) {
-
+                    showToast("Shake to update list");
                 }
             }));
             super.onPostExecute( res );

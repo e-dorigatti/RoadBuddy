@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
     <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        >
 
         <TextView
             android:layout_width="fill_parent"
@@ -17,6 +18,7 @@
             android:textColor="@android:color/white"
             android:gravity="center_vertical"/>
 
+        <!-- img view removed for the moment
         <com.joooonho.SelectableRoundedImageView
             xmlns:app="http://schemas.android.com/apk/res-auto"
             android:id="@+id/card_image_slider"
@@ -33,7 +35,7 @@
             app:sriv_left_bottom_corner_radius="2dip"
             app:sriv_right_bottom_corner_radius="2dip"
             app:sriv_border_width="0dip"
-            app:sriv_oval="false" />
+            app:sriv_oval="false" />-->
 
         <TextView
             android:layout_width="fill_parent"
@@ -42,7 +44,8 @@
             android:id="@+id/txtTotalDistance"
             android:gravity="center_vertical"
             android:textSize="20sp"
-            android:layout_below="@id/card_image_slider"
+            android:layout_below="@id/txtPathDescription"
+            android:layout_marginTop="36dp"
             android:paddingBottom="10dp"
             android:paddingLeft="10dp"
             android:paddingRight="10dp"
