@@ -3,7 +3,6 @@ package it.unitn.roadbuddy.app;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.FragmentTransaction;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 
 public class NavigationInfoFragment extends SliderContentFragment implements AdapterView.OnItemClickListener {
 
@@ -66,6 +64,14 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
             FragmentTransaction transaction = getFragmentManager( ).beginTransaction( );
             transaction.add( R.id.frmPathInfo, tripPath.getInfoFragment( ) );
             transaction.commit( );
+
+            frmPathInfo.setOnClickListener( new View.OnClickListener( ) {
+                @Override
+                public void onClick( View view ) {
+                    if ( listener != null )
+                        listener.onPathSelected( );
+                }
+            } );
         }
 
         return view;
@@ -112,6 +118,8 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
 
     public interface ParticipantInteractionListener {
         void onParticipantSelected( User participant );
+
+        void onPathSelected( );
     }
 
     class AdaptedUser implements DynamicViewArrayAdapter.Listable {
@@ -133,12 +141,22 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
         public View getView( int position, View convertView, ViewGroup parent ) {
             TextView txt = new TextView( getContext( ) );
             txt.setTextColor( Color.WHITE );
-            switch (position){
-                case 1:txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar1, 0, 0, 0 ); break;
-                case 2:txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar2, 0, 0, 0 );break;
-                case 3:txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar3, 0, 0, 0 );break;
-                case 4:txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar4, 0, 0, 0 );break;
-                default: txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar4, 0, 0, 0 );break;
+            switch ( position ) {
+                case 1:
+                    txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar1, 0, 0, 0 );
+                    break;
+                case 2:
+                    txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar2, 0, 0, 0 );
+                    break;
+                case 3:
+                    txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar3, 0, 0, 0 );
+                    break;
+                case 4:
+                    txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar4, 0, 0, 0 );
+                    break;
+                default:
+                    txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar4, 0, 0, 0 );
+                    break;
             }
             txt.setCompoundDrawablePadding( 56 );
             float density = getContext( ).getResources( ).getDisplayMetrics( ).density;

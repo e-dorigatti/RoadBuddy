@@ -71,6 +71,8 @@ public class NavigationState implements NFAState,
     List<User> buddies = new ArrayList<>( );
     List<DrawableUser> drawableUsers = new ArrayList<>( );
     DrawableUser selectedUser;
+    User currentUser;
+
     /**
      * used when we are invited to a trip
      * <p/>
@@ -101,6 +103,7 @@ public class NavigationState implements NFAState,
         this.fragment = fragment;
         this.nfa = nfa;
         this.googleMap = fragment.googleMap;
+        this.currentUser = fragment.getCurrentUser( );
 
         fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
         fragment.clearMap( );
@@ -269,6 +272,37 @@ public class NavigationState implements NFAState,
     public void onParticipantSelected( User participant ) {
         if ( participant != null && participant.getLastPosition( ) != null )
             moveCameraTo( participant.getLastPosition( ), 15 );
+    }
+
+    @Override
+    public void onPathSelected( ) {
+        if ( navigationPathDrawable != null ) {
+            // zoom to the waypoint nearest to the user position
+
+            LatLng userPosition = currentUser.getLastPosition( );
+            LatLng zoomTo = null;
+
+            if ( userPosition != null ) {
+                LatLng nearest = null;
+                double nearestDist = 0.0;
+
+                for ( List<LatLng> leg : navigationPathDrawable.getPath( ).getLegs( ) ) {
+                    LatLng p = leg.get( 0 );
+                    double dist = Math.abs( userPosition.latitude - p.latitude ) +
+                            Math.abs( userPosition.longitude - p.longitude );
+
+                    if ( nearest == null || dist < nearestDist ) {
+                        nearest = p;
+                        nearestDist = dist;
+                    }
+                }
+
+                zoomTo = nearest;
+            }
+
+            zoomTo = zoomTo != null ? zoomTo : navigationPathDrawable.getPath( ).getLegs( ).get( 0 ).get( 0 );
+            moveCameraTo( zoomTo, 12 );
+        }
     }
 
     void moveCameraTo( LatLng point, float zoom ) {
@@ -445,6 +479,7 @@ public class NavigationState implements NFAState,
                 drawable.DrawToMap( fragment.getContext( ), googleMap );
                 drawableUsers.add( drawable );
             }
+            else currentUser = u;
         }
     }
 
