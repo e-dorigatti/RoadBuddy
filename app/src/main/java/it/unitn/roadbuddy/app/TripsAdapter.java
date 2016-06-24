@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -19,7 +20,8 @@ public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHold
     private int randomNum;
 
     public TripsAdapter( List<Path> pathList ) {
-        this.pathList = pathList;
+
+        this.pathList = new ArrayList<>(pathList);
     }
 
     @Override
@@ -83,6 +85,58 @@ public class TripsAdapter extends RecyclerView.Adapter<TripsAdapter.PathViewHold
 
         return pathList.get(position);
     }
+
+    public Path removeItem(int position) {
+        final Path path = pathList.remove(position);
+        notifyItemRemoved(position);
+        return path;
+    }
+
+    public void addItem(int position, Path path) {
+        pathList.add(position, path);
+        notifyItemInserted(position);
+    }
+
+    public void moveItem(int fromPosition, int toPosition) {
+        final Path path = pathList.remove(fromPosition);
+        pathList.add( toPosition, path );
+        notifyItemMoved( fromPosition, toPosition );
+    }
+
+    public void animateTo(List<Path> paths) {
+        applyAndAnimateRemovals(paths);
+        applyAndAnimateAdditions(paths);
+        applyAndAnimateMovedItems(paths);
+    }
+
+    private void applyAndAnimateRemovals(List<Path> newPaths) {
+        for (int i = pathList.size() - 1; i >= 0; i--) {
+            final Path path = pathList.get(i);
+            if (!newPaths.contains(path)) {
+                removeItem(i);
+            }
+        }
+    }
+
+    private void applyAndAnimateAdditions(List<Path> newPaths) {
+        for (int i = 0, count = newPaths.size(); i < count; i++) {
+            final Path path = newPaths.get(i);
+            if (!pathList.contains(path)) {
+                addItem(i, path);
+            }
+        }
+    }
+
+    private void applyAndAnimateMovedItems(List<Path> newPaths) {
+        for (int toPosition = newPaths.size() - 1; toPosition >= 0; toPosition--) {
+            final Path path = newPaths.get(toPosition);
+            final int fromPosition = pathList.indexOf(path);
+            if (fromPosition >= 0 && fromPosition != toPosition) {
+                moveItem(fromPosition, toPosition);
+            }
+        }
+    }
+
     private static int getRandomNumberInRange(int min, int max) {
 
         if (min >= max) {

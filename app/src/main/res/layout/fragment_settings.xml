@@ -1,36 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:tools="http://schemas.android.com/tools"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              tools:context="it.unitn.roadbuddy.app.SettingsFragment" android:orientation="vertical">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:facebook="http://schemas.android.com/apk/res-auto"
+    tools:context="it.unitn.roadbuddy.app.SettingsFragment"
+    android:orientation="vertical"
+    android:isScrollContainer="true"
+    >
+
+    <com.facebook.login.widget.ProfilePictureView
+        android:id="@+id/friendProfilePicture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_gravity="center"
+        android:layout_marginTop="8dp"
+        />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/facebook_name"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:textSize="20sp"
+        android:layout_gravity="center"
+        android:textColor="@color/black"/>
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/user_description"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="30dp"
+        android:layout_marginBottom="16dp"
+        android:hint="@string/description_user"
+        android:textSize="16sp"
+        android:background="@android:color/transparent"
+        android:layout_gravity="left"
+        android:textColor="@color/grey_700"
+
+        />
 
     <FrameLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAlignment="center"
             android:id="@+id/settings"
             android:layout_marginBottom="5dp"
-            android:layout_gravity="center"
+            android:layout_gravity="left"
             >
     </FrameLayout>
+
+
 
     <com.facebook.login.widget.LoginButton
             android:id="@+id/login_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/settings"
-            android:layout_marginTop="5dp"
-            android:layout_marginBottom="5dp"
-            android:layout_gravity="center"/>
+            android:layout_marginTop="150dp"
+            android:layout_gravity="center" />
 
-    <Button
+
+    <!--<Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Logout"
             android:id="@+id/btnLogout"
             android:layout_marginBottom="5dp"
             android:layout_gravity="center"
-            />
+            />-->
 
 </LinearLayout>

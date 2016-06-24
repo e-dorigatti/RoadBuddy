@@ -26,6 +26,7 @@ import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import it.unitn.roadbuddy.app.backend.BackendException;
@@ -33,7 +34,9 @@ import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.Path;
 
 
-public class TripsFragment extends Fragment {
+public class TripsFragment extends Fragment implements SearchView.OnQueryTextListener  {
+
+    final static String PATHS_LIST_KEY = "path-list";
 
     MainActivity mPActivity;
     ViewPager mPager;
@@ -41,6 +44,9 @@ public class TripsFragment extends Fragment {
     CancellableAsyncTaskManager taskManager;
     EmptyRecyclerView mRecyclerView;
     TripsAdapter mAdapter;
+
+    Bundle savedInstanceState;
+
 
     RecyclerView.LayoutManager mLayoutManager;
     View emptyView;
@@ -58,6 +64,8 @@ public class TripsFragment extends Fragment {
 
     private SearchView searchView;
     public static final String INTENT_SELECTED_TRIP = "select-trip";
+
+    private List<Path> resList;
 
     public TripsFragment( ) {
         // Required empty public constructor
@@ -93,15 +101,19 @@ public class TripsFragment extends Fragment {
                               Bundle savedInstanceState ) {
         // Inflate the layout for this fragment
         tripsView = inflater.inflate( R.layout.fragment_trips, container, false );
+
+        final SearchView searchView = (SearchView) tripsView.findViewById(R.id.action_search);
+        searchView.setOnQueryTextListener(this);
+
         return tripsView;
 
     }
 
     @Override
     public void onViewCreated( View view, @Nullable Bundle savedInstanceState ) {
-        super.onViewCreated( view, savedInstanceState );
-        Log.v("MY_STATE_LOG", "trips fragment creato");
 
+        super.onViewCreated( view, savedInstanceState );
+        this.savedInstanceState = savedInstanceState;
         //Setting the recycler view
         this.mPager = ( ViewPager ) getActivity( ).findViewById( R.id.pager );
         this.mRecyclerView = ( EmptyRecyclerView ) view.findViewById( R.id.recycler_view );
@@ -142,6 +154,8 @@ public class TripsFragment extends Fragment {
         latLng = new LatLng(latitude, longitude);
 
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, latLng);
+
+
     }
 
     @Override
@@ -236,7 +250,8 @@ public class TripsFragment extends Fragment {
         protected void onPostExecute( List<Path> res ) {
 
             //sending data to the recycler view
-            mAdapter = new TripsAdapter( res );
+            resList = res;
+            mAdapter = new TripsAdapter( resList );
             mRecyclerView.setAdapter( mAdapter );
 
             mRecyclerView.addOnItemTouchListener(new RecyclerTouchListener(getContext(), mRecyclerView, new ClickListener() {
@@ -263,6 +278,60 @@ public class TripsFragment extends Fragment {
             }));
             super.onPostExecute( res );
         }
+    }
+
+    @Override
+    public void onSaveInstanceState( Bundle outState ) {
+        super.onSaveInstanceState( outState );
+
+        ArrayList<Path> paths = new ArrayList<>( );
+        for ( Path p : resList )
+            paths.add( p);
+        outState.putParcelableArrayList( PATHS_LIST_KEY, paths );
+
+    }
+
+
+    @Override
+    public boolean onQueryTextChange(String query) {
+        if(savedInstanceState != null) {
+            Log.v("BUNDLE",savedInstanceState.toString());
+            resList = savedInstanceState.getParcelableArrayList(PATHS_LIST_KEY);
+            savedInstanceState = null;
+
+        }
+        final List<Path> filteredPathList = filter(resList, query);
+        mAdapter.animateTo(filteredPathList);
+        mRecyclerView.scrollToPosition(0);
+        return true;
+    }
+
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+        if(savedInstanceState != null) {
+            resList = savedInstanceState.getParcelableArrayList(PATHS_LIST_KEY);
+            savedInstanceState = null;
+        }
+        final List<Path> filteredPathList = filter(resList, query);
+        mAdapter.animateTo(filteredPathList);
+        mRecyclerView.scrollToPosition(0);
+        return true;
+    }
+
+    private List<Path> filter(List<Path> paths, String query) {
+        query = query.toLowerCase();
+
+        final List<Path> filteredPathList = new ArrayList<>();
+            for (Path path : paths) {
+                final String text = path.getDescription().toLowerCase();
+                if (text.contains(query)) {
+                    filteredPathList.add(path);
+                }
+            }
+
+        return filteredPathList;
+
+
     }
 
     public interface ClickListener {

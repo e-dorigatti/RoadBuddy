@@ -70,4 +70,7 @@
     <string name="search_hint">Search Trips</string>
     <string name="search_label">Search</string>
     <string name="loading_content">Loading Content</string>
+
+    <string name="description_user">Describe yourself</string>
+    "
 </resources>

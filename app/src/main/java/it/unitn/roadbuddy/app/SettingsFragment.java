@@ -10,9 +10,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
+
 import com.facebook.CallbackManager;
 import com.facebook.login.widget.LoginButton;
+import com.facebook.login.widget.ProfilePictureView;
 
 import java.util.Arrays;
 
@@ -47,16 +50,25 @@ public class SettingsFragment
         FrameLayout settingsFrame = ( FrameLayout ) mainLayout.findViewById( R.id.settings );
         settingsFrame.addView( settings );
 
+        TextView profileName = (TextView) mainLayout.findViewById(R.id.facebook_name);
+        ProfilePictureView profilePictureView;
+        profilePictureView = (ProfilePictureView) mainLayout.findViewById(R.id.friendProfilePicture);
+        com.facebook.Profile profile = com.facebook.Profile.getCurrentProfile();
+        profilePictureView.setCropped(true);
+        if(profile != null) {
+            profilePictureView.setProfileId(profile.getId());
+            profileName.setText(profile.getName());
+        }
         LoginButton loginButton = ( LoginButton ) mainLayout.findViewById( R.id.login_button );
         loginButton.setFragment( this );
         loginButton.setReadPermissions( Arrays.asList( "public_profile", "email" ) );
 
-        mainLayout.findViewById( R.id.btnLogout ).setOnClickListener( new View.OnClickListener( ) {
+        /*mainLayout.findViewById( R.id.btnLogout ).setOnClickListener( new View.OnClickListener( ) {
             @Override
             public void onClick( View view ) {
                 logout( );
             }
-        } );
+        } );*/
 
         return mainLayout;
     }
