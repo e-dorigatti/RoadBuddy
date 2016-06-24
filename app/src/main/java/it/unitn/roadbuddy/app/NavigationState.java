@@ -233,6 +233,13 @@ public class NavigationState implements NFAState,
 
             fragment.removeDrawable( fragment.selectedDrawable );
             fragment.setSelectedDrawable( navigationPathDrawable );
+        }
+
+        if ( fragment.sliderLayout.getFragment( ) != infoFragment ) {
+            /**
+             * But if the selected path was the same of the current trip
+             * we should only restore the info fragment
+             */
 
             fragment.sliderLayout.setFragment( infoFragment );
             fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
