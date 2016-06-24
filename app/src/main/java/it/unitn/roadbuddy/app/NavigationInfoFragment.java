@@ -133,17 +133,13 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
         public View getView( int position, View convertView, ViewGroup parent ) {
             TextView txt = new TextView( getContext( ) );
             txt.setTextColor( Color.WHITE );
-            Random r = new Random();
-            int randomAvatar = r.nextInt(5 - 1) + 1;
-            Log.e("random", ""+randomAvatar);
-            switch (randomAvatar){
+            switch (position){
                 case 1:txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar1, 0, 0, 0 ); break;
                 case 2:txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar2, 0, 0, 0 );break;
                 case 3:txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar3, 0, 0, 0 );break;
                 case 4:txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar4, 0, 0, 0 );break;
                 default: txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar4, 0, 0, 0 );break;
             }
-
             txt.setCompoundDrawablePadding( 56 );
             float density = getContext( ).getResources( ).getDisplayMetrics( ).density;
             int h = ( int ) ( 68 * density );
