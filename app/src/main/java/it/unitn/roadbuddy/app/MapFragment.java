@@ -282,7 +282,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     public void RefreshMapContent( ) {
         Animation animRotate = AnimationUtils.loadAnimation(getContext(),R.anim.rotate);
         floatingActionMenu = (FloatingActionMenu) getView().findViewById(R.id.fab);
-        floatingActionMenu.getMenuIconView().startAnimation(animRotate);
+        if ( floatingActionMenu != null ) {
+            floatingActionMenu.getMenuIconView().startAnimation(animRotate);
+        }
         // run async task
         LatLngBounds bounds = googleMap.getProjection( ).getVisibleRegion( ).latLngBounds;
         taskManager.startRunningTask( new RefreshMapAsync( getContext( ) ), true, bounds );
