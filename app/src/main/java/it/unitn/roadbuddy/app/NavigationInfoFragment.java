@@ -1,29 +1,26 @@
 package it.unitn.roadbuddy.app;
 
 import android.graphics.Color;
+import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentTransaction;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.FrameLayout;
-import android.widget.ListView;
-import android.widget.TextView;
+import android.widget.*;
 import com.google.android.gms.maps.model.LatLng;
+import it.unitn.roadbuddy.app.backend.models.Notification;
 import it.unitn.roadbuddy.app.backend.models.Path;
 import it.unitn.roadbuddy.app.backend.models.User;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
-public class NavigationInfoFragment extends SliderContentFragment implements AdapterView.OnItemClickListener {
+public class NavigationInfoFragment extends SliderContentFragment
+        implements AdapterView.OnItemClickListener {
 
     ParticipantInteractionListener listener;
-    ListView lstBuddies;
     DynamicViewArrayAdapter adapter;
     List<DynamicViewArrayAdapter.Listable> adaptedBuddies = new ArrayList<>( );
 
@@ -52,11 +49,24 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
 
         View view = super.onCreateView( inflater, container, savedInstanceState );
 
-        lstBuddies = ( ListView ) view.findViewById( R.id.lstBuddies );
+        ListView lstBuddies = ( ListView ) view.findViewById( R.id.lstBuddies );
         if ( lstBuddies != null ) {
             adapter = new DynamicViewArrayAdapter( getContext( ), adaptedBuddies );
             lstBuddies.setAdapter( adapter );
             lstBuddies.setOnItemClickListener( this );
+        }
+
+        FloatingActionButton btnSendPing = ( FloatingActionButton ) view.findViewById( R.id.btnSendPing );
+        if ( btnSendPing != null ) {
+            btnSendPing.setOnClickListener( new View.OnClickListener( ) {
+                @Override
+                public void onClick( View view ) {
+                    if ( listener != null ) {
+                        listener.onSendPing( );
+                        Toast.makeText( getContext( ), "Sent!", Toast.LENGTH_SHORT ).show( );
+                    }
+                }
+            } );
         }
 
         FrameLayout frmPathInfo = ( FrameLayout ) view.findViewById( R.id.frmPathInfo );
@@ -78,23 +88,54 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
     }
 
     public void setBuddies( List<User> buddies ) {
+        Map<Integer, Integer> badges = new HashMap<>( );
+        for ( DynamicViewArrayAdapter.Listable listable : adaptedBuddies ) {
+            AdaptedUser adapted = ( AdaptedUser ) listable;
+            badges.put( adapted.getUser( ).getId( ), adapted.getBadgeType( ) );
+        }
+
         adaptedBuddies.clear( );
         for ( User u : buddies ) {
             if ( u.getId( ) == currentUserId )
                 currentUserPosition = u.getLastPosition( );
 
-            adaptedBuddies.add( new AdaptedUser( u ) );
+            AdaptedUser adaptedUser = new AdaptedUser( u );
+            adaptedBuddies.add( adaptedUser );
+            Integer badge = badges.get( u.getId( ) );
+            if ( badge != null ) {
+                adaptedUser.setBadgeType( badge );
+            }
         }
         Collections.sort( adaptedBuddies, new AdapterUserComparator( ) );
         adapter.notifyDataSetChanged( );
+    }
+
+    public void showNotifications( List<Notification> notifications ) {
+        if ( notifications.size( ) == 0 )
+            return;
+
+        Map<Integer, AdaptedUser> shownUsers = new HashMap<>( );
+        for ( DynamicViewArrayAdapter.Listable listable : adaptedBuddies ) {
+            AdaptedUser adapted = ( AdaptedUser ) listable;
+            shownUsers.put( adapted.getUser( ).getId( ), adapted );
+        }
+
+        for ( Notification not : notifications ) {
+            AdaptedUser adaptedSender = shownUsers.get( not.getSender( ).getId( ) );
+            if ( adaptedSender != null ) {
+                adaptedSender.setBadgeType( not.getType( ) );
+            }
+        }
     }
 
     @Override
     public void onItemClick( AdapterView<?> adapterView, View view, int position, long id ) {
         if ( listener != null ) {
             AdaptedUser selected = ( AdaptedUser ) adaptedBuddies.get( position );
+
             listener.onParticipantSelected( selected.getUser( ) );
             setSelectedUser( selected.getUser( ) );
+            selected.setBadgeType( 0 );
         }
     }
 
@@ -120,13 +161,22 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
         void onParticipantSelected( User participant );
 
         void onPathSelected( );
+
+        void onSendPing( );
     }
 
     class AdaptedUser implements DynamicViewArrayAdapter.Listable {
 
+        private static final int BLINK_DELAY = 500;
+
         Double distanceFromUser = null;
         User user;
         boolean selected;
+        int badge = 0;
+
+        TextView userInfoView;
+        AnimationDrawable blinkAnimation;
+        int avatar;
 
         public AdaptedUser( User user ) {
             this.user = user;
@@ -137,52 +187,104 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
             this.selected = selected;
         }
 
-        @Override
-        public View getView( int position, View convertView, ViewGroup parent ) {
-            TextView txt = new TextView( getContext( ) );
-            txt.setTextColor( Color.WHITE );
-            switch ( position ) {
-                case 1:
-                    txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar1, 0, 0, 0 );
+        public int getBadgeType( ) {
+            return badge;
+        }
+
+        public void setBadgeType( int type ) {
+            badge = type;
+            if ( type <= 0 ) {
+                if ( blinkAnimation != null )
+                    blinkAnimation.stop( );
+            }
+            else {
+                setupAnimation( );
+                if ( blinkAnimation != null ) {
+                    userInfoView.setCompoundDrawablesWithIntrinsicBounds(
+                            blinkAnimation, null, null, null
+                    );
+                    blinkAnimation.start( );
+                }
+            }
+
+        }
+
+        void setupAnimation( ) {
+            int drawable;
+            switch ( badge ) {
+                case Notification.NOTIFICATION_PING:
+                    drawable = R.drawable.ic_warning_white_24dp;
                     break;
-                case 2:
-                    txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar2, 0, 0, 0 );
-                    break;
-                case 3:
-                    txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar3, 0, 0, 0 );
-                    break;
-                case 4:
-                    txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar4, 0, 0, 0 );
-                    break;
+
                 default:
-                    txt.setCompoundDrawablesWithIntrinsicBounds( R.mipmap.ic_avatar4, 0, 0, 0 );
+                    drawable = 0;
                     break;
             }
-            txt.setCompoundDrawablePadding( 56 );
+
+            if ( userInfoView != null && drawable > 0 ) {
+                blinkAnimation = new AnimationDrawable( );
+                blinkAnimation.addFrame( getResources( ).getDrawable( avatar ), BLINK_DELAY );
+                blinkAnimation.addFrame( getResources( ).getDrawable( drawable ), BLINK_DELAY );
+                blinkAnimation.setOneShot( false );
+            }
+            else blinkAnimation = null;
+        }
+
+        @Override
+        public View getView( int position, View convertView, ViewGroup parent ) {
+            userInfoView = new TextView( getContext( ) );
+            userInfoView.setTextColor( Color.WHITE );
+            switch ( position ) {
+                case 0:
+                    avatar = R.mipmap.ic_avatar1;
+                    break;
+                case 1:
+                    avatar = R.mipmap.ic_avatar2;
+                    break;
+                case 2:
+                    avatar = R.mipmap.ic_avatar3;
+                    break;
+                default:
+                    avatar = R.mipmap.ic_avatar4;
+                    break;
+            }
+
+            userInfoView.setCompoundDrawablePadding( 56 );
+
+            setupAnimation( );
+            if ( blinkAnimation != null ) {
+                userInfoView.setCompoundDrawablesWithIntrinsicBounds(
+                        blinkAnimation, null, null, null
+                );
+                blinkAnimation.start( );
+            }
+            else {
+                userInfoView.setCompoundDrawablesWithIntrinsicBounds( avatar, 0, 0, 0 );
+            }
+
             float density = getContext( ).getResources( ).getDisplayMetrics( ).density;
-            int h = ( int ) ( 68 * density );
-            txt.setHeight( h );
-            txt.setWidth( ViewGroup.LayoutParams.MATCH_PARENT );
-            txt.setPadding( 16, 8, 16, 0 );
-            txt.setGravity( Gravity.CENTER_VERTICAL );
+            int height = ( int ) ( 68 * density );
+            userInfoView.setLayoutParams( new TableLayout.LayoutParams( ViewGroup.LayoutParams.FILL_PARENT, height, 1 ) );
+            userInfoView.setPadding( 16, 8, 16, 0 );
+            userInfoView.setGravity( Gravity.CENTER_VERTICAL );
 
             if ( selected )
-                txt.setTextColor( Color.RED );
+                userInfoView.setTextColor( Color.RED );
 
             if ( user.getId( ) == currentUserId ) {
                 String fmt = getString( R.string.navigation_info_you );
-                txt.setText( String.format( fmt, user.getUserName( ) ) );
+                userInfoView.setText( String.format( fmt, user.getUserName( ) ) );
             }
             else {
                 Double dist = getDistanceFromCurrentUser( );
                 String fmt = getString( R.string.navigation_info_buddy );
-                txt.setText( String.format(
+                userInfoView.setText( String.format(
                         fmt, user.getUserName( ),
                         dist != null ? Path.formatDistance( dist.intValue( ) ) : "???"
                 ) );
             }
 
-            return txt;
+            return userInfoView;
         }
 
         public User getUser( ) {
@@ -239,7 +341,6 @@ public class NavigationInfoFragment extends SliderContentFragment implements Ada
                 return -1;
             else
                 return -Double.compare( d1, d2 );
-
         }
     }
 }

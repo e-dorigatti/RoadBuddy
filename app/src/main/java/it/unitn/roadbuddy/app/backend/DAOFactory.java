@@ -45,4 +45,13 @@ public class DAOFactory {
             throw new BackendException( exc.getMessage( ), exc );
         }
     }
+
+    public static NotificationDAO getNotificationDAO( ) throws BackendException {
+        try {
+            return PostgresNotificationDAO.getInstance( );
+        }
+        catch ( SQLException exc ) {
+            throw new BackendException( exc.getMessage( ), exc );
+        }
+    }
 }

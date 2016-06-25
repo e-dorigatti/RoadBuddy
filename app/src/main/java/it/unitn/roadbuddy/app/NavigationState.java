@@ -5,8 +5,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Parcelable;
+import android.support.v4.os.ResultReceiver;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
@@ -22,6 +22,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
+import it.unitn.roadbuddy.app.backend.models.Notification;
 import it.unitn.roadbuddy.app.backend.models.Path;
 import it.unitn.roadbuddy.app.backend.models.Trip;
 import it.unitn.roadbuddy.app.backend.models.User;
@@ -42,7 +43,8 @@ public class NavigationState implements NFAState,
             INVITATION_TRIP_KEY = "invitation-trip",
             INVITER_NAME_KEY = "inviter-name",
             UI_STATE_KEY = "interface-state",
-            INVITED_BUDDY_KEY = "invited-buddy";
+            INVITED_BUDDY_KEY = "invited-buddy",
+            RECEIVER_KEY = "receiver";
 
     public static final int
             STATE_INITIAL = 0,
@@ -72,6 +74,7 @@ public class NavigationState implements NFAState,
     List<DrawableUser> drawableUsers = new ArrayList<>( );
     DrawableUser selectedUser;
     User currentUser;
+    NavigationUpdatesReceiver updatesReceiver;
 
     /**
      * used when we are invited to a trip
@@ -84,7 +87,6 @@ public class NavigationState implements NFAState,
      */
     Integer invitationTrip;
     String inviterName;
-    RefreshBuddiesRunnable buddiesRefresh;
     NavigationInfoFragment infoFragment;
 
     String invitedBuddyName;
@@ -174,8 +176,8 @@ public class NavigationState implements NFAState,
 
     @Override
     public void onStateExit( NFA nfa, MapFragment fragment ) {
-        if ( buddiesRefresh != null ) {
-            buddiesRefresh.Stop( );
+        if ( updatesReceiver != null ) {
+            updatesReceiver.disable( );
         }
 
         googleMap.setOnMarkerClickListener( this );
@@ -200,6 +202,7 @@ public class NavigationState implements NFAState,
             currentInterfaceState = savedInstanceState.getInt( UI_STATE_KEY );
             inviterName = savedInstanceState.getString( INVITER_NAME_KEY );
             invitedBuddyName = savedInstanceState.getString( INVITED_BUDDY_KEY );
+            updatesReceiver = savedInstanceState.getParcelable( RECEIVER_KEY );
         }
     }
 
@@ -215,6 +218,7 @@ public class NavigationState implements NFAState,
         savedInstanceState.putInt( UI_STATE_KEY, currentInterfaceState );
         savedInstanceState.putString( INVITER_NAME_KEY, inviterName );
         savedInstanceState.putString( INVITED_BUDDY_KEY, invitedBuddyName );
+        savedInstanceState.putParcelable( RECEIVER_KEY, updatesReceiver );
     }
 
     @Override
@@ -303,6 +307,13 @@ public class NavigationState implements NFAState,
             zoomTo = zoomTo != null ? zoomTo : navigationPathDrawable.getPath( ).getLegs( ).get( 0 ).get( 0 );
             moveCameraTo( zoomTo, 12 );
         }
+    }
+
+    @Override
+    public void onSendPing( ) {
+        fragment.mainActivity.backgroundTasksHandler.post(
+                new SendPing( currentUser.getId( ), currentTrip.getId( ), Notification.NOTIFICATION_PING )
+        );
     }
 
     void moveCameraTo( LatLng point, float zoom ) {
@@ -433,7 +444,17 @@ public class NavigationState implements NFAState,
         infoFragment.setParticipantInteractionListener( this );
         fragment.sliderLayout.setFragment( infoFragment );
 
-        buddiesRefresh = new RefreshBuddiesRunnable( fragment.mainActivity.backgroundTasksHandler );
+        //buddiesRefresh = new RefreshBuddiesRunnable( fragment.mainActivity.backgroundTasksHandler );
+
+
+        if ( updatesReceiver == null )
+            updatesReceiver = new NavigationUpdatesReceiver( );
+        updatesReceiver.enable( );
+
+        NavigationService.startNavigation(
+                fragment.getContext( ), currentTrip.getId( ), currentUser.getId( ),
+                updatesReceiver
+        );
 
         currentInterfaceState = STATE_NAVIGATION;
     }
@@ -489,6 +510,13 @@ public class NavigationState implements NFAState,
                 drawableUsers.add( drawable );
             }
             else currentUser = u;
+        }
+    }
+
+    void showNotifications( List<Notification> notifications ) {
+        if ( infoFragment != null && notifications.size( ) > 0 ) {
+            infoFragment.showNotifications( notifications );
+            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.EXPANDED );
         }
     }
 
@@ -627,6 +655,8 @@ public class NavigationState implements NFAState,
         @Override
         protected void onPostExecute( Boolean res ) {
             super.onPostExecute( res );
+
+            NavigationService.stopNavigation( fragment.getContext( ) );
             fragment.removeDrawable( navigationPathDrawable );
             fragment.sliderLayout.setView( null );
             fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
@@ -687,51 +717,103 @@ public class NavigationState implements NFAState,
         }
     }
 
-    class RefreshBuddiesRunnable implements Runnable {
+    class SendPing implements Runnable {
 
-        public static final int REFRESH_INTERVAL = 15 * 1000;
+        int userId;
+        int tripId;
+        int type;
 
-        Handler handler;
-
-        public RefreshBuddiesRunnable( Handler handler ) {
-            this.handler = handler;
-
-            handler.post( this );
+        public SendPing( int userId, int tripId, int type ) {
+            this.userId = userId;
+            this.tripId = tripId;
+            this.type = type;
         }
 
         @Override
         public void run( ) {
             try {
-                final List<User> participants = DAOFactory.getUserDAO( ).getUsersOfTrip(
-                        currentTrip.getId( )
-                );
-
-                /**
-                 * By forcing the update to happen on the UI thread we are sure
-                 * to avoid concurrency issues and don't need to add explicit
-                 * synchronization to the rest of the code.
-                 */
-                Activity activity = fragment.getActivity( );
-
-                if ( activity != null ) {
-                    activity.runOnUiThread(
-                            new Runnable( ) {
-                                @Override
-                                public void run( ) {
-                                    updateBuddies( participants );
-                                }
-                            } );
-                }
+                DAOFactory.getNotificationDAO( ).sendPing( userId, tripId, type );
             }
             catch ( BackendException exc ) {
-                Log.e( getClass( ).getName( ), "while getting users of trip", exc );
+                Log.e( getClass( ).getName( ), "while sending ping", exc );
             }
+        }
+    }
 
-            handler.postDelayed( this, REFRESH_INTERVAL );
+    class NavigationUpdatesReceiver extends ResultReceiver {
+
+        private boolean enabled;
+
+
+        public NavigationUpdatesReceiver( ) {
+            super( fragment.mainActivity.backgroundTasksHandler );
         }
 
-        public void Stop( ) {
-            handler.removeCallbacks( this );
+        public void enable( ) {
+            enabled = true;
+        }
+
+        public void disable( ) {
+            enabled = false;
+        }
+
+        public boolean isEnabled( ) {
+            return enabled;
+        }
+
+        @Override
+        protected void onReceiveResult( int resultCode, Bundle resultData ) {
+            super.onReceiveResult( resultCode, resultData );
+
+            switch ( resultCode ) {
+                case NavigationService.PARTICIPANTS_DATA: {
+                    if ( isEnabled( ) ) {
+                        final ArrayList<User> participants = resultData.getParcelableArrayList(
+                                NavigationService.PARTICIPANTS_KEY
+                        );
+
+                        runOnUiThread(
+                                new Runnable( ) {
+                                    @Override
+                                    public void run( ) {
+                                        updateBuddies( participants );
+                                    }
+                                }
+                        );
+                    }
+                }
+
+                case NavigationService.NOTIFICATIONS_DATA: {
+                    if ( isEnabled( ) ) {
+                        final ArrayList<Notification> notifications = resultData.getParcelableArrayList(
+                                NavigationService.NOTIFICATIONS_KEY
+                        );
+
+                        if ( notifications != null ) {
+                            runOnUiThread( new Runnable( ) {
+                                @Override
+                                public void run( ) {
+                                    showNotifications( notifications );
+                                }
+                            } );
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * By forcing the update to happen on the UI thread we are sure
+         * to avoid concurrency issues and don't need to add explicit
+         * synchronization to the rest of the code.
+         * <p/>
+         * Also, we can freely update the UI :)
+         */
+        void runOnUiThread( Runnable r ) {
+            Activity activity = fragment.getActivity( );
+            if ( activity != null ) {
+                activity.runOnUiThread( r );
+            }
         }
     }
 }

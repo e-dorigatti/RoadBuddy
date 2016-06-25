@@ -5,7 +5,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,10 +23,6 @@ import com.facebook.appevents.AppEventsLogger;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.model.LatLng;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
@@ -37,9 +32,7 @@ import it.unitn.roadbuddy.app.backend.postgres.PostgresUtils;
 
 import java.sql.SQLException;
 
-public class MainActivity extends AppCompatActivity
-        implements GoogleApiClient.ConnectionCallbacks,
-                   LocationListener {
+public class MainActivity extends AppCompatActivity {
 
     public static final String
             INTENT_JOIN_TRIP = "join-trip",
@@ -54,7 +47,6 @@ public class MainActivity extends AppCompatActivity
     ViewPager mPager;
     PagerAdapter mAdapter;
 
-    GoogleApiClient googleApiClient;
     HandlerThread backgroundThread;
     Handler backgroundTasksHandler;
     CheckInvitesRunnable inviteRunnable;
@@ -122,11 +114,6 @@ public class MainActivity extends AppCompatActivity
             currentUserId = ( Integer ) savedInstanceState.getSerializable( CURRENT_USER_ID_KEY );
         }
 
-        googleApiClient = new GoogleApiClient.Builder( this )
-                .addConnectionCallbacks( this )
-                .addApi( LocationServices.API )
-                .build( );
-
         client = new GoogleApiClient.Builder( this ).addApi( AppIndex.API ).build( );
         Log.v( "MY_STATE_LOG", "main activity creato" );
     }
@@ -186,15 +173,6 @@ public class MainActivity extends AppCompatActivity
             locationPermissionEnabled = true;
         }
 
-        if ( locationPermissionEnabled ) {
-            googleApiClient.connect( );
-            /*
-            if ( mAdapter.getMapFragment( ) != null ) {
-                mAdapter.getMapFragment( ).onStart( );
-            }
-            */
-        }
-
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client.connect( );
@@ -237,13 +215,6 @@ public class MainActivity extends AppCompatActivity
         catch ( SQLException exc ) {
             Log.e( getClass( ).getName( ), "on destroy", exc );
         }
-        if ( locationPermissionEnabled && googleApiClient.isConnected( ) ) {
-            LocationServices.FusedLocationApi.removeLocationUpdates(
-                    googleApiClient, this
-            );
-
-            googleApiClient.disconnect( );
-        }
 
         backgroundThread.quit( );
 
@@ -275,7 +246,6 @@ public class MainActivity extends AppCompatActivity
                         && grantResults[ 0 ] == PackageManager.PERMISSION_GRANTED ) {
 
                     locationPermissionEnabled = true;
-                    googleApiClient.connect( );
 
                     mAdapter = new PagerAdapter( getSupportFragmentManager( ) );
                     mPager.setAdapter( mAdapter );
@@ -291,48 +261,6 @@ public class MainActivity extends AppCompatActivity
         }
 
     }
-
-    @Override
-    public void onConnected( Bundle connectionHint ) {
-        // called when the google api client has successfully connected to whatever
-
-        // ask for periodic location updates running the listener on the background worker
-        LocationRequest requestType = LocationRequest
-                .create( )
-                .setPriority( LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY )
-                .setInterval( 5 * 60 * 1000 )
-                .setFastestInterval( 15 * 1000 );
-
-        if ( ActivityCompat.checkSelfPermission( this, Manifest.permission.ACCESS_FINE_LOCATION )
-                == PackageManager.PERMISSION_GRANTED ) {
-            LocationServices.FusedLocationApi.requestLocationUpdates(
-                    googleApiClient, requestType,
-                    this,
-                    backgroundThread.getLooper( )
-            );
-        }
-    }
-
-    @Override
-    public void onConnectionSuspended( int n ) {
-
-    }
-
-    @Override
-    public void onLocationChanged( Location location ) {
-        // gets run in a background thread
-
-        try {
-            DAOFactory.getUserDAO( ).setCurrentLocation(
-                    currentUserId, new LatLng( location.getLatitude( ),
-                                               location.getLongitude( ) )
-            );
-        }
-        catch ( BackendException exc ) {
-            Log.e( getClass( ).getName( ), "while updating user position", exc );
-        }
-    }
-
 
     public void showChoosenPath( Path path ) {
         mPager.setCurrentItem( 0 );
