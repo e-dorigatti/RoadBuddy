@@ -106,9 +106,6 @@ public class NavigationState implements NFAState,
         this.googleMap = fragment.googleMap;
         this.currentUser = fragment.getCurrentUser( );
 
-        fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
-        fragment.clearMap( );
-
         googleMap.setOnMarkerClickListener( this );
         googleMap.setOnMapClickListener( this );
 
@@ -464,7 +461,7 @@ public class NavigationState implements NFAState,
         input.setInputType( InputType.TYPE_CLASS_TEXT );
         float density =  fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
         int padding = ( int ) ( 24 * density );
-        input.setPadding(padding, padding, padding, padding);
+        input.setPadding( padding, padding, padding, padding );
         builder.setView( input );
 
         builder.setPositiveButton(
@@ -572,6 +569,9 @@ public class NavigationState implements NFAState,
 
         @Override
         protected void onPreExecute( ) {
+            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+            fragment.clearMap( );
+            
             ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
             pbar.setIndeterminate( true );
             fragment.sliderLayout.setView( pbar );
@@ -676,6 +676,9 @@ public class NavigationState implements NFAState,
         @Override
         protected void onPreExecute( ) {
             currentInterfaceState = STATE_CREATING_TRIP;
+
+            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+            fragment.clearMap( );
 
             ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
             pbar.setIndeterminate( true );
