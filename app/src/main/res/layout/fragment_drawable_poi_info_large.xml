@@ -4,11 +4,16 @@
               android:layout_height="match_parent" android:id="@+id/lyBasicDrawableInfo">
 
     <TextView
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:gravity="center"
-            android:textAlignment="center"
-            android:text="Medium Text"
-            android:id="@+id/txtComment"/>
+        android:layout_width="match_parent"
+        android:layout_height="68dp"
+        android:id="@+id/txtComment"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:background="@color/indigo_500"
+        android:gravity="center_vertical"
+        android:focusable="true"
+        android:paddingStart="16dp"
+        android:paddingTop="0dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="0dp"
+        android:textColor="@android:color/white" />
 </LinearLayout>
