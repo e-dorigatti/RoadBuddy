@@ -330,6 +330,9 @@ public class NavigationState implements NFAState,
         builder.setTitle( R.string.navigation_join_confirm_title );
 
         final TextView input = new TextView( fragment.getActivity( ) );
+        float density =  fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
+        int padding = ( int ) ( 24 * density );
+        input.setPadding(padding, padding, padding, padding);
         input.setText( String.format(
                 fragment.getString( R.string.navigation_join_confirm_text ),
                 inviterName
@@ -370,6 +373,9 @@ public class NavigationState implements NFAState,
             builder.setTitle( "Did you know?" );
 
             final TextView input = new TextView( fragment.getActivity( ) );
+            float density =  fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
+            int padding = ( int ) ( 24 * density );
+            input.setPadding(padding, padding, padding, padding);
             input.setText( R.string.navigation_path_tip );
             input.setTextAlignment( View.TEXT_ALIGNMENT_CENTER );
             builder.setView( input );
@@ -461,6 +467,9 @@ public class NavigationState implements NFAState,
 
         final EditText input = new EditText( fragment.getActivity( ) );
         input.setInputType( InputType.TYPE_CLASS_TEXT );
+        float density =  fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
+        int padding = ( int ) ( 24 * density );
+        input.setPadding(padding, padding, padding, padding);
         builder.setView( input );
 
         builder.setPositiveButton(
