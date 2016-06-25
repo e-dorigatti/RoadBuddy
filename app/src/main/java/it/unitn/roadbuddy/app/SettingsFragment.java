@@ -51,6 +51,7 @@ public class SettingsFragment
         settingsFrame.addView( settings );
 
         TextView profileName = (TextView) mainLayout.findViewById(R.id.facebook_name);
+        TextView profileDetail = (TextView) mainLayout.findViewById(R.id.facebook_details);
         ProfilePictureView profilePictureView;
         profilePictureView = (ProfilePictureView) mainLayout.findViewById(R.id.friendProfilePicture);
         com.facebook.Profile profile = com.facebook.Profile.getCurrentProfile();
@@ -58,6 +59,7 @@ public class SettingsFragment
         if(profile != null) {
             profilePictureView.setProfileId(profile.getId());
             profileName.setText(profile.getName());
+            profileDetail.setText("Male, Age 22");
         }
         LoginButton loginButton = ( LoginButton ) mainLayout.findViewById( R.id.login_button );
         loginButton.setFragment( this );
