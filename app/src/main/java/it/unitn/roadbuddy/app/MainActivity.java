@@ -267,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
         MapFragment fragment = mAdapter.getMapFragment( );
 
         if ( fragment != null ) {
-            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+            fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
             fragment.showTrip( path );
         }
     }

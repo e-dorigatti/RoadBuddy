@@ -243,7 +243,7 @@ public class NavigationState implements NFAState,
              */
 
             fragment.sliderLayout.setFragment( infoFragment );
-            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+            fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
         }
     }
 
@@ -312,7 +312,7 @@ public class NavigationState implements NFAState,
 
     void moveCameraTo( LatLng point, float zoom ) {
         CameraUpdate anim = CameraUpdateFactory.newLatLngZoom( point, zoom );
-        fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+        fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
         googleMap.animateCamera( anim );
     }
 
@@ -507,7 +507,7 @@ public class NavigationState implements NFAState,
     void showNotifications( List<Notification> notifications ) {
         if ( infoFragment != null && notifications.size( ) > 0 ) {
             infoFragment.showNotifications( notifications );
-            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.EXPANDED );
+            fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.EXPANDED );
         }
     }
 
@@ -568,7 +568,7 @@ public class NavigationState implements NFAState,
 
         @Override
         protected void onPreExecute( ) {
-            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+            fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
 
             ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
             pbar.setIndeterminate( true );
@@ -652,7 +652,7 @@ public class NavigationState implements NFAState,
             NavigationService.stopNavigation( fragment.getContext( ) );
             fragment.removeDrawable( navigationPathDrawable );
             fragment.sliderLayout.setView( null );
-            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
+            fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
             nfa.Transition( new RestState( ), null );
         }
     }
@@ -675,7 +675,7 @@ public class NavigationState implements NFAState,
         protected void onPreExecute( ) {
             currentInterfaceState = STATE_CREATING_TRIP;
 
-            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+            fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
 
             ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
             pbar.setIndeterminate( true );
