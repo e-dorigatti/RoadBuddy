@@ -43,8 +43,7 @@ public class NavigationState implements NFAState,
             INVITATION_TRIP_KEY = "invitation-trip",
             INVITER_NAME_KEY = "inviter-name",
             UI_STATE_KEY = "interface-state",
-            INVITED_BUDDY_KEY = "invited-buddy",
-            RECEIVER_KEY = "receiver";
+            INVITED_BUDDY_KEY = "invited-buddy";
 
     public static final int
             STATE_INITIAL = 0,
@@ -202,7 +201,6 @@ public class NavigationState implements NFAState,
             currentInterfaceState = savedInstanceState.getInt( UI_STATE_KEY );
             inviterName = savedInstanceState.getString( INVITER_NAME_KEY );
             invitedBuddyName = savedInstanceState.getString( INVITED_BUDDY_KEY );
-            updatesReceiver = savedInstanceState.getParcelable( RECEIVER_KEY );
         }
     }
 
@@ -218,7 +216,6 @@ public class NavigationState implements NFAState,
         savedInstanceState.putInt( UI_STATE_KEY, currentInterfaceState );
         savedInstanceState.putString( INVITER_NAME_KEY, inviterName );
         savedInstanceState.putString( INVITED_BUDDY_KEY, invitedBuddyName );
-        savedInstanceState.putParcelable( RECEIVER_KEY, updatesReceiver );
     }
 
     @Override
@@ -446,9 +443,7 @@ public class NavigationState implements NFAState,
 
         //buddiesRefresh = new RefreshBuddiesRunnable( fragment.mainActivity.backgroundTasksHandler );
 
-
-        if ( updatesReceiver == null )
-            updatesReceiver = new NavigationUpdatesReceiver( );
+        updatesReceiver = new NavigationUpdatesReceiver( );
         updatesReceiver.enable( );
 
         NavigationService.startNavigation(
