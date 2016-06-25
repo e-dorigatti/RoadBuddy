@@ -1,36 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
     <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        >
+        android:layout_height="match_parent">
 
         <TextView
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:singleLine="true"
+            android:layout_width="wrap_content"
+            android:layout_height="68dp"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:id="@+id/txtPathDescription"
             android:background="@color/indigo_500"
-            android:paddingTop="18dp"
-            android:paddingBottom="20dp"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp"
-            android:textColor="@android:color/white"
-            android:gravity="center_vertical"/>
-
-        <TextView
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:id="@+id/txtTotalDistance"
+            android:scrollHorizontally="true"
             android:gravity="center_vertical"
-            android:textSize="18sp"
-            android:layout_below="@id/txtPathDescription"
-            android:layout_marginTop="36dp"
-            android:paddingBottom="10dp"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp"
-            />
+            android:marqueeRepeatLimit="marquee_forever"
+            android:focusable="true"
+            android:paddingStart="16dp"
+            android:paddingTop="0dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="0dp"
+            android:textColor="@android:color/white"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentStart="true" />
 
         <TextView
             android:layout_width="match_parent"
@@ -39,10 +28,24 @@
             android:id="@+id/txtTotalDuration"
             android:gravity="center_vertical"
             android:textSize="18sp"
-            android:layout_below="@id/txtTotalDistance"
+            android:layout_marginTop="20dp"
+            android:paddingStart="10dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="10dp"
             android:paddingBottom="10dp"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp"
-            />
+            android:layout_below="@+id/txtPathDescription"
+            android:layout_alignParentStart="true" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:id="@+id/txtTotalDistance"
+            android:gravity="center_vertical"
+            android:textSize="18sp"
+            android:layout_below="@id/txtTotalDuration"
+            android:paddingStart="10dp"
+            android:paddingTop="0dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="10dp"/>
     </RelativeLayout>

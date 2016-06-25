@@ -2,9 +2,12 @@ package it.unitn.roadbuddy.app;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -36,6 +39,7 @@ public class DrawablePathInfoFragment extends Fragment {
         TextView txtDistance = ( TextView ) mainLayout.findViewById( R.id.txtTotalDistance );
         TextView txtDescription = ( TextView ) mainLayout.findViewById( R.id.txtPathDescription );
 
+
         if ( drawablePath != null ) {
             txtDistance.setText(
                     String.format( getString( R.string.path_edit_total_distance ),
@@ -48,20 +52,9 @@ public class DrawablePathInfoFragment extends Fragment {
                     ) );
 
             txtDescription.setText( drawablePath.getPath( ).getDescription( ) );
-           /* switch (randomNum){
-                case 1:
-                    vImg.setImageResource(R.drawable.sample_background);
-                    break;
-                case 2:
-                    vImg.setImageResource(R.drawable.sample_background2);
-                    break;
-                case 3:
-                    vImg.setImageResource(R.drawable.sample_background3);
-                    break;
-                case 4:
-                    vImg.setImageResource(R.drawable.sample_background4);
-                    break;
-            }*/
+            txtDescription.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+            txtDescription.setSelected(true);
+            txtDescription.setSingleLine(true);
         }
 
         return mainLayout;
