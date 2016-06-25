@@ -213,8 +213,10 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
         super.onSaveInstanceState( outState );
 
         ArrayList<Path> paths = new ArrayList<>( );
-        for ( Path p : resList )
-            paths.add( p );
+        if ( resList != null ) {
+            for ( Path p : resList )
+                paths.add( p );
+        }
         outState.putParcelableArrayList( PATHS_LIST_KEY, paths );
     }
 
