@@ -1,8 +1,11 @@
 package it.unitn.roadbuddy.app;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.location.Criteria;
@@ -13,6 +16,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
+import android.support.v4.widget.CursorAdapter;
+import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
@@ -31,7 +36,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class TripsFragment extends Fragment implements SearchView.OnQueryTextListener {
+public class TripsFragment extends Fragment
+        implements SearchView.OnQueryTextListener, SearchView.OnSuggestionListener {
 
     public static final String
             INTENT_SELECTED_TRIP = "select-trip",
@@ -49,8 +55,9 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
     View tripsView;
     Location myLocation;
     GeoApiContext geoContext;
-
     Object lastQuery;
+    SearchHintRunnable searchHintRunnable;
+    SimpleCursorAdapter searchHintsAdapter;
 
     // The following are used for the shake detection
     private SensorManager mSensorManager;
@@ -79,15 +86,9 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
 
             @Override
             public void onShake( int count ) {
-                /*
-                 * The following method, "handleShakeEvent(count):" is a stub //
-				 * method you would use to setup whatever you want done once the
-				 * device has been shook.
-				 */
                 handleShakeEvent( );
             }
         } );
-
     }
 
     @Override
@@ -96,11 +97,18 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
         // Inflate the layout for this fragment
         tripsView = inflater.inflate( R.layout.fragment_trips, container, false );
 
-        final SearchView searchView = ( SearchView ) tripsView.findViewById( R.id.action_search );
+        searchHintsAdapter = new SimpleCursorAdapter(
+                getContext( ), R.layout.layout_path_search_hint,
+                null, SearchHintRunnable.COLUMNS,
+                new int[] { R.id.txtLocationName }, 0
+        );
+
+        searchView = ( SearchView ) tripsView.findViewById( R.id.action_search );
         searchView.setOnQueryTextListener( this );
+        searchView.setSuggestionsAdapter( searchHintsAdapter );
+        searchView.setOnSuggestionListener( this );
 
         return tripsView;
-
     }
 
     @Override
@@ -202,15 +210,19 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
 
     @Override
     public boolean onQueryTextChange( String query ) {
-
         lastQuery = query;
-        /*
-        final List<Path> filteredPathList = filter( resList, query );
-        if ( mAdapter != null ) {
-            mAdapter.animateTo( filteredPathList );
-            mRecyclerView.scrollToPosition( 0 );
+        if ( mPActivity.backgroundTasksHandler == null )
+            return false;
+
+        if ( searchHintRunnable != null ) {
+            mPActivity.backgroundTasksHandler.removeCallbacks( searchHintRunnable );
         }
-        */
+
+        searchHintRunnable = new SearchHintRunnable(
+                geoContext, query, searchHintsAdapter, mPActivity
+        );
+        mPActivity.backgroundTasksHandler.postDelayed( searchHintRunnable, 1000 );
+
         return true;
     }
 
@@ -219,29 +231,27 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
         lastQuery = query;
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );
 
-        /*
-        final List<Path> filteredPathList = filter( resList, query );
-        mAdapter.animateTo( filteredPathList );
-        mRecyclerView.scrollToPosition( 0 );
-        */
-
         return true;
     }
 
-    private List<Path> filter( List<Path> paths, String query ) {
-        query = query.toLowerCase( );
+    @Override
+    public boolean onSuggestionSelect( int position ) {
+        return acceptSearchHint( position );
+    }
 
-        final List<Path> filteredPathList = new ArrayList<>( );
-        for ( Path path : paths ) {
-            final String text = path.getDescription( ).toLowerCase( );
-            if ( text.contains( query ) ) {
-                filteredPathList.add( path );
-            }
-        }
+    @Override
+    public boolean onSuggestionClick( int position ) {
+        return acceptSearchHint( position );
+    }
 
-        return filteredPathList;
-
-
+    boolean acceptSearchHint( int position ) {
+        Cursor cursor = ( Cursor ) searchView.getSuggestionsAdapter( ).getItem( position );
+        lastQuery = new LatLng(
+                cursor.getDouble( cursor.getColumnIndex( SearchHintRunnable.COLUMN_LATITUDE ) ),
+                cursor.getDouble( cursor.getColumnIndex( SearchHintRunnable.COLUMN_LONGITUDE ) )
+        );
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );
+        return false;
     }
 
     public interface ClickListener {
@@ -372,5 +382,67 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
             } ) );
             super.onPostExecute( res );
         }
+    }
+}
+
+class SearchHintRunnable implements Runnable {
+
+    public static final String
+            COLUMN_ID = "_id",
+            COLUMN_NAME = "name",
+            COLUMN_LATITUDE = "latitude",
+            COLUMN_LONGITUDE = "longitude";
+
+    public static final String[] COLUMNS = new String[] {
+            COLUMN_NAME, COLUMN_LATITUDE, COLUMN_LONGITUDE, COLUMN_ID
+    };
+
+    String text;
+    CursorAdapter destAdapter;
+    GeoApiContext geoContext;
+    Activity activity;
+
+    public SearchHintRunnable( GeoApiContext geoContext,
+                               String text,
+                               CursorAdapter destAdapter,
+                               Activity activity ) {
+        this.text = text;
+        this.destAdapter = destAdapter;
+        this.geoContext = geoContext;
+        this.activity = activity;
+    }
+
+    @Override
+    public void run( ) {
+        GeocodingResult[] places;
+
+        try {
+            places = GeocodingApi.geocode(
+                    geoContext, text
+            ).await( );
+        }
+        catch ( Exception exc ) {
+            Log.e( getClass( ).getName( ), "while retrieving search hints", exc );
+            return;
+        }
+
+        final MatrixCursor cursor = new MatrixCursor( COLUMNS );
+        for ( int i = 0; i < places.length; i++ ) {
+            GeocodingResult res = places[ i ];
+
+            cursor.addRow( new Object[] {
+                    res.formattedAddress,
+                    res.geometry.location.lat,
+                    res.geometry.location.lng,
+                    Integer.toString( i )
+            } );
+        }
+
+        activity.runOnUiThread( new Runnable( ) {
+            @Override
+            public void run( ) {
+                destAdapter.changeCursor( cursor );
+            }
+        } );
     }
 }

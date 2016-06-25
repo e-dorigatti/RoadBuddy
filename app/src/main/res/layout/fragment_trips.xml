@@ -4,8 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-
-
     <!-- Replaced android.support.v7.widget.RecyclerView with the
      new EmptyRecyclerView -->
 
@@ -28,9 +26,8 @@
             android:layout_height="wrap_content"
             android:src="@drawable/road_buddy_loading"
             android:layout_gravity="center"/>
-
-
     </FrameLayout>
+
     <android.support.v7.widget.SearchView
         android:id="@id/action_search"
         android:layout_width="match_parent"
