@@ -13,7 +13,7 @@ public interface PathDAO {
 
     List<Path> getPathsInside( Context c, LatLngBounds bounds ) throws BackendException;
 
-    List<Path> getPathsFromPosition( Context c, LatLng pos ) throws BackendException;
+    List<Path> getPathsFromPosition( Context c, LatLng pos, long distanceMeters ) throws BackendException;
 
     Path getPath( int pathId ) throws BackendException;
 }

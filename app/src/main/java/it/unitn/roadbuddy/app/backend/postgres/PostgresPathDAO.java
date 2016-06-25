@@ -177,7 +177,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
     }
 
     @Override
-    public List<Path> getPathsFromPosition( Context c, LatLng pos ) throws BackendException {
+    public List<Path> getPathsFromPosition( Context c, LatLng pos, long distanceMeters ) throws BackendException {
         try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
             PreparedStatement stmt = conn.prepareStatement(
                     String.format(
@@ -187,9 +187,13 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
                             COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION, COLUMN_NAME_DESCRIPTION
                     )
             );
+
+            double earth_radius = 6371 * 1000; // metres
+            double distanceDegrees = 180.0 * distanceMeters / ( Math.PI * earth_radius );
+
             Point p = new Point( pos.latitude, pos.longitude );
             stmt.setObject( 1, new PGgeometry( p ) );
-            stmt.setFloat( 2, 3000f );
+            stmt.setDouble( 2, distanceDegrees );
 
             ResultSet res = stmt.executeQuery( );
             List<Path> paths = new ArrayList<>( );
@@ -214,7 +218,7 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
                     String.format(
                             "SELECT %s, %s, %s, %s, %s, %s FROM %s WHERE %s = ?",
                             COLUMN_NAME_ID, COLUMN_NAME_PATH, COLUMN_NAME_OWNER,
-                            COLUMN_NAME_DISTANCE,  COLUMN_NAME_DURATION,
+                            COLUMN_NAME_DISTANCE, COLUMN_NAME_DURATION,
                             COLUMN_NAME_DESCRIPTION, TABLE_NAME, COLUMN_NAME_ID
                     )
             );

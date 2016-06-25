@@ -20,6 +20,9 @@ import android.util.Log;
 import android.view.*;
 import android.widget.Toast;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.maps.GeoApiContext;
+import com.google.maps.GeocodingApi;
+import com.google.maps.model.GeocodingResult;
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.Path;
@@ -30,8 +33,11 @@ import java.util.List;
 
 public class TripsFragment extends Fragment implements SearchView.OnQueryTextListener {
 
-    public static final String INTENT_SELECTED_TRIP = "select-trip";
-    final static String PATHS_LIST_KEY = "path-list";
+    public static final String
+            INTENT_SELECTED_TRIP = "select-trip",
+            PATHS_LIST_KEY = "path-list",
+            LAST_QUERY = "last-query";
+
     MainActivity mPActivity;
     ViewPager mPager;
     PagerAdapter mPagerAdapter;
@@ -41,10 +47,11 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
     RecyclerView.LayoutManager mLayoutManager;
     View emptyView;
     View tripsView;
-    double latitude;
-    double longitude;
-    LatLng latLng;
     Location myLocation;
+    GeoApiContext geoContext;
+
+    Object lastQuery;
+
     // The following are used for the shake detection
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
@@ -60,6 +67,8 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
     public void onCreate( Bundle savedInstanceState ) {
         this.mPActivity = ( MainActivity ) getActivity( );
         super.onCreate( savedInstanceState );
+
+        geoContext = new GeoApiContext( ).setApiKey( BuildConfig.APIKEY );
 
         // ShakeDetector initialization
         mSensorManager = ( SensorManager ) getActivity( ).getSystemService( Context.SENSOR_SERVICE );
@@ -109,35 +118,27 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
         this.mLayoutManager = new LinearLayoutManager( getContext( ) );
         mRecyclerView.setLayoutManager( mLayoutManager );
 
-        latitude = 46.00;
-        longitude = 11.00;
+        double latitude = 46.00;
+        double longitude = 11.00;
 
         this.taskManager = new CancellableAsyncTaskManager( );
-        if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION ) == PackageManager.PERMISSION_GRANTED ) {
-            //Get Location Manager object for System Service LOCATION_SERVICE
+        if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION )
+                == PackageManager.PERMISSION_GRANTED ) {
+
             LocationManager locationManager = ( LocationManager ) getActivity( ).getSystemService( Context.LOCATION_SERVICE );
 
-            //Create a new Criteria to retrieve provider
             Criteria criteria = new Criteria( );
-
-            //Get the name of the best provider
             String provider = locationManager.getBestProvider( criteria, true );
-
-            //Get current user location
             myLocation = locationManager.getLastKnownLocation( provider );
 
             if ( myLocation != null ) {
-                //Get latitude
                 latitude = myLocation.getLatitude( );
-                //Get longitude
                 longitude = myLocation.getLongitude( );
             }
-
         }
-        //Create a LatLng object for the current user's location
-        latLng = new LatLng( latitude, longitude );
 
-        taskManager.startRunningTask( new getTrips( getContext( ) ), true, latLng );
+        lastQuery = new LatLng( latitude, longitude );
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );
 
         if ( savedInstanceState != null ) {
             resList = savedInstanceState.getParcelableArrayList( PATHS_LIST_KEY );
@@ -150,9 +151,9 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
     public void onPause( ) {
         // Add the following line to unregister the Sensor Manager onPause
         mSensorManager.unregisterListener( mShakeDetector );
+        taskManager.stopAllRunningTasks( );
+
         super.onPause( );
-        taskManager.stopRunningTasksOfType( getTrips.class );
-        updateList( );
     }
 
     @Override
@@ -168,35 +169,14 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
     @Override
     public void onResume( ) {
         super.onResume( );
-        updateList( );
-        // Add the following line to register the Session Manager Listener onResume
+
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );
         mSensorManager.registerListener( mShakeDetector, mAccelerometer, SensorManager.SENSOR_DELAY_UI );
-        Log.v( "MY_STATE_LOG", "contenuto ricaricato" );
-    }
-
-    @Override
-    public void onDestroy( ) {
-        super.onDestroy( );
-        Log.v( "MY_STATE_LOG", "trips fragment distrutto" );
-    }
-
-    public void updateList( ) {
-        LatLng myPos;
-        if ( myLocation != null ) {
-            //Get latitude
-            latitude = myLocation.getLatitude( );
-            //Get longitude
-            longitude = myLocation.getLongitude( );
-        }
-        //Create a LatLng object for the current user's location
-        myPos = new LatLng( latitude, longitude );
-        taskManager.startRunningTask( new getTrips( getContext( ) ), true, myPos );
     }
 
     public void handleShakeEvent( ) {
-        Log.v( "SHAKE", "Device shaked" );
         showToast( "Trip list updating.." );
-        updateList( );
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );
     }
 
     public void showToast( String text ) {
@@ -223,20 +203,28 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
     @Override
     public boolean onQueryTextChange( String query ) {
 
+        lastQuery = query;
+        /*
         final List<Path> filteredPathList = filter( resList, query );
         if ( mAdapter != null ) {
             mAdapter.animateTo( filteredPathList );
             mRecyclerView.scrollToPosition( 0 );
         }
-
+        */
         return true;
     }
 
     @Override
     public boolean onQueryTextSubmit( String query ) {
+        lastQuery = query;
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );
+
+        /*
         final List<Path> filteredPathList = filter( resList, query );
         mAdapter.animateTo( filteredPathList );
         mRecyclerView.scrollToPosition( 0 );
+        */
+
         return true;
     }
 
@@ -305,7 +293,7 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
         }
     }
 
-    class getTrips extends CancellableAsyncTask<LatLng, Integer, List<Path>> {
+    class getTrips extends CancellableAsyncTask<Object, Integer, List<Path>> {
 
         String exceptionMessage;
         Context context;
@@ -316,13 +304,31 @@ public class TripsFragment extends Fragment implements SearchView.OnQueryTextLis
         }
 
         @Override
-        protected List<Path> doInBackground( LatLng... pos ) {
+        protected List<Path> doInBackground( Object... pos ) {
+            LatLng center;
+            if ( pos[ 0 ] instanceof LatLng ) {
+                center = ( LatLng ) pos[ 0 ];
+            }
+            else if ( pos[ 0 ] instanceof String ) {
+                try {
+                    GeocodingResult[] places = GeocodingApi.geocode(
+                            geoContext, ( String ) pos[ 0 ]
+                    ).await( );
+
+                    center = new LatLng(
+                            places[ 0 ].geometry.location.lat,
+                            places[ 0 ].geometry.location.lng
+                    );
+                }
+                catch ( Exception exc ) {
+                    Log.e( getClass( ).getName( ), "while geocoding address", exc );
+                    return null;
+                }
+            }
+            else return null;
 
             try {
-                List<Path> paths = DAOFactory.getPathDAO( ).getPathsFromPosition(
-                        context, pos[ 0 ]
-                );
-                return paths;
+                return DAOFactory.getPathDAO( ).getPathsFromPosition( context, center, 50 * 1000 );
             }
             catch ( BackendException e ) {
                 Log.e( getClass( ).getName( ), "while getting trips from position", e );
