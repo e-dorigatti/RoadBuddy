@@ -324,9 +324,9 @@ public class NavigationState implements NFAState,
         builder.setTitle( R.string.navigation_join_confirm_title );
 
         final TextView input = new TextView( fragment.getActivity( ) );
-        float density =  fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
+        float density = fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
         int padding = ( int ) ( 24 * density );
-        input.setPadding(padding, padding, padding, padding);
+        input.setPadding( padding, padding, padding, padding );
         input.setText( String.format(
                 fragment.getString( R.string.navigation_join_confirm_text ),
                 inviterName
@@ -367,9 +367,9 @@ public class NavigationState implements NFAState,
             builder.setTitle( "Did you know?" );
 
             final TextView input = new TextView( fragment.getActivity( ) );
-            float density =  fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
+            float density = fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
             int padding = ( int ) ( 24 * density );
-            input.setPadding(padding, padding, padding, padding);
+            input.setPadding( padding, padding, padding, padding );
             input.setText( R.string.navigation_path_tip );
             input.setTextAlignment( View.TEXT_ALIGNMENT_CENTER );
             builder.setView( input );
@@ -427,6 +427,7 @@ public class NavigationState implements NFAState,
             }
         } );
 
+        fragment.clearMap( );
         if ( navigationPathDrawable != null ) {
             fragment.setSelectedDrawable( navigationPathDrawable );
         }
@@ -437,8 +438,6 @@ public class NavigationState implements NFAState,
         );
         infoFragment.setParticipantInteractionListener( this );
         fragment.sliderLayout.setFragment( infoFragment );
-
-        //buddiesRefresh = new RefreshBuddiesRunnable( fragment.mainActivity.backgroundTasksHandler );
 
         updatesReceiver = new NavigationUpdatesReceiver( );
         updatesReceiver.enable( );
@@ -459,7 +458,7 @@ public class NavigationState implements NFAState,
 
         final EditText input = new EditText( fragment.getActivity( ) );
         input.setInputType( InputType.TYPE_CLASS_TEXT );
-        float density =  fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
+        float density = fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
         int padding = ( int ) ( 24 * density );
         input.setPadding( padding, padding, padding, padding );
         builder.setView( input );
@@ -570,8 +569,7 @@ public class NavigationState implements NFAState,
         @Override
         protected void onPreExecute( ) {
             fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
-            fragment.clearMap( );
-            
+
             ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
             pbar.setIndeterminate( true );
             fragment.sliderLayout.setView( pbar );
@@ -678,7 +676,6 @@ public class NavigationState implements NFAState,
             currentInterfaceState = STATE_CREATING_TRIP;
 
             fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
-            fragment.clearMap( );
 
             ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
             pbar.setIndeterminate( true );
@@ -691,6 +688,10 @@ public class NavigationState implements NFAState,
         @Override
         protected Trip doInBackground( Void... voids ) {
             try {
+                if ( path != null ) {
+                    path = DAOFactory.getPathDAO( ).getPath( path.getId( ) );
+                }
+
                 return DAOFactory.getTripDAO( ).createTrip( path, currentUser );
             }
             catch ( BackendException exc ) {
@@ -708,6 +709,13 @@ public class NavigationState implements NFAState,
             }
             else {
                 currentTrip = res;
+                if ( path != null ) {
+                    // replace the drawed path with an higher resolution version
+                    fragment.removeDrawable( navigationPathDrawable );
+                    navigationPathDrawable = new DrawablePath( path );
+                    fragment.addDrawable( navigationPathDrawable );
+
+                }
                 startTrip( );
             }
 

@@ -208,6 +208,31 @@ public class PostgresPathDAO extends PostgresDAOBase implements PathDAO {
     }
 
     @Override
+    public Path getPath( int pathId ) throws BackendException {
+        try ( Connection conn = PostgresUtils.getInstance( ).getConnection( ) ) {
+            PreparedStatement stmt = conn.prepareStatement(
+                    String.format(
+                            "SELECT %s, %s, %s, %s, %s, %s FROM %s WHERE %s = ?",
+                            COLUMN_NAME_ID, COLUMN_NAME_PATH, COLUMN_NAME_OWNER,
+                            COLUMN_NAME_DISTANCE,  COLUMN_NAME_DURATION,
+                            COLUMN_NAME_DESCRIPTION, TABLE_NAME, COLUMN_NAME_ID
+                    )
+            );
+            stmt.setInt( 1, pathId );
+
+            ResultSet res = stmt.executeQuery( );
+            if ( res.next( ) ) {
+                return readPath( res, "" );
+            }
+            else return null;
+        }
+        catch ( SQLException exc ) {
+            Log.e( getClass( ).getName( ), "while retrieving paths", exc );
+            throw new BackendException( exc.getMessage( ), exc );
+        }
+    }
+
+    @Override
     protected int getSchemaVersion( ) {
         return 9;  // TODO [ed] increment at every schema change
     }
