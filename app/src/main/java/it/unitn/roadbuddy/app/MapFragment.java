@@ -499,24 +499,14 @@ class ViewContainer {
         }
     }
 
-    public void setView( View v ) {
-        removeView( );
-        if ( v != null ) {
-            currentView = v;
-
-            if ( v.getParent( ) == null )
-                container.addView( v );
-            else Utils.Assert( v.getParent( ) == container, false );
-
-            showParent( );
-        }
-        else hideParent( );
-    }
-
     public View setView( int resId ) {
         View v = inflater.inflate( resId, container, false );
         setView( v );
         return v;
+    }
+
+    public Fragment getFragment( ) {
+        return currentFragment;
     }
 
     public void setFragment( Fragment f ) {
@@ -528,6 +518,24 @@ class ViewContainer {
             FragmentTransaction ft = fragmentManager.beginTransaction( );
             ft.add( container.getId( ), f );
             ft.commit( );
+
+            showParent( );
+        }
+        else hideParent( );
+    }
+
+    public View getView( ) {
+        return currentView;
+    }
+
+    public void setView( View v ) {
+        removeView( );
+        if ( v != null ) {
+            currentView = v;
+
+            if ( v.getParent( ) == null )
+                container.addView( v );
+            else Utils.Assert( v.getParent( ) == container, false );
 
             showParent( );
         }
