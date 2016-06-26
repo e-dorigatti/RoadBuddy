@@ -71,7 +71,7 @@ public class Path implements Parcelable {
         if ( duration <= 0 )
             return "-";
         else if ( totalHours > 0 )
-            return String.format( "%d h %d mim", totalHours, totalMinutes % 60 );
+            return String.format( "%d h %d min", totalHours, totalMinutes % 60 );
         else if ( totalMinutes > 0 )
             return String.format( "%d min", totalMinutes );
         else return String.format( "%d sec", totalSeconds );

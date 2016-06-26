@@ -47,7 +47,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             DRAWABLE_KEY_FORMAT = "drawable-%d",
             SELECTED_DRAWABLE_KEY = "selected-drawable",
             CAMERA_LOCATION_KEY = "camera-location";
-
+    protected SlidingUpPanelLayout slidingLayout;
     MainActivity mainActivity;
     FloatingActionMenu floatingActionMenu;
     ViewContainer mainLayout;
@@ -61,7 +61,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     NFAState initialState;
     Bundle savedInstanceState;
     SetSliderStatusRunnable setSliderStatus;
-    private SlidingUpPanelLayout slidingLayout;
 
     public MapFragment( ) {
     }
@@ -155,7 +154,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onStart( ) {
-        setSLiderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
+        setSliderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
         if ( nfa != null )
             nfa.Resume( savedInstanceState );
         super.onStart( );
@@ -238,7 +237,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
      * We keep track of the latest such status and set it some time
      * in the future so as to allow everyone to set a status
      */
-    void setSLiderStatus( SlidingUpPanelLayout.PanelState status ) {
+    void setSliderStatus( SlidingUpPanelLayout.PanelState status ) {
         if ( mainActivity.backgroundTasksHandler != null ) {
             if ( setSliderStatus != null )
                 mainActivity.backgroundTasksHandler.removeCallbacks( setSliderStatus );
@@ -280,10 +279,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void RefreshMapContent( ) {
-        Animation animRotate = AnimationUtils.loadAnimation(getContext(),R.anim.rotate);
-        floatingActionMenu = (FloatingActionMenu) getView().findViewById(R.id.fab);
-        if ( floatingActionMenu != null )
-            floatingActionMenu.getMenuIconView().startAnimation(animRotate);
+        Animation animRotate = AnimationUtils.loadAnimation( getContext( ), R.anim.rotate );
+        floatingActionMenu = ( FloatingActionMenu ) getView( ).findViewById( R.id.fab );
+        if ( floatingActionMenu != null ) {
+            floatingActionMenu.getMenuIconView( ).startAnimation( animRotate );
+        }
         // run async task
         LatLngBounds bounds = googleMap.getProjection( ).getVisibleRegion( ).latLngBounds;
         taskManager.startRunningTask( new RefreshMapAsync( getContext( ) ), true, bounds );
@@ -307,11 +307,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         if ( selectedDrawable != null ) {
             selectedDrawable.setSelected( getContext( ), googleMap, true );
             sliderLayout.setFragment( selectedDrawable.getInfoFragment( ) );
-            setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+            setSliderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
         }
         else {
             sliderLayout.setFragment( null );
-            setSLiderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
+            setSliderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
         }
     }
 
@@ -354,7 +354,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         setSelectedDrawable( d );
     }
 
-    class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Drawable, Boolean> {
+    class RefreshMapAsync extends CancellableAsyncTask<LatLngBounds, Void, List<Drawable>> {
 
         String exceptionMessage;
         Context context;
@@ -362,6 +362,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         /**
          * drawables which were not returned by the backend will be removed from the
          * map because they are not visible anymore
+         * <p/>
+         * (except for the selected drawable, whose info is still visible in the slider
+         * layout)
          */
         Set<Integer> missingDrawables;
 
@@ -375,7 +378,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
 
         @Override
-        protected Boolean doInBackground( LatLngBounds... bounds ) {
+        protected List<Drawable> doInBackground( LatLngBounds... bounds ) {
             /**
              * Sleep a while to let the user adjust the viewport
              *
@@ -384,16 +387,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
              * and cancelled when the view is moved again
              */
             SystemClock.sleep( 2500 );
-            if ( isCancelled( ) ) return false;
+            if ( isCancelled( ) ) return null;
 
             try {
+                List<Drawable> res = new ArrayList<>( );
 
                 List<Path> paths = DAOFactory.getPathDAO( ).getPathsInside(
                         context, bounds[ 0 ]
                 );
 
                 for ( Path p : paths ) {
-                    publishProgress( new DrawablePath( p ) );
+                    res.add( new DrawablePath( p ) );
                 }
 
                 List<CommentPOI> commentPOIs =
@@ -405,48 +409,53 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                                   );
 
                 for ( CommentPOI p : commentPOIs ) {
-                    publishProgress( new DrawableCommentPOI( p ) );
+                    res.add( new DrawableCommentPOI( p ) );
                 }
 
-                return true;
+                return res;
             }
             catch ( BackendException e ) {
                 Log.e( getClass( ).getName( ), "while refreshing map", e );
                 exceptionMessage = e.getMessage( );
-                return false;
+                return null;
             }
         }
 
         @Override
-        protected void onProgressUpdate( Drawable... values ) {
-            super.onProgressUpdate( values );
+        protected void onPostExecute( List<Drawable> result ) {
+            if ( result != null ) {
+                SlidingUpPanelLayout.PanelState previousState =
+                        slidingLayout.getPanelState( );
 
-            Drawable selected = selectedDrawable;
-            Drawable drawable = values[ 0 ];
+                Drawable selected = selectedDrawable;
 
-            Drawable oldDrawable = shownDrawablesByModel.get( drawable.getModelId( ) );
-            if ( oldDrawable != null )
-                removeDrawable( oldDrawable );
+                for ( Drawable drawable : result ) {
+                    Drawable oldDrawable = shownDrawablesByModel.get( drawable.getModelId( ) );
+                    if ( oldDrawable != null )
+                        removeDrawable( oldDrawable );
 
-            addDrawable( drawable );
-            if ( drawable.equals( selected ) )
-                setSelectedDrawable( drawable );
+                    addDrawable( drawable );
+                    if ( drawable.equals( selected ) )
+                        setSelectedDrawable( drawable );
 
-            missingDrawables.remove( drawable.getModelId( ) );
-        }
-
-        @Override
-        protected void onPostExecute( Boolean success ) {
-            if ( success ) {
-                for ( Integer drawable : missingDrawables ) {
-                    removeDrawable( shownDrawablesByModel.get( drawable ) );
+                    missingDrawables.remove( drawable.getModelId( ) );
                 }
+
+                for ( Integer drawable : missingDrawables ) {
+                    if ( selectedDrawable == null || selectedDrawable.getModelId( ) != drawable ) {
+                        removeDrawable( shownDrawablesByModel.get( drawable ) );
+                    }
+                }
+
+                if ( floatingActionMenu != null )
+                    floatingActionMenu.getMenuIconView( ).clearAnimation( );
+
+                previousState = previousState == SlidingUpPanelLayout.PanelState.DRAGGING ?
+                        SlidingUpPanelLayout.PanelState.EXPANDED : previousState;
+                setSliderStatus( previousState );
             }
 
-            if ( floatingActionMenu != null )
-                floatingActionMenu.getMenuIconView( ).clearAnimation( );
-
-            super.onPostExecute( success );
+            super.onPostExecute( result );
         }
 
     }

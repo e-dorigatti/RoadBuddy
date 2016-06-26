@@ -6,13 +6,17 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.preference.PreferenceFragmentCompat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.facebook.AccessToken;
+import com.facebook.AccessTokenTracker;
 import com.facebook.CallbackManager;
 import com.facebook.login.widget.LoginButton;
 import com.facebook.login.widget.ProfilePictureView;
@@ -24,9 +28,9 @@ public class SettingsFragment
         implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     public static final String KEY_PREF_USER_NAME = "pref_dev_user_name",
-            KEY_PREF_USER_ID = "pref_dev_user_id",
-            KEY_PREF_DEV_ENABLED = "pref_dev_enabled";
+            KEY_PREF_USER_ID = "pref_dev_user_id";
 
+    AccessTokenTracker accessTokenTracker;
     MainActivity mPActivity;
     AsyncTask runningAsyncTask;
     String currentUserName;
@@ -49,29 +53,49 @@ public class SettingsFragment
         View mainLayout = inflater.inflate( R.layout.fragment_settings, container, false );
         FrameLayout settingsFrame = ( FrameLayout ) mainLayout.findViewById( R.id.settings );
         settingsFrame.addView( settings );
-
+        LoginButton faceButton = ( LoginButton ) mainLayout.findViewById( R.id.login_button );
+        Button nickButton = (Button) mainLayout.findViewById( R.id.btnLogout );
+        nickButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                logout();
+            }
+        });
+        faceButton.setFragment( this );
+        faceButton.setReadPermissions( Arrays.asList( "public_profile", "email" ) );
         TextView profileName = (TextView) mainLayout.findViewById(R.id.facebook_name);
         TextView profileDetail = (TextView) mainLayout.findViewById(R.id.facebook_details);
-        ProfilePictureView profilePictureView;
-        profilePictureView = (ProfilePictureView) mainLayout.findViewById(R.id.friendProfilePicture);
-        com.facebook.Profile profile = com.facebook.Profile.getCurrentProfile();
-        profilePictureView.setCropped(true);
-        if(profile != null) {
-            profilePictureView.setProfileId(profile.getId());
-            profileName.setText(profile.getName());
+        if ( AccessToken.getCurrentAccessToken( ) == null ) {
+            faceButton.setVisibility(View.GONE);
+            SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getContext( ) );
+            currentUserName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, null );
+            profileName.setText( pref.getString( SettingsFragment.KEY_PREF_USER_NAME, null ));
             profileDetail.setText("Male, Age 22");
-        }
-        LoginButton loginButton = ( LoginButton ) mainLayout.findViewById( R.id.login_button );
-        loginButton.setFragment( this );
-        loginButton.setReadPermissions( Arrays.asList( "public_profile", "email" ) );
-
-        /*mainLayout.findViewById( R.id.btnLogout ).setOnClickListener( new View.OnClickListener( ) {
-            @Override
-            public void onClick( View view ) {
-                logout( );
+        }else{
+            nickButton.setVisibility(View.GONE);
+            getPreferenceScreen().findPreference("pref_dev_user_name").setEnabled(false);
+            ProfilePictureView profilePictureView;
+            profilePictureView = (ProfilePictureView) mainLayout.findViewById(R.id.friendProfilePicture);
+            com.facebook.Profile profile = com.facebook.Profile.getCurrentProfile();
+            profilePictureView.setCropped(true);
+            if(profile != null) {
+                profilePictureView.setProfileId(profile.getId());
+                profileName.setText(profile.getName());
+                profileDetail.setText("Male, Age 22");
             }
-        } );*/
+        }
 
+        accessTokenTracker = new AccessTokenTracker( ) {
+            @Override
+            protected void onCurrentAccessTokenChanged(
+                    AccessToken oldAccessToken,
+                    AccessToken currentAccessToken ) {
+                Log.v( "Login", "Vecchio token " + oldAccessToken );
+                Log.v( "Login", "Nuovo token " + currentAccessToken );
+                if (currentAccessToken == null)
+                    logout();
+            }
+        };
         return mainLayout;
     }
 
@@ -84,6 +108,7 @@ public class SettingsFragment
 
         getActivity( ).recreate( );
     }
+
 
     @Override
     public void onResume( ) {

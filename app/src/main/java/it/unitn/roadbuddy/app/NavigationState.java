@@ -43,8 +43,7 @@ public class NavigationState implements NFAState,
             INVITATION_TRIP_KEY = "invitation-trip",
             INVITER_NAME_KEY = "inviter-name",
             UI_STATE_KEY = "interface-state",
-            INVITED_BUDDY_KEY = "invited-buddy",
-            RECEIVER_KEY = "receiver";
+            INVITED_BUDDY_KEY = "invited-buddy";
 
     public static final int
             STATE_INITIAL = 0,
@@ -106,9 +105,6 @@ public class NavigationState implements NFAState,
         this.nfa = nfa;
         this.googleMap = fragment.googleMap;
         this.currentUser = fragment.getCurrentUser( );
-
-        fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
-        fragment.clearMap( );
 
         googleMap.setOnMarkerClickListener( this );
         googleMap.setOnMapClickListener( this );
@@ -202,7 +198,6 @@ public class NavigationState implements NFAState,
             currentInterfaceState = savedInstanceState.getInt( UI_STATE_KEY );
             inviterName = savedInstanceState.getString( INVITER_NAME_KEY );
             invitedBuddyName = savedInstanceState.getString( INVITED_BUDDY_KEY );
-            updatesReceiver = savedInstanceState.getParcelable( RECEIVER_KEY );
         }
     }
 
@@ -218,7 +213,6 @@ public class NavigationState implements NFAState,
         savedInstanceState.putInt( UI_STATE_KEY, currentInterfaceState );
         savedInstanceState.putString( INVITER_NAME_KEY, inviterName );
         savedInstanceState.putString( INVITED_BUDDY_KEY, invitedBuddyName );
-        savedInstanceState.putParcelable( RECEIVER_KEY, updatesReceiver );
     }
 
     @Override
@@ -249,7 +243,7 @@ public class NavigationState implements NFAState,
              */
 
             fragment.sliderLayout.setFragment( infoFragment );
-            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+            fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
         }
     }
 
@@ -318,7 +312,7 @@ public class NavigationState implements NFAState,
 
     void moveCameraTo( LatLng point, float zoom ) {
         CameraUpdate anim = CameraUpdateFactory.newLatLngZoom( point, zoom );
-        fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+        fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
         googleMap.animateCamera( anim );
     }
 
@@ -330,9 +324,9 @@ public class NavigationState implements NFAState,
         builder.setTitle( R.string.navigation_join_confirm_title );
 
         final TextView input = new TextView( fragment.getActivity( ) );
-        float density =  fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
+        float density = fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
         int padding = ( int ) ( 24 * density );
-        input.setPadding(padding, padding, padding, padding);
+        input.setPadding( padding, padding, padding, padding );
         input.setText( String.format(
                 fragment.getString( R.string.navigation_join_confirm_text ),
                 inviterName
@@ -373,9 +367,9 @@ public class NavigationState implements NFAState,
             builder.setTitle( "Did you know?" );
 
             final TextView input = new TextView( fragment.getActivity( ) );
-            float density =  fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
+            float density = fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
             int padding = ( int ) ( 24 * density );
-            input.setPadding(padding, padding, padding, padding);
+            input.setPadding( padding, padding, padding, padding );
             input.setText( R.string.navigation_path_tip );
             input.setTextAlignment( View.TEXT_ALIGNMENT_CENTER );
             builder.setView( input );
@@ -433,6 +427,7 @@ public class NavigationState implements NFAState,
             }
         } );
 
+        fragment.clearMap( );
         if ( navigationPathDrawable != null ) {
             fragment.setSelectedDrawable( navigationPathDrawable );
         }
@@ -444,11 +439,7 @@ public class NavigationState implements NFAState,
         infoFragment.setParticipantInteractionListener( this );
         fragment.sliderLayout.setFragment( infoFragment );
 
-        //buddiesRefresh = new RefreshBuddiesRunnable( fragment.mainActivity.backgroundTasksHandler );
-
-
-        if ( updatesReceiver == null )
-            updatesReceiver = new NavigationUpdatesReceiver( );
+        updatesReceiver = new NavigationUpdatesReceiver( );
         updatesReceiver.enable( );
 
         NavigationService.startNavigation(
@@ -467,9 +458,9 @@ public class NavigationState implements NFAState,
 
         final EditText input = new EditText( fragment.getActivity( ) );
         input.setInputType( InputType.TYPE_CLASS_TEXT );
-        float density =  fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
+        float density = fragment.getContext( ).getResources( ).getDisplayMetrics( ).density;
         int padding = ( int ) ( 24 * density );
-        input.setPadding(padding, padding, padding, padding);
+        input.setPadding( padding, padding, padding, padding );
         builder.setView( input );
 
         builder.setPositiveButton(
@@ -516,7 +507,7 @@ public class NavigationState implements NFAState,
     void showNotifications( List<Notification> notifications ) {
         if ( infoFragment != null && notifications.size( ) > 0 ) {
             infoFragment.showNotifications( notifications );
-            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.EXPANDED );
+            fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.EXPANDED );
         }
     }
 
@@ -577,6 +568,8 @@ public class NavigationState implements NFAState,
 
         @Override
         protected void onPreExecute( ) {
+            fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+
             ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
             pbar.setIndeterminate( true );
             fragment.sliderLayout.setView( pbar );
@@ -659,7 +652,7 @@ public class NavigationState implements NFAState,
             NavigationService.stopNavigation( fragment.getContext( ) );
             fragment.removeDrawable( navigationPathDrawable );
             fragment.sliderLayout.setView( null );
-            fragment.setSLiderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
+            fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.HIDDEN );
             nfa.Transition( new RestState( ), null );
         }
     }
@@ -682,6 +675,8 @@ public class NavigationState implements NFAState,
         protected void onPreExecute( ) {
             currentInterfaceState = STATE_CREATING_TRIP;
 
+            fragment.setSliderStatus( SlidingUpPanelLayout.PanelState.COLLAPSED );
+
             ProgressBar pbar = new ProgressBar( fragment.getContext( ) );
             pbar.setIndeterminate( true );
             fragment.sliderLayout.setView( pbar );
@@ -693,6 +688,10 @@ public class NavigationState implements NFAState,
         @Override
         protected Trip doInBackground( Void... voids ) {
             try {
+                if ( path != null ) {
+                    path = DAOFactory.getPathDAO( ).getPath( path.getId( ) );
+                }
+
                 return DAOFactory.getTripDAO( ).createTrip( path, currentUser );
             }
             catch ( BackendException exc ) {
@@ -710,6 +709,13 @@ public class NavigationState implements NFAState,
             }
             else {
                 currentTrip = res;
+                if ( path != null ) {
+                    // replace the drawed path with an higher resolution version
+                    fragment.removeDrawable( navigationPathDrawable );
+                    navigationPathDrawable = new DrawablePath( path );
+                    fragment.addDrawable( navigationPathDrawable );
+
+                }
                 startTrip( );
             }
 

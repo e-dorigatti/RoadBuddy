@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.DialogFragment;
+import android.support.v4.widget.Space;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -22,7 +23,6 @@ import java.util.Arrays;
 
 public class SplashActivity extends AppCompatActivity {
 
-    AccessTokenTracker accessTokenTracker;
     AccessToken FaceAccessToken = null;
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
     CallbackManager callbackManager;
@@ -54,18 +54,6 @@ public class SplashActivity extends AppCompatActivity {
                     }
                 }
         );
-
-        accessTokenTracker = new AccessTokenTracker( ) {
-            @Override
-            protected void onCurrentAccessTokenChanged(
-                    AccessToken oldAccessToken,
-                    AccessToken currentAccessToken ) {
-                FaceAccessToken = currentAccessToken;
-                Log.v( "Login", "Vecchio token " + oldAccessToken );
-                Log.v( "Login", "Nuovo token " + currentAccessToken );
-            }
-        };
-
         FaceAccessToken = AccessToken.getCurrentAccessToken( );
     }
 
@@ -74,28 +62,15 @@ public class SplashActivity extends AppCompatActivity {
         super.onStart( );
 
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( this );
-
         int currentUserId = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
-        String userName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, null );
 
         if ( FaceAccessToken == null && currentUserId == -1 ) {
             // first launch, login
             FireLogInDialogFragment dialog = new FireLogInDialogFragment( );
             dialog.show( getSupportFragmentManager( ), "login" );
-        }
-        else {
-            if ( pref.getBoolean( SettingsFragment.KEY_PREF_DEV_ENABLED, false ) ) {
-                Toast.makeText(
-                        this,
-                        String.format(
-                                "You are currently running as user %s (id: %d)",
-                                userName, currentUserId
-                        ), Toast.LENGTH_SHORT
-                ).show( );
-            }
-
+        }else {
             launchMainActivity( );
-        }
+            }
     }
 
     void launchMainActivity( ) {
@@ -118,7 +93,6 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy( ) {
-        accessTokenTracker.stopTracking( );
         Log.v( "MY_STATE_LOG", "main activity distrutto" );
         super.onDestroy( );
     }
@@ -131,7 +105,6 @@ public class SplashActivity extends AppCompatActivity {
                     public void onCompleted( JSONObject object, GraphResponse response ) {
                         String first_name = object.optString( "first_name" );
                         String last_name = object.optString( "last_name" );
-
                         setInitialPreferences( ( first_name + " " + last_name ).trim( ) );
                     }
                 } );
@@ -179,7 +152,7 @@ public class SplashActivity extends AppCompatActivity {
         @Override
         public void onDismiss( DialogInterface dialog ) {
             super.onDismiss( dialog );
-            //Toast.makeText( MainActivity.this, "You wont be able to perform most of action", Toast.LENGTH_LONG).show( );
+
         }
     }
 }

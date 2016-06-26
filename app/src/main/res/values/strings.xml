@@ -67,7 +67,7 @@
     <string name="title_activity_trips_detail">TripsDetailActivity</string>
     <string name="dialog_sign_in">Choose a log in</string>
     <string name="username">Username</string>
-    <string name="search_hint">Search Trips</string>
+    <string name="search_hint">Search trips</string>
     <string name="search_label">Search</string>
     <string name="loading_content">Loading Content</string>
 
