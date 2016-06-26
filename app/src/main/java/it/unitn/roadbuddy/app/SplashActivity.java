@@ -7,7 +7,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.widget.Space;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -67,10 +66,12 @@ public class SplashActivity extends AppCompatActivity {
         if ( FaceAccessToken == null && currentUserId == -1 ) {
             // first launch, login
             FireLogInDialogFragment dialog = new FireLogInDialogFragment( );
+            dialog.setRetainInstance( true );
             dialog.show( getSupportFragmentManager( ), "login" );
-        }else {
+        }
+        else {
             launchMainActivity( );
-            }
+        }
     }
 
     void launchMainActivity( ) {
@@ -105,7 +106,7 @@ public class SplashActivity extends AppCompatActivity {
                     public void onCompleted( JSONObject object, GraphResponse response ) {
                         String first_name = object.optString( "first_name" );
                         String last_name = object.optString( "last_name" );
-                        setInitialPreferences( ( first_name + " " + last_name ).trim( ) );
+                        setInitialPreferences( ( first_name + " " + last_name ).trim( ), true );
                     }
                 } );
 
@@ -115,16 +116,23 @@ public class SplashActivity extends AppCompatActivity {
         graphRequest.executeAsync( );
     }
 
-    void setInitialPreferences( String username ) {
+    void setInitialPreferences( String username, boolean canSwitchToExistingUser ) {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( this );
         SharedPreferences.Editor editor = sharedPref.edit( );
         editor.putString( SettingsFragment.KEY_PREF_USER_NAME, username );
         editor.apply( );
 
-        taskManager.startRunningTask( new ChangeAppUserAsync( taskManager, this, username, false ), true );
+        taskManager.startRunningTask(
+                new ChangeAppUserAsync( taskManager, this, username, null, canSwitchToExistingUser ),
+                true
+        );
     }
 
     public class FireLogInDialogFragment extends DialogFragment {
+
+        public FireLogInDialogFragment( ) {
+
+        }
 
         @Override
         public Dialog onCreateDialog( Bundle savedInstanceState ) {
@@ -135,7 +143,7 @@ public class SplashActivity extends AppCompatActivity {
                 public void onClick( DialogInterface dialog, int id ) {
                     EditText username = ( EditText ) dialog_preference.findViewById( R.id.username_pref );
                     if ( username != null && username.getText( ) != null ) {
-                        setInitialPreferences( username.getText( ).toString( ) );
+                        setInitialPreferences( username.getText( ).toString( ), false );
                     }
                 }
             } ).setNegativeButton( "Facebook", new DialogInterface.OnClickListener( ) {
@@ -150,9 +158,10 @@ public class SplashActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onDismiss( DialogInterface dialog ) {
-            super.onDismiss( dialog );
-
+        public void onCancel( DialogInterface dialog ) {
+            FireLogInDialogFragment d = new FireLogInDialogFragment( );
+            d.setRetainInstance( true );
+            d.show( getSupportFragmentManager( ), "login" );
         }
     }
 }

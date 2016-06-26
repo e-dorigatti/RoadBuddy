@@ -14,12 +14,12 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.facebook.AccessToken;
 import com.facebook.AccessTokenTracker;
 import com.facebook.CallbackManager;
 import com.facebook.login.widget.LoginButton;
 import com.facebook.login.widget.ProfilePictureView;
+import it.unitn.roadbuddy.app.backend.models.User;
 
 import java.util.Arrays;
 
@@ -33,8 +33,8 @@ public class SettingsFragment
     AccessTokenTracker accessTokenTracker;
     MainActivity mPActivity;
     AsyncTask runningAsyncTask;
-    String currentUserName;
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
+    User currentUserData;
 
     @Override
     public void onCreatePreferences( Bundle savedInstanceState, String rootKey ) {
@@ -54,34 +54,37 @@ public class SettingsFragment
         FrameLayout settingsFrame = ( FrameLayout ) mainLayout.findViewById( R.id.settings );
         settingsFrame.addView( settings );
         LoginButton faceButton = ( LoginButton ) mainLayout.findViewById( R.id.login_button );
-        Button nickButton = (Button) mainLayout.findViewById( R.id.btnLogout );
-        nickButton.setOnClickListener(new View.OnClickListener() {
+        Button nickButton = ( Button ) mainLayout.findViewById( R.id.btnLogout );
+        nickButton.setOnClickListener( new View.OnClickListener( ) {
             @Override
-            public void onClick(View v) {
-                logout();
+            public void onClick( View v ) {
+                logout( );
             }
-        });
+        } );
         faceButton.setFragment( this );
         faceButton.setReadPermissions( Arrays.asList( "public_profile", "email" ) );
-        TextView profileName = (TextView) mainLayout.findViewById(R.id.facebook_name);
-        TextView profileDetail = (TextView) mainLayout.findViewById(R.id.facebook_details);
+        TextView profileName = ( TextView ) mainLayout.findViewById( R.id.facebook_name );
+        TextView profileDetail = ( TextView ) mainLayout.findViewById( R.id.facebook_details );
         if ( AccessToken.getCurrentAccessToken( ) == null ) {
-            faceButton.setVisibility(View.GONE);
+            faceButton.setVisibility( View.GONE );
             SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getContext( ) );
-            currentUserName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, null );
-            profileName.setText( pref.getString( SettingsFragment.KEY_PREF_USER_NAME, null ));
-            profileDetail.setText("Male, Age 22");
-        }else{
-            nickButton.setVisibility(View.GONE);
-            getPreferenceScreen().findPreference("pref_dev_user_name").setEnabled(false);
+            String currentUserName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, null );
+            int currentUserId = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
+            currentUserData = new User( currentUserId, currentUserName, null, null, null );
+            profileName.setText( pref.getString( SettingsFragment.KEY_PREF_USER_NAME, null ) );
+            profileDetail.setText( "Male, Age 22" );
+        }
+        else {
+            nickButton.setVisibility( View.GONE );
+            getPreferenceScreen( ).findPreference( "pref_dev_user_name" ).setEnabled( false );
             ProfilePictureView profilePictureView;
-            profilePictureView = (ProfilePictureView) mainLayout.findViewById(R.id.friendProfilePicture);
-            com.facebook.Profile profile = com.facebook.Profile.getCurrentProfile();
-            profilePictureView.setCropped(true);
-            if(profile != null) {
-                profilePictureView.setProfileId(profile.getId());
-                profileName.setText(profile.getName());
-                profileDetail.setText("Male, Age 22");
+            profilePictureView = ( ProfilePictureView ) mainLayout.findViewById( R.id.friendProfilePicture );
+            com.facebook.Profile profile = com.facebook.Profile.getCurrentProfile( );
+            profilePictureView.setCropped( true );
+            if ( profile != null ) {
+                profilePictureView.setProfileId( profile.getId( ) );
+                profileName.setText( profile.getName( ) );
+                profileDetail.setText( "Male, Age 22" );
             }
         }
 
@@ -92,21 +95,21 @@ public class SettingsFragment
                     AccessToken currentAccessToken ) {
                 Log.v( "Login", "Vecchio token " + oldAccessToken );
                 Log.v( "Login", "Nuovo token " + currentAccessToken );
-                if (currentAccessToken == null)
-                    logout();
+                if ( currentAccessToken == null )
+                    logout( );
             }
         };
         return mainLayout;
     }
 
     void logout( ) {
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( getActivity( ) );
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( mPActivity );
         SharedPreferences.Editor editor = sharedPref.edit( );
         editor.remove( SettingsFragment.KEY_PREF_USER_NAME );
         editor.remove( SettingsFragment.KEY_PREF_USER_ID );
         editor.apply( );
 
-        getActivity( ).recreate( );
+        mPActivity.recreate( );
     }
 
 
@@ -119,7 +122,9 @@ public class SettingsFragment
                                   .registerOnSharedPreferenceChangeListener( this );
         }
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( getContext( ) );
-        currentUserName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, null );
+        String currentUserName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, null );
+        int currentUserId = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
+        currentUserData = new User( currentUserId, currentUserName, null, null, null );
     }
 
     @Override
@@ -140,9 +145,16 @@ public class SettingsFragment
             if ( runningAsyncTask == null ) {
                 String newUserName = sharedPreferences.getString( key, null );
 
-                if ( newUserName != null ) {
+                /**
+                 * If the login is denied because there is another user with the same name the
+                 * setting will be changed so as to restore the old user name, so this callback
+                 * will be fired again with the old user name, which of course already exists,
+                 * so this callback will be fired over and over in an infinite loop
+                 */
+
+                if ( newUserName != null && !newUserName.equals( currentUserData.getUserName( ) ) ) {
                     taskManager.startRunningTask(
-                            new ChangeAppUserAsync( taskManager, getActivity( ), newUserName, true ),
+                            new ChangeAppUserAsync( taskManager, getActivity( ), newUserName, currentUserData, false ),
                             true
                     );
                 }
