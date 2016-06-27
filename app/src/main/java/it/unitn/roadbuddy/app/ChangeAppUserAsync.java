@@ -17,13 +17,16 @@ class ChangeAppUserAsync extends CancellableAsyncTask<Object, Integer, Integer> 
     String newUserName;
     boolean canSwitchToExistingUser;
     boolean userAlreadyExists;
+    User oldUserData;
     ProgressDialog dialog;
 
     public ChangeAppUserAsync( CancellableAsyncTaskManager taskManager,
                                Activity activity, String newUserName,
+                               User oldUserData,
                                boolean canSwitchToExistingUser ) {
         super( taskManager );
 
+        this.oldUserData = oldUserData;
         this.activity = activity;
         this.newUserName = newUserName;
         this.canSwitchToExistingUser = canSwitchToExistingUser;
@@ -76,11 +79,18 @@ class ChangeAppUserAsync extends CancellableAsyncTask<Object, Integer, Integer> 
 
         if ( userID != null ) {
             editor.putInt( SettingsFragment.KEY_PREF_USER_ID, userID );
+            editor.putString( SettingsFragment.KEY_PREF_USER_NAME, newUserName );
             editor.apply( );
 
             activity.recreate( );
         }
         else {
+            if ( oldUserData != null ) {
+                editor.putInt( SettingsFragment.KEY_PREF_USER_ID, oldUserData.getId( ) );
+                editor.putString( SettingsFragment.KEY_PREF_USER_NAME, oldUserData.getUserName( ) );
+            }
+            editor.apply( );
+
             String message = errorMessage != null ? errorMessage : "Could not login";
             Toast.makeText( activity, message, Toast.LENGTH_LONG ).show( );
 

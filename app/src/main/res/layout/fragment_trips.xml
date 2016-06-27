@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -32,5 +33,14 @@
         android:id="@id/action_search"
         android:queryHint="Search trips.."
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        app:actionViewClass="android.support.v7.widget.SearchView"
+        android:layout_marginLeft="8dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="@color/white"
+        app:queryHint="@string/search_hint"
+        app:iconifiedByDefault="false"
+        android:theme="@style/Widget.AppCompat.Light.SearchView" />
 </RelativeLayout>

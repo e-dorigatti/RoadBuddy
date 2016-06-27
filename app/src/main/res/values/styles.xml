@@ -39,7 +39,7 @@
         <item name="android:layout_margin">6dp</item>
         <item name="android:layout_marginBottom">8dp</item>
         <item name="android:textColor">#FFFFFF</item>
-        <item name="cardBackgroundColor">@color/blue_700</item>
+        <item name="cardBackgroundColor">@color/indigo_500</item>
     </style>
 
     <style name="BuddyListItem" parent="Theme.AppCompat.Light">

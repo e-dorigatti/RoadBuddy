@@ -3,11 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:facebook="http://schemas.android.com/apk/res-auto"
     tools:context="it.unitn.roadbuddy.app.SettingsFragment"
     android:orientation="vertical"
-    android:isScrollContainer="true"
-    >
+    android:isScrollContainer="true">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,7 +16,6 @@
         android:id="@+id/friendProfilePicture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
         android:layout_gravity="center"
         android:layout_marginStart="30dp"
         android:layout_marginTop="8dp"
@@ -37,7 +34,7 @@
             android:id="@+id/facebook_name"
             android:layout_marginTop="20dp"
             android:textSize="20sp"
-            android:layout_gravity="left"
+            android:layout_gravity="start"
             android:textColor="@color/black"/>
 
             <TextView
@@ -47,7 +44,7 @@
                 android:layout_marginTop="4dp"
                 android:layout_marginBottom="8dp"
                 android:textSize="14sp"
-                android:layout_gravity="left"
+                android:layout_gravity="start"
                 android:textColor="@color/grey_700"/>
 
         </LinearLayout>
@@ -89,13 +86,12 @@
             android:layout_gravity="center" />
 
 
-    <!--<Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Logout"
-            android:id="@+id/btnLogout"
-            android:layout_marginBottom="5dp"
-            android:layout_gravity="center"
-            />-->
-
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Logout"
+        android:id="@+id/btnLogout"
+        android:layout_marginBottom="5dp"
+        android:layout_gravity="center"
+        android:background="@color/indigo_500" android:textColor="@color/white"/>
 </LinearLayout>

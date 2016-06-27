@@ -22,7 +22,6 @@ import java.util.Arrays;
 
 public class SplashActivity extends AppCompatActivity {
 
-    AccessTokenTracker accessTokenTracker;
     AccessToken FaceAccessToken = null;
     CancellableAsyncTaskManager taskManager = new CancellableAsyncTaskManager( );
     CallbackManager callbackManager;
@@ -54,18 +53,6 @@ public class SplashActivity extends AppCompatActivity {
                     }
                 }
         );
-
-        accessTokenTracker = new AccessTokenTracker( ) {
-            @Override
-            protected void onCurrentAccessTokenChanged(
-                    AccessToken oldAccessToken,
-                    AccessToken currentAccessToken ) {
-                FaceAccessToken = currentAccessToken;
-                Log.v( "Login", "Vecchio token " + oldAccessToken );
-                Log.v( "Login", "Nuovo token " + currentAccessToken );
-            }
-        };
-
         FaceAccessToken = AccessToken.getCurrentAccessToken( );
     }
 
@@ -74,26 +61,15 @@ public class SplashActivity extends AppCompatActivity {
         super.onStart( );
 
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences( this );
-
         int currentUserId = pref.getInt( SettingsFragment.KEY_PREF_USER_ID, -1 );
-        String userName = pref.getString( SettingsFragment.KEY_PREF_USER_NAME, null );
 
         if ( FaceAccessToken == null && currentUserId == -1 ) {
             // first launch, login
             FireLogInDialogFragment dialog = new FireLogInDialogFragment( );
+            dialog.setRetainInstance( true );
             dialog.show( getSupportFragmentManager( ), "login" );
         }
         else {
-            if ( pref.getBoolean( SettingsFragment.KEY_PREF_DEV_ENABLED, false ) ) {
-                Toast.makeText(
-                        this,
-                        String.format(
-                                "You are currently running as user %s (id: %d)",
-                                userName, currentUserId
-                        ), Toast.LENGTH_SHORT
-                ).show( );
-            }
-
             launchMainActivity( );
         }
     }
@@ -118,7 +94,6 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy( ) {
-        accessTokenTracker.stopTracking( );
         Log.v( "MY_STATE_LOG", "main activity distrutto" );
         super.onDestroy( );
     }
@@ -131,8 +106,7 @@ public class SplashActivity extends AppCompatActivity {
                     public void onCompleted( JSONObject object, GraphResponse response ) {
                         String first_name = object.optString( "first_name" );
                         String last_name = object.optString( "last_name" );
-
-                        setInitialPreferences( ( first_name + " " + last_name ).trim( ) );
+                        setInitialPreferences( ( first_name + " " + last_name ).trim( ), true );
                     }
                 } );
 
@@ -142,16 +116,23 @@ public class SplashActivity extends AppCompatActivity {
         graphRequest.executeAsync( );
     }
 
-    void setInitialPreferences( String username ) {
+    void setInitialPreferences( String username, boolean canSwitchToExistingUser ) {
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences( this );
         SharedPreferences.Editor editor = sharedPref.edit( );
         editor.putString( SettingsFragment.KEY_PREF_USER_NAME, username );
         editor.apply( );
 
-        taskManager.startRunningTask( new ChangeAppUserAsync( taskManager, this, username, false ), true );
+        taskManager.startRunningTask(
+                new ChangeAppUserAsync( taskManager, this, username, null, canSwitchToExistingUser ),
+                true
+        );
     }
 
     public class FireLogInDialogFragment extends DialogFragment {
+
+        public FireLogInDialogFragment( ) {
+
+        }
 
         @Override
         public Dialog onCreateDialog( Bundle savedInstanceState ) {
@@ -162,7 +143,7 @@ public class SplashActivity extends AppCompatActivity {
                 public void onClick( DialogInterface dialog, int id ) {
                     EditText username = ( EditText ) dialog_preference.findViewById( R.id.username_pref );
                     if ( username != null && username.getText( ) != null ) {
-                        setInitialPreferences( username.getText( ).toString( ) );
+                        setInitialPreferences( username.getText( ).toString( ), false );
                     }
                 }
             } ).setNegativeButton( "Facebook", new DialogInterface.OnClickListener( ) {
@@ -177,9 +158,10 @@ public class SplashActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onDismiss( DialogInterface dialog ) {
-            super.onDismiss( dialog );
-            //Toast.makeText( MainActivity.this, "You wont be able to perform most of action", Toast.LENGTH_LONG).show( );
+        public void onCancel( DialogInterface dialog ) {
+            FireLogInDialogFragment d = new FireLogInDialogFragment( );
+            d.setRetainInstance( true );
+            d.show( getSupportFragmentManager( ), "login" );
         }
     }
 }

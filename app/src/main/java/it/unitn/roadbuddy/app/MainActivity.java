@@ -272,10 +272,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public boolean isLocationPermissionEnabled( ) {
-        return locationPermissionEnabled;
-    }
-
     class GetCurrentUserRunnable implements Runnable {
 
         public static final int INTERVAL = 15 * 1000;
