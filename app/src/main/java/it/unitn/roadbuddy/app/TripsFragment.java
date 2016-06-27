@@ -22,18 +22,24 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
-import android.view.*;
+import android.view.GestureDetector;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
+
 import com.google.android.gms.maps.model.LatLng;
 import com.google.maps.GeoApiContext;
 import com.google.maps.GeocodingApi;
 import com.google.maps.model.GeocodingResult;
-import it.unitn.roadbuddy.app.backend.BackendException;
-import it.unitn.roadbuddy.app.backend.DAOFactory;
-import it.unitn.roadbuddy.app.backend.models.Path;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import it.unitn.roadbuddy.app.backend.BackendException;
+import it.unitn.roadbuddy.app.backend.DAOFactory;
+import it.unitn.roadbuddy.app.backend.models.Path;
 
 
 public class TripsFragment extends Fragment
@@ -210,7 +216,7 @@ public class TripsFragment extends Fragment
 
     @Override
     public boolean onQueryTextChange( String query ) {
-        lastQuery = query;
+       /* lastQuery = query;
         if ( mPActivity.backgroundTasksHandler == null )
             return false;
 
@@ -222,17 +228,42 @@ public class TripsFragment extends Fragment
                 geoContext, query, searchHintsAdapter, mPActivity
         );
         mPActivity.backgroundTasksHandler.postDelayed( searchHintRunnable, 1000 );
+        */
+        final List<Path> filteredPathList = filter( resList, query );
+        if ( mAdapter != null ) {
+            mAdapter.animateTo( filteredPathList );
+            mRecyclerView.scrollToPosition( 0 );
+        }
 
         return true;
     }
 
     @Override
     public boolean onQueryTextSubmit( String query ) {
-        lastQuery = query;
-        taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );
-
+       /* lastQuery = query;
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );*/
+        final List<Path> filteredPathList = filter( resList, query );
+        mAdapter.animateTo( filteredPathList );
+        mRecyclerView.scrollToPosition( 0 );
         return true;
+
     }
+
+    private List<Path> filter(List<Path> paths, String query) {
+        query = query.toLowerCase();
+
+        final List<Path> filteredModelList = new ArrayList<>();
+        if(paths != null) {
+            for (Path path : paths) {
+                final String text = path.getDescription().toLowerCase();
+                if (text.contains(query)) {
+                    filteredModelList.add(path);
+                }
+            }
+        }
+        return filteredModelList;
+    }
+
 
     @Override
     public boolean onSuggestionSelect( int position ) {
