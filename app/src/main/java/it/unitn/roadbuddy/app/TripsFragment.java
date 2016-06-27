@@ -243,8 +243,10 @@ public class TripsFragment extends Fragment
        /* lastQuery = query;
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );*/
         final List<Path> filteredPathList = filter( resList, query );
-        mAdapter.animateTo( filteredPathList );
-        mRecyclerView.scrollToPosition( 0 );
+        if ( mAdapter != null ) {
+            mAdapter.animateTo( filteredPathList );
+            mRecyclerView.scrollToPosition( 0 );
+        }
         return true;
 
     }
