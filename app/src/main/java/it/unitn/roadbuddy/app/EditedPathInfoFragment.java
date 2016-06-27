@@ -17,12 +17,10 @@ import java.util.ArrayList;
 
 public class EditedPathInfoFragment extends SliderContentFragment {
 
-    ListView lstWaypoints;
-    TextView txtTotalDistance;
-    TextView txtTotalDuration;
-
     ArrayList<WaypointInfo> waypoints = new ArrayList<>( );
     DynamicViewArrayAdapter adapter;
+
+    View mainView;
 
     long totalDistance = 0;
     long totalDuration = 0;
@@ -35,29 +33,17 @@ public class EditedPathInfoFragment extends SliderContentFragment {
     }
 
     @Override
-    public void onViewExpand( ) {
-        super.onViewExpand( );
-        lstWaypoints.setVisibility( View.VISIBLE );
-    }
-
-    @Override
-    public void onViewShrink( ) {
-        super.onViewShrink( );
-        lstWaypoints.setVisibility( View.INVISIBLE );
-    }
-
-    @Override
     public View onCreateView( LayoutInflater inflater, ViewGroup container,
                               Bundle savedInstanceState ) {
 
-        View view = super.onCreateView( inflater, container, savedInstanceState );
-
-        lstWaypoints = ( ListView ) view.findViewById( R.id.lstWaypoints );
-        txtTotalDistance = ( TextView ) view.findViewById( R.id.txtTotalDistance );
-        txtTotalDuration = ( TextView ) view.findViewById( R.id.txtTotalDuration );
+        mainView = super.onCreateView( inflater, container, savedInstanceState );
 
         adapter = new DynamicViewArrayAdapter( getContext( ) );
-        lstWaypoints.setAdapter( adapter );
+
+        ListView lstWaypoints = ( ListView ) mainView.findViewById( R.id.lstWaypoints );
+        if ( lstWaypoints != null ) {
+            lstWaypoints.setAdapter( adapter );
+        }
 
         for ( WaypointInfo waypoint : waypoints ) {
             waypoint.setContext( getContext( ) );
@@ -67,19 +53,27 @@ public class EditedPathInfoFragment extends SliderContentFragment {
 
         updateSummary( );
 
-        return view;
+        return mainView;
     }
 
     void updateSummary( ) {
-        txtTotalDistance.setText(
-                String.format( getString( R.string.path_edit_total_distance ),
-                               Path.formatDistance( totalDistance )
-                ) );
+        TextView txtTotalDistance = ( TextView ) mainView.findViewById( R.id.txtTotalDistance );
+        if ( txtTotalDistance != null ) {
+            txtTotalDistance.setText(
+                    String.format( getString( R.string.path_edit_total_distance ),
+                                   Path.formatDistance( totalDistance )
+                    )
+            );
+        }
 
-        txtTotalDuration.setText(
-                String.format( getString( R.string.path_edit_total_duration ),
-                               Path.formatDuration( totalDuration )
-                ) );
+        TextView txtTotalDuration = ( TextView ) mainView.findViewById( R.id.txtTotalDuration );
+        if ( txtTotalDuration != null ) {
+            txtTotalDuration.setText(
+                    String.format( getString( R.string.path_edit_total_duration ),
+                                   Path.formatDuration( totalDuration )
+                    )
+            );
+        }
     }
 
     public void popWaypoint( ) {
@@ -99,6 +93,12 @@ public class EditedPathInfoFragment extends SliderContentFragment {
 
         if ( adapter != null ) {
             adapter.insert( waypoint, position );
+
+            ListView lstWaypoints = ( ListView ) mainView.findViewById( R.id.lstWaypoints );
+            if ( !adapter.equals( lstWaypoints.getAdapter( ) ) ) {
+                lstWaypoints.setAdapter( adapter );
+            }
+
             updateSummary( );
         }
     }
@@ -109,6 +109,11 @@ public class EditedPathInfoFragment extends SliderContentFragment {
 
         Utils.Assert( adapter.getPosition( waypoint ) >= 0, false );
         adapter.remove( waypoint );
+
+        ListView lstWaypoints = ( ListView ) mainView.findViewById( R.id.lstWaypoints );
+        if ( !adapter.equals( lstWaypoints.getAdapter( ) ) ) {
+            lstWaypoints.setAdapter( adapter );
+        }
 
         totalDistance -= waypoint.getDistanceTo( );
         totalDuration -= waypoint.getDurationTo( );
