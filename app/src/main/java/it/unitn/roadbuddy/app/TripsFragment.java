@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
@@ -17,38 +16,30 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.CursorAdapter;
-import android.support.v4.widget.SimpleCursorAdapter;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
-import android.view.GestureDetector;
-import android.view.LayoutInflater;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewGroup;
+import android.view.*;
 import android.widget.Toast;
-
 import com.google.android.gms.maps.model.LatLng;
 import com.google.maps.GeoApiContext;
 import com.google.maps.GeocodingApi;
 import com.google.maps.model.GeocodingResult;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import it.unitn.roadbuddy.app.backend.BackendException;
 import it.unitn.roadbuddy.app.backend.DAOFactory;
 import it.unitn.roadbuddy.app.backend.models.Path;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class TripsFragment extends Fragment
         implements SearchView.OnQueryTextListener, SearchView.OnSuggestionListener {
 
     public static final String
-            INTENT_SELECTED_TRIP = "select-trip",
             PATHS_LIST_KEY = "path-list",
-            LAST_QUERY = "last-query";
+            LAST_QUERY_KEY = "last-query";
 
     MainActivity mPActivity;
     ViewPager mPager;
@@ -61,9 +52,9 @@ public class TripsFragment extends Fragment
     View tripsView;
     Location myLocation;
     GeoApiContext geoContext;
-    Object lastQuery;
-    SearchHintRunnable searchHintRunnable;
-    SimpleCursorAdapter searchHintsAdapter;
+    String lastQuery;
+    LocationManager locationManager;
+    String locationProvider;
 
     // The following are used for the shake detection
     private SensorManager mSensorManager;
@@ -103,16 +94,18 @@ public class TripsFragment extends Fragment
         // Inflate the layout for this fragment
         tripsView = inflater.inflate( R.layout.fragment_trips, container, false );
 
+        /*
         searchHintsAdapter = new SimpleCursorAdapter(
                 getContext( ), R.layout.layout_path_search_hint,
                 null, SearchHintRunnable.COLUMNS,
                 new int[] { R.id.txtLocationName }, 0
         );
+        */
 
         searchView = ( SearchView ) tripsView.findViewById( R.id.action_search );
         searchView.setOnQueryTextListener( this );
-        searchView.setSuggestionsAdapter( searchHintsAdapter );
-        searchView.setOnSuggestionListener( this );
+        //searchView.setSuggestionsAdapter( searchHintsAdapter );
+        //searchView.setOnSuggestionListener( this );
 
         return tripsView;
     }
@@ -132,18 +125,36 @@ public class TripsFragment extends Fragment
         this.mLayoutManager = new LinearLayoutManager( getContext( ) );
         mRecyclerView.setLayoutManager( mLayoutManager );
 
+        this.taskManager = new CancellableAsyncTaskManager( );
+
+        locationManager = ( LocationManager ) getActivity( )
+                .getSystemService( Context.LOCATION_SERVICE );
+
+        Criteria criteria = new Criteria( );
+        locationProvider = locationManager.getBestProvider( criteria, true );
+
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, getQueryPosition( ) );
+
+        if ( savedInstanceState != null ) {
+            resList = savedInstanceState.getParcelableArrayList( PATHS_LIST_KEY );
+            mAdapter = new TripsAdapter( resList );
+            mRecyclerView.setAdapter( mAdapter );
+
+            lastQuery = savedInstanceState.getString( LAST_QUERY_KEY );
+            if ( lastQuery != null ) {
+                doQuery( lastQuery );
+            }
+        }
+    }
+
+    LatLng getQueryPosition( ) {
         double latitude = 46.00;
         double longitude = 11.00;
 
-        this.taskManager = new CancellableAsyncTaskManager( );
         if ( ActivityCompat.checkSelfPermission( getActivity( ), Manifest.permission.ACCESS_FINE_LOCATION )
                 == PackageManager.PERMISSION_GRANTED ) {
 
-            LocationManager locationManager = ( LocationManager ) getActivity( ).getSystemService( Context.LOCATION_SERVICE );
-
-            Criteria criteria = new Criteria( );
-            String provider = locationManager.getBestProvider( criteria, true );
-            myLocation = locationManager.getLastKnownLocation( provider );
+            myLocation = locationManager.getLastKnownLocation( locationProvider );
 
             if ( myLocation != null ) {
                 latitude = myLocation.getLatitude( );
@@ -151,14 +162,7 @@ public class TripsFragment extends Fragment
             }
         }
 
-        lastQuery = new LatLng( latitude, longitude );
-        taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );
-
-        if ( savedInstanceState != null ) {
-            resList = savedInstanceState.getParcelableArrayList( PATHS_LIST_KEY );
-            mAdapter = new TripsAdapter( resList );
-            mRecyclerView.setAdapter( mAdapter );
-        }
+        return new LatLng( latitude, longitude );
     }
 
     @Override
@@ -184,13 +188,13 @@ public class TripsFragment extends Fragment
     public void onResume( ) {
         super.onResume( );
 
-        taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, getQueryPosition( ) );
         mSensorManager.registerListener( mShakeDetector, mAccelerometer, SensorManager.SENSOR_DELAY_UI );
     }
 
     public void handleShakeEvent( ) {
         showToast( "Trip list updating.." );
-        taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );
+        taskManager.startRunningTask( new getTrips( getContext( ) ), true, getQueryPosition( ) );
     }
 
     public void showToast( String text ) {
@@ -212,6 +216,7 @@ public class TripsFragment extends Fragment
                 paths.add( p );
         }
         outState.putParcelableArrayList( PATHS_LIST_KEY, paths );
+        outState.putString( LAST_QUERY_KEY, lastQuery );
     }
 
     @Override
@@ -229,12 +234,8 @@ public class TripsFragment extends Fragment
         );
         mPActivity.backgroundTasksHandler.postDelayed( searchHintRunnable, 1000 );
         */
-        final List<Path> filteredPathList = filter( resList, query );
-        if ( mAdapter != null ) {
-            mAdapter.animateTo( filteredPathList );
-            mRecyclerView.scrollToPosition( 0 );
-        }
 
+        doQuery( query );
         return true;
     }
 
@@ -242,24 +243,29 @@ public class TripsFragment extends Fragment
     public boolean onQueryTextSubmit( String query ) {
        /* lastQuery = query;
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );*/
+
+        doQuery( query );
+        return true;
+    }
+
+    void doQuery( String query ) {
+        lastQuery = query;
         final List<Path> filteredPathList = filter( resList, query );
         if ( mAdapter != null ) {
             mAdapter.animateTo( filteredPathList );
             mRecyclerView.scrollToPosition( 0 );
         }
-        return true;
-
     }
 
-    private List<Path> filter(List<Path> paths, String query) {
-        query = query.toLowerCase();
+    private List<Path> filter( List<Path> paths, String query ) {
+        query = query.toLowerCase( );
 
-        final List<Path> filteredModelList = new ArrayList<>();
-        if(paths != null) {
-            for (Path path : paths) {
-                final String text = path.getDescription().toLowerCase();
-                if (text.contains(query)) {
-                    filteredModelList.add(path);
+        final List<Path> filteredModelList = new ArrayList<>( );
+        if ( paths != null ) {
+            for ( Path path : paths ) {
+                final String text = path.getDescription( ).toLowerCase( );
+                if ( query.isEmpty( ) || text.contains( query ) ) {
+                    filteredModelList.add( path );
                 }
             }
         }
@@ -278,12 +284,14 @@ public class TripsFragment extends Fragment
     }
 
     boolean acceptSearchHint( int position ) {
+        /*
         Cursor cursor = ( Cursor ) searchView.getSuggestionsAdapter( ).getItem( position );
         lastQuery = new LatLng(
                 cursor.getDouble( cursor.getColumnIndex( SearchHintRunnable.COLUMN_LATITUDE ) ),
                 cursor.getDouble( cursor.getColumnIndex( SearchHintRunnable.COLUMN_LONGITUDE ) )
         );
         taskManager.startRunningTask( new getTrips( getContext( ) ), true, lastQuery );
+        */
         return false;
     }
 
@@ -391,21 +399,16 @@ public class TripsFragment extends Fragment
             mAdapter = new TripsAdapter( resList );
             mRecyclerView.setAdapter( mAdapter );
 
+            if ( lastQuery != null ) {
+                doQuery( lastQuery );
+            }
+
             mRecyclerView.addOnItemTouchListener( new RecyclerTouchListener( getContext( ), mRecyclerView, new ClickListener( ) {
                 @Override
                 public void onClick( View view, int position ) {
-
                     //sending data from the recycler view to the sliderLayout
                     Path path = mAdapter.getPath( position );
                     mPActivity.showChoosenPath( path );
-                    /*Intent intent = new Intent( getContext(), MainActivity.class);
-                    intent.setAction(INTENT_SELECTED_TRIP);
-                    Bundle savedInstanceState;
-                    //intent.putExtra(INTENT_SELECTED_TRIP, path);
-                    intent.putExtra(INTENT_SELECTED_TRIP, path.getId());
-                    startActivity(intent);*/
-
-
                 }
 
                 @Override
