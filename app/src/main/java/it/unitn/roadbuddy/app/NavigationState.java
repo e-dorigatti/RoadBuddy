@@ -710,11 +710,11 @@ public class NavigationState implements NFAState,
             else {
                 currentTrip = res;
                 if ( path != null ) {
-                    // replace the drawed path with an higher resolution version
-                    /*fragment.removeDrawable( navigationPathDrawable );
+                    // replace the drawn path with an higher resolution version
+                    fragment.removeDrawable( navigationPathDrawable );
                     navigationPathDrawable = new DrawablePath( path );
-                    fragment.addDrawable( navigationPathDrawable );*/
-
+                    fragment.addDrawable( navigationPathDrawable );
+                    fragment.setSelectedDrawable( navigationPathDrawable );
                 }
                 startTrip( );
             }
