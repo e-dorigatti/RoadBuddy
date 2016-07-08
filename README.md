@@ -53,3 +53,5 @@ Configuration of postgis (every time you create a new container, unless you pers
 PGPASSWORD=lpsmt2016 psql -h localhost -p 54321 -U roadbuddy -c "CREATE EXTENSION postgis; CREATE EXTENSION postgis_topology;"
 ```
 
+# License
+The source code is under the terms of the [GNU General Public License, version 3](http://www.gnu.org/licenses/gpl.html).
