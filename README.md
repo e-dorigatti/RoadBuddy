@@ -7,7 +7,7 @@ Resources (in Italian, sorry):
 
  - [video](https://www.youtube.com/watch?v=84H-o9Ggkzw)
  - [concept](https://drive.google.com/file/d/0B19yc8dlm1XpSWlScURBUXhfSjg/view)
- - [final report](https://drive.google.com/open?id=0BwTnXnG7pvmHZUdLOVJkalFEbWc/view)
+ - [final report](https://drive.google.com/open?id=0BwTnXnG7pvmHZUdLOVJkalFEbWc)
 
 #### Android Dependencies
 From the Android SDK manager you need to install (not sure this is the complete list):
